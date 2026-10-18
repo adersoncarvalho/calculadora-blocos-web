@@ -1,4 +1,4 @@
-﻿@import 'katex/dist/katex.min.css';
+@import 'katex/dist/katex.min.css';
 :root {
   --bg: #090d16;
   --card-bg: #131c2e;
@@ -3301,6 +3301,64 @@ kbd {
     flex: 0 0 auto;
   }
 }
+
+/* =========================================================
+   ESTILO DEFINITIVO DOS BOTÕES DE FILTRO, ABAS E OPÇÕES
+   (TEMA TÉCNICO ESCURO DE ENGENHARIA - ZERO BOTÕES BRANCOS)
+   ========================================================= */
+.filter-btn,
+button.filter-btn {
+  background: rgba(19, 28, 46, 0.85) !important;
+  color: var(--text) !important;
+  border: 1px solid rgba(56, 189, 248, 0.25) !important;
+  border-radius: 8px !important;
+  padding: 8px 14px;
+  font-size: 0.86rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.filter-btn:hover,
+button.filter-btn:hover {
+  background: rgba(56, 189, 248, 0.15) !important;
+  border-color: var(--primary) !important;
+  color: var(--primary) !important;
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.35);
+  transform: translateY(-1px);
+}
+
+.filter-btn.active,
+button.filter-btn.active {
+  background: rgba(14, 165, 233, 0.25) !important;
+  border-color: var(--primary) !important;
+  color: #38bdf8 !important;
+  font-weight: 700 !important;
+  box-shadow: 0 0 16px rgba(56, 189, 248, 0.45) !important;
+}
+
+body:not(.light-theme) button:not(.btn-primary):not(.btn-theme-toggle):not(.btn-open-guide) {
+  background: rgba(19, 28, 46, 0.85);
+  color: var(--text);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+}
+
+body:not(.light-theme) button.btn-secondary {
+  background: #1e293b !important;
+  color: var(--text) !important;
+  border: 1px solid rgba(148, 163, 184, 0.25) !important;
+}
+
+body:not(.light-theme) button.btn-secondary:hover {
+  background: #334155 !important;
+  color: var(--primary) !important;
+  border-color: var(--primary) !important;
+}
+
 
 
 

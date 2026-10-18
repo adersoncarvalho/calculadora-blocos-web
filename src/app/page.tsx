@@ -3,75 +3,99 @@
 import React, { useState, useEffect } from 'react';
 import { Header } from '@/components/Header';
 import { ShortcutsModal } from '@/components/ShortcutsModal';
-import { GuideModal } from '@/features/guide/GuideModal';
-import { PracticeModal } from '@/features/practice/PracticeModal';
-import { SimulationsGalleryModal } from '@/features/simulations/SimulationsGalleryModal';
-import { CalculatorSection } from '@/features/calculator/CalculatorSection';
+import { GuideSection } from '@/features/guide/GuideSection';
+import { PracticeSection } from '@/features/practice/PracticeSection';
+import { SimulationsGallerySection } from '@/features/simulations/SimulationsGallerySection';
 import { BuilderSection } from '@/features/builder/BuilderSection';
+import { CalculatorSection } from '@/features/calculator/CalculatorSection';
+
+type ActiveView = 'home' | 'builder' | 'guide' | 'practice' | 'simulations';
 
 export default function HomePage() {
-  const [view, setView] = useState<'home' | 'builder'>('home');
+  const [view, setView] = useState<ActiveView>('home');
+  const [showCanonicalModels, setShowCanonicalModels] = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
-  const [showGuide, setShowGuide] = useState(false);
-  const [showPractice, setShowPractice] = useState(false);
-  const [showSimulations, setShowSimulations] = useState(false);
 
-  // Escuta tecla '?' para atalhos e 'Esc' para fechar modais
+  // Escuta tecla '?' para atalhos e 'Esc' para fechar modais ou voltar
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === '?' || (e.shiftKey && e.key === '/')) {
         setShowShortcuts(prev => !prev);
       } else if (e.key === 'Escape') {
         setShowShortcuts(false);
-        setShowGuide(false);
-        setShowPractice(false);
-        setShowSimulations(false);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  // Transição para o Construtor Livre em tela dedicada no topo
-  const handleOpenBuilder = () => {
-    setView('builder');
+  // Transições com scroll para o topo para abrir telas dedicadas
+  const handleSetView = (newView: ActiveView) => {
+    setView(newView);
     if (typeof window !== 'undefined') {
       window.scrollTo({ top: 0, behavior: 'instant' });
     }
   };
 
-  const handleBackToHome = () => {
-    setView('home');
-    if (typeof window !== 'undefined') {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-  };
-
-  // Se o usuário está no modo Construtor Livre, abre direto no topo sem banners acumulados
+  // Se o usuário está em uma das ferramentas dedicadas, abre direto no topo em tela cheia limpa
   if (view === 'builder') {
     return (
       <main style={{ padding: '16px 20px', minHeight: '100vh' }}>
         <BuilderSection
-          onBack={handleBackToHome}
-          onOpenGuide={() => setShowGuide(true)}
+          onBack={() => handleSetView('home')}
+          onOpenGuide={() => handleSetView('guide')}
         />
-
-        {/* Modais Globais acessíveis do Construtor */}
-        <GuideModal isOpen={showGuide} onClose={() => setShowGuide(false)} />
         <ShortcutsModal isOpen={showShortcuts} onClose={() => setShowShortcuts(false)} />
       </main>
     );
   }
 
+  if (view === 'guide') {
+    return (
+      <main style={{ padding: '16px 20px', minHeight: '100vh' }}>
+        <GuideSection
+          onBack={() => handleSetView('home')}
+          onNavigate={v => handleSetView(v)}
+        />
+        <ShortcutsModal isOpen={showShortcuts} onClose={() => setShowShortcuts(false)} />
+      </main>
+    );
+  }
+
+  if (view === 'practice') {
+    return (
+      <main style={{ padding: '16px 20px', minHeight: '100vh' }}>
+        <PracticeSection
+          onBack={() => handleSetView('home')}
+          onNavigate={v => handleSetView(v)}
+        />
+        <ShortcutsModal isOpen={showShortcuts} onClose={() => setShowShortcuts(false)} />
+      </main>
+    );
+  }
+
+  if (view === 'simulations') {
+    return (
+      <main style={{ padding: '16px 20px', minHeight: '100vh' }}>
+        <SimulationsGallerySection
+          onBack={() => handleSetView('home')}
+          onNavigate={v => handleSetView(v)}
+        />
+        <ShortcutsModal isOpen={showShortcuts} onClose={() => setShowShortcuts(false)} />
+      </main>
+    );
+  }
+
+  // Visualização Inicial Padrão (HOME) - Totalmente Clean
   return (
     <main style={{ padding: '16px 20px', minHeight: '100vh' }}>
       {/* Top Header Principal */}
       <Header
         onOpenShortcuts={() => setShowShortcuts(true)}
-        onOpenBuilder={handleOpenBuilder}
-        onOpenGuide={() => setShowGuide(true)}
-        onOpenPractice={() => setShowPractice(true)}
-        onOpenSimulations={() => setShowSimulations(true)}
+        onOpenBuilder={() => handleSetView('builder')}
+        onOpenGuide={() => handleSetView('guide')}
+        onOpenPractice={() => handleSetView('practice')}
+        onOpenSimulations={() => handleSetView('simulations')}
       />
 
       {/* Hero Banner Profissional */}
@@ -95,7 +119,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Trilha Progressiva de Aplicação e Estudo */}
+      {/* Trilha Progressiva de Aplicação e Estudo (Percurso Acadêmico) */}
       <div className="learning-path-banner" id="learningPathBanner" style={{ marginTop: '20px' }}>
         <div className="learning-path-header" style={{ marginBottom: '14px' }}>
           <span className="learning-path-badge" style={{ fontSize: '0.74rem', background: 'rgba(56,189,248,0.1)', color: 'var(--primary)', padding: '3px 8px', borderRadius: '4px', fontWeight: 700 }}>
@@ -110,73 +134,97 @@ export default function HomePage() {
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: '14px' }}>
+          {/* Etapa 1 • Teoria */}
           <div
             className="learning-step-card"
-            onClick={() => setShowGuide(true)}
+            onClick={() => handleSetView('guide')}
             role="button"
             tabIndex={0}
-            style={{ cursor: 'pointer', background: 'var(--card-bg)', border: '1px solid var(--card-border)', borderRadius: '8px', padding: '14px' }}
+            style={{ cursor: 'pointer', background: 'var(--card-bg)', border: '1px solid var(--card-border)', borderRadius: '8px', padding: '16px' }}
           >
             <div style={{ fontSize: '0.72rem', color: 'var(--primary)', fontWeight: 700 }}>Etapa 1 • Teoria</div>
-            <div style={{ fontWeight: 700, fontSize: '0.94rem', margin: '4px 0', color: 'var(--text)' }}>📚 Fundamentos & Regras</div>
-            <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Estude premissas de isolamento, equações nodais e regras de blocos.</div>
+            <div style={{ fontWeight: 700, fontSize: '0.96rem', margin: '4px 0', color: 'var(--text)' }}>📚 Fundamentos & Regras</div>
+            <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', lineHeight: '1.45' }}>Estude premissas de isolamento, equações nodais e regras de blocos.</div>
           </div>
 
+          {/* Etapa 2 • Modelos (Abre a calculadora de topologias canônicas abaixo) */}
           <div
             className="learning-step-card"
             onClick={() => {
-              const el = document.getElementById('calcSectionArea');
-              if (el) el.scrollIntoView({ behavior: 'smooth' });
+              setShowCanonicalModels(prev => !prev);
+              setTimeout(() => {
+                const el = document.getElementById('calcSectionArea');
+                if (el) el.scrollIntoView({ behavior: 'smooth' });
+              }, 60);
             }}
             role="button"
             tabIndex={0}
-            style={{ cursor: 'pointer', background: 'var(--card-bg)', border: '1px solid var(--card-border)', borderRadius: '8px', padding: '14px' }}
+            style={{
+              cursor: 'pointer',
+              background: showCanonicalModels ? 'rgba(56,189,248,0.1)' : 'var(--card-bg)',
+              border: `1px solid ${showCanonicalModels ? 'var(--primary)' : 'var(--card-border)'}`,
+              borderRadius: '8px',
+              padding: '16px'
+            }}
           >
             <div style={{ fontSize: '0.72rem', color: 'var(--primary)', fontWeight: 700 }}>Etapa 2 • Modelos</div>
-            <div style={{ fontWeight: 700, fontSize: '0.94rem', margin: '4px 0', color: 'var(--text)' }}>📐 Topologias Canônicas</div>
-            <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Calcule a malha fechada clássica G/(1+GH) com memorial analítico em LaTeX.</div>
+            <div style={{ fontWeight: 700, fontSize: '0.96rem', margin: '4px 0', color: 'var(--text)' }}>📐 Topologias Canônicas</div>
+            <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', lineHeight: '1.45' }}>
+              {showCanonicalModels ? '▲ Recolher modelos canônicos' : '▼ Abrir modelos e memorial analítico'}
+            </div>
           </div>
 
+          {/* Etapa 3 • Prática */}
           <div
             className="learning-step-card"
-            onClick={() => setShowPractice(true)}
+            onClick={() => handleSetView('practice')}
             role="button"
             tabIndex={0}
-            style={{ cursor: 'pointer', background: 'var(--card-bg)', border: '1px solid var(--card-border)', borderRadius: '8px', padding: '14px' }}
+            style={{ cursor: 'pointer', background: 'var(--card-bg)', border: '1px solid var(--card-border)', borderRadius: '8px', padding: '16px' }}
           >
             <div style={{ fontSize: '0.72rem', color: 'var(--primary)', fontWeight: 700 }}>Etapa 3 • Prática</div>
-            <div style={{ fontWeight: 700, fontSize: '0.94rem', margin: '4px 0', color: 'var(--text)' }}>🧪 Laboratório Interativo</div>
-            <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Exercícios em 3 níveis com verificador de equivalência algébrica real.</div>
+            <div style={{ fontWeight: 700, fontSize: '0.96rem', margin: '4px 0', color: 'var(--text)' }}>🧪 Laboratório Interativo</div>
+            <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', lineHeight: '1.45' }}>Exercícios em 3 níveis com verificador de equivalência algébrica real.</div>
           </div>
 
+          {/* Etapa 4 • Criação */}
           <div
             className="learning-step-card"
-            onClick={handleOpenBuilder}
+            onClick={() => handleSetView('builder')}
             role="button"
             tabIndex={0}
-            style={{ cursor: 'pointer', background: 'var(--card-bg)', border: '1px solid var(--card-border)', borderRadius: '8px', padding: '14px' }}
+            style={{ cursor: 'pointer', background: 'var(--card-bg)', border: '1px solid var(--card-border)', borderRadius: '8px', padding: '16px' }}
           >
             <div style={{ fontSize: '0.72rem', color: 'var(--primary)', fontWeight: 700 }}>Etapa 4 • Criação</div>
-            <div style={{ fontWeight: 700, fontSize: '0.94rem', margin: '4px 0', color: 'var(--text)' }}>🛠️ Construtor Livre</div>
-            <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Monte qualquer diagrama arbitrário e calcule a redução via Mason.</div>
+            <div style={{ fontWeight: 700, fontSize: '0.96rem', margin: '4px 0', color: 'var(--text)' }}>🛠️ Construtor Livre</div>
+            <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', lineHeight: '1.45' }}>Monte qualquer diagrama arbitrário e calcule a redução via Mason.</div>
           </div>
         </div>
       </div>
 
-      {/* Seção da Calculadora e Topologias */}
-      <div id="calcSectionArea">
-        <CalculatorSection
-          onOpenPractice={() => setShowPractice(true)}
-          onOpenBuilder={handleOpenBuilder}
-          onOpenGuide={() => setShowGuide(true)}
-        />
-      </div>
+      {/* Conteúdo Abaixo do Percurso Acadêmico: Apenas renderiza quando o usuário clica na Etapa 2 */}
+      {showCanonicalModels && (
+        <div id="calcSectionArea" style={{ marginTop: '24px' }}>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '8px' }}>
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={() => setShowCanonicalModels(false)}
+              style={{ fontSize: '0.8rem', padding: '6px 12px', cursor: 'pointer' }}
+            >
+              ✕ Fechar / Recolher Modelos
+            </button>
+          </div>
+          <CalculatorSection
+            onOpenPractice={() => handleSetView('practice')}
+            onOpenBuilder={() => handleSetView('builder')}
+            onOpenGuide={() => handleSetView('guide')}
+          />
+        </div>
+      )}
 
-      {/* Modais Globais */}
+      {/* Modal de Atalhos de Teclado */}
       <ShortcutsModal isOpen={showShortcuts} onClose={() => setShowShortcuts(false)} />
-      <GuideModal isOpen={showGuide} onClose={() => setShowGuide(false)} />
-      <PracticeModal isOpen={showPractice} onClose={() => setShowPractice(false)} />
-      <SimulationsGalleryModal isOpen={showSimulations} onClose={() => setShowSimulations(false)} />
 
       {/* Rodapé Acadêmico Institucional */}
       <footer style={{ marginTop: '48px', paddingTop: '20px', borderTop: '1px solid var(--card-border)', textAlign: 'center', fontSize: '0.82rem', color: 'var(--text-muted)' }}>
