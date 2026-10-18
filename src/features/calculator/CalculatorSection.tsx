@@ -4,6 +4,7 @@ import React, { useState, useMemo } from 'react';
 import { PRESETS_DATA, PresetDef } from './presetsData';
 import { PresetSvgView } from './PresetSvgView';
 import { MathView } from '@/components/MathView';
+import { InteractiveMathView, InteractiveMathLine } from '@/components/InteractiveMathView';
 import { parseRatExpr } from '@/core/algebra/parser';
 import {
   ratMul,
@@ -15,6 +16,11 @@ import {
 } from '@/core/algebra/rational';
 import { polyToLatex, toUnivariateArr, trimUni } from '@/core/algebra/polynomial';
 import { analyzeTransferFunction, StabilityReport } from '@/core/analysis/stability';
+import {
+  buildCascataInteractiveLines,
+  buildParaleloInteractiveLines,
+  buildFeedbackInteractiveLines
+} from './stepMathExplanations';
 
 interface CalculatorSectionProps {
   onOpenPractice?: () => void;
@@ -32,6 +38,7 @@ export const CalculatorSection: React.FC<CalculatorSectionProps> = ({
   const preset: PresetDef | null = selectedKey ? PRESETS_DATA[selectedKey] || null : null;
 
   const [formValues, setFormValues] = useState<Record<string, string>>({});
+  const [activeStageIdx, setActiveStageIdx] = useState<number>(0);
 
   const [copiedLatex, setCopiedLatex] = useState(false);
   const [copiedScilab, setCopiedScilab] = useState(false);
@@ -39,6 +46,7 @@ export const CalculatorSection: React.FC<CalculatorSectionProps> = ({
   // Troca de preset
   const handleSelectPreset = (key: string) => {
     setSelectedKey(key);
+    setActiveStageIdx(0);
     const newPreset = PRESETS_DATA[key];
     if (newPreset) {
       setFormValues({ ...newPreset.defaultValues });
@@ -52,18 +60,25 @@ export const CalculatorSection: React.FC<CalculatorSectionProps> = ({
   const handleResetDefaults = () => {
     if (preset) {
       setFormValues({ ...preset.defaultValues });
+      setActiveStageIdx(0);
     }
   };
 
-  // Cálculo analítico e memorial passo a passo
+  // Cálculo analítico e memorial passo a passo enriquecido com lupinha interativa
   const calculation = useMemo(() => {
     if (!selectedKey || !preset) {
-      return { success: false, error: null, steps: [], finalT: null, stability: null, scilabScript: '' };
+      return { success: false, error: null, steps: [], finalT: null, stability: null, scilabScript: '', stagesCount: 1 };
     }
 
     try {
       let finalT: RatFunc;
-      const steps: { title: string; desc: string; math: string }[] = [];
+      const steps: {
+        title: string;
+        desc: string;
+        interactiveLines: InteractiveMathLine[];
+        stageSvgIdx?: number;
+      }[] = [];
+      let stagesCount = 2;
 
       if (selectedKey === 'mf_padrao') {
         const G = parseRatExpr(formValues.G || '10/(s+2)');
@@ -73,66 +88,242 @@ export const CalculatorSection: React.FC<CalculatorSectionProps> = ({
         const denOp = isNeg ? '+' : '-';
 
         finalT = ratFeedback(G, H, signChar as '+' | '-');
+        stagesCount = 4;
 
+        // Etapa 1
         steps.push({
           title: 'Etapa 1: Equacionamento Nodal da Malha Fechada',
           desc: `O sinal de erro no ponto de soma é E(s) = R(s) ${denOp === '+' ? '-' : '+'} H(s)·C(s), e a saída da planta é C(s) = G(s)·E(s):`,
-          math: `C(s) = G(s) \\cdot \\left[ R(s) ${denOp === '+' ? '-' : '+'} H(s)C(s) \\right]`
+          stageSvgIdx: 0,
+          interactiveLines: [
+            {
+              math: `E(s) = R(s) ${denOp === '+' ? '-' : '+'} H(s) \\cdot C(s)`,
+              explanationTitle: 'Equação Nodal do Ponto de Soma',
+              explanationHtml: `<ol>
+                <li><b>Ponto de Soma:</b> O sinal resultante $E(s)$ é a soma algébrica das entradas do somador. A referência entra com sinal positivo e o ramo de realimentação entra com sinal <b>${denOp === '+' ? '-' : '+'}</b>.</li>
+                <li><b>Sinal Realimentado:</b> Tomado da saída $C(s)$ e ponderado pelo sensor $H(s)$, valendo $H(s) \\cdot C(s)$.</li>
+              </ol>`
+            },
+            {
+              math: `C(s) = G(s) \\cdot E(s) = G(s) \\cdot \\left[ R(s) ${denOp === '+' ? '-' : '+'} H(s)C(s) \\right]`,
+              explanationTitle: 'Substituição do Sinal de Erro no Caminho Direto',
+              explanationHtml: `<ol>
+                <li><b>Ação da Planta:</b> A saída $C(s)$ é obtida multiplicando o bloco direto $G(s)$ pelo sinal de erro $E(s)$.</li>
+                <li>Substituindo $E(s)$ diretamente na equação da saída, eliminamos a variável interna intermediária.</li>
+              </ol>`
+            }
+          ]
         });
 
+        // Etapa 2
         steps.push({
-          title: 'Etapa 2: Isolamento da Saída C(s) e Fator Comum',
-          desc: 'Agrupam-se os termos em C(s) no membro esquerdo da equação:',
-          math: `C(s) \\cdot \\left[ 1 ${denOp} G(s)H(s) \\right] = G(s) R(s) \\implies T(s) = \\frac{C(s)}{R(s)} = \\frac{G(s)}{1 ${denOp} G(s)H(s)}`
+          title: 'Etapa 2: Isolamento da Saída C(s) e Dedução da Equação Canônica',
+          desc: 'Agrupam-se os termos em C(s) no membro esquerdo da equação e coloca-se a saída em evidência:',
+          stageSvgIdx: 1,
+          interactiveLines: [
+            {
+              math: `C(s) ${denOp === '+' ? '+' : '-'} G(s)H(s)C(s) = G(s)R(s)`,
+              explanationTitle: 'Transposição de Termos para o Membro Esquerdo',
+              explanationHtml: `<ol>
+                <li>Ao transpor o termo $G(s)H(s)C(s)$ do membro direito para o esquerdo da igualdade, seu sinal inverte de ${denOp === '+' ? '-' : '+'} para <b>${denOp}</b>.</li>
+              </ol>`
+            },
+            {
+              math: `C(s) \\cdot \\left[ 1 ${denOp} G(s)H(s) \\right] = G(s) R(s)`,
+              explanationTitle: 'Fatoração por Evidência da Saída C(s)',
+              explanationHtml: `<ol>
+                <li>Colocando $C(s)$ em evidência: $C(s) \\cdot 1 + C(s) \\cdot [${denOp} G(s)H(s)] = C(s) \\cdot [1 ${denOp} G(s)H(s)]$.</li>
+              </ol>`
+            },
+            {
+              math: `T(s) = \\frac{C(s)}{R(s)} = \\frac{G(s)}{1 ${denOp} G(s)H(s)}`,
+              explanationTitle: 'Fórmula Canônica de Malha Fechada',
+              explanationHtml: `<ol>
+                <li>Passando o fator entre colchetes $[1 ${denOp} G(s)H(s)]$ dividindo, obtém-se a razão de transferência equivalente $\\frac{C(s)}{R(s)}$.</li>
+              </ol>`
+            }
+          ]
         });
 
+        // Etapa 3
+        const feedbackLines = buildFeedbackInteractiveLines(
+          'T(s) = \\frac{C(s)}{R(s)}',
+          G,
+          H,
+          signChar as '+' | '-',
+          finalT
+        );
         steps.push({
-          title: 'Etapa 3: Substituição Racional com Mínimo Múltiplo Comum (MMC)',
-          desc: 'Substituindo G(s) e H(s), desenvolvendo o MMC no denominador e simplificando fatores comuns:',
-          math: `T(s) = \\frac{${ratToLatex(G)}}{1 ${denOp} \\left(${ratToLatex(G)}\\right)\\left(${ratToLatex(H)}\\right)} = ${ratToLatex(finalT)}`
+          title: 'Etapa 3: Resolução Racional Passo a Passo com Mínimo Múltiplo Comum (MMC)',
+          desc: 'Substituição das frações de G(s) e H(s), desenvolvimento do MMC no denominador e cancelamento de fatores comuns:',
+          stageSvgIdx: 2,
+          interactiveLines: feedbackLines
         });
+
       } else if (selectedKey === 'cascata_dupla') {
         const G1 = parseRatExpr(formValues.G1 || '4/(s+1)');
         const G2 = parseRatExpr(formValues.G2 || '5/(s+2)');
         finalT = ratMul(G1, G2);
+        stagesCount = 2;
+
+        const cascataLines = buildCascataInteractiveLines(
+          'G_{\\text{eq}}(s)',
+          G1,
+          G2,
+          finalT
+        );
 
         steps.push({
-          title: 'Etapa 1: Associação em Série / Cascata',
-          desc: 'A saída do primeiro bloco é a entrada do segundo bloco. Multiplicam-se numeradores e denominadores:',
-          math: `G_{\\text{eq}}(s) = G_1(s) \\cdot G_2(s) = \\left(${ratToLatex(G1)}\\right) \\cdot \\left(${ratToLatex(G2)}\\right) = ${ratToLatex(finalT)}`
+          title: 'Etapa 1: Equacionamento Nodal do Sinal Intermediário X1(s)',
+          desc: 'A saída do primeiro estágio G1(s) alimenta diretamente a entrada do segundo estágio G2(s):',
+          stageSvgIdx: 0,
+          interactiveLines: [
+            {
+              math: `X_1(s) = G_1(s) \\cdot R(s)`,
+              explanationTitle: 'Sinal Intermediário X1(s)',
+              explanationHtml: `<ol>
+                <li>O sinal $X_1(s)$ na saída do primeiro bloco é o produto de $G_1(s)$ pelo sinal de referência $R(s)$.</li>
+              </ol>`
+            },
+            {
+              math: `C(s) = G_2(s) \\cdot X_1(s) = G_2(s) \\cdot G_1(s) \\cdot R(s)`,
+              explanationTitle: 'Saída Final C(s) por Substituição Direta',
+              explanationHtml: `<ol>
+                <li>Substituindo $X_1(s)$ na entrada de $G_2(s)$, obtemos a saída $C(s)$ em função direta de $R(s)$.</li>
+              </ol>`
+            }
+          ]
         });
+
+        steps.push({
+          title: 'Etapa 2: Multiplicação Algébrica Polinomial Passo a Passo',
+          desc: 'Multiplicação de numeradores e denominadores e expansão da forma polinomial final:',
+          stageSvgIdx: 1,
+          interactiveLines: cascataLines
+        });
+
       } else if (selectedKey === 'paralelo') {
         const G1 = parseRatExpr(formValues.G1 || '6/(s+2)');
         const G2 = parseRatExpr(formValues.G2 || '3/(s+4)');
         const isSub = (formValues.op || '').includes('Subtração');
+        const opChar = isSub ? '-' : '+';
         finalT = isSub ? ratAdd(G1, parseRatExpr(`-(${formValues.G2 || '3/(s+4)'})`)) : ratAdd(G1, G2);
+        stagesCount = 2;
+
+        const parLines = buildParaleloInteractiveLines(
+          'G_{\\text{eq}}(s)',
+          G1,
+          G2,
+          opChar,
+          finalT
+        );
 
         steps.push({
-          title: 'Etapa 1: Associação em Paralelo com Denominador Comum (MMC)',
-          desc: `Os dois ramos convergem no somador com operação ${isSub ? 'subtrativa (-)' : 'aditiva (+)'}:`,
-          math: `G_{\\text{eq}}(s) = G_1(s) ${isSub ? '-' : '+'} G_2(s) = \\left(${ratToLatex(G1)}\\right) ${isSub ? '-' : '+'} \\left(${ratToLatex(G2)}\\right) = ${ratToLatex(finalT)}`
+          title: 'Etapa 1: Equacionamento dos Ramos Paralelos X1(s) e X2(s)',
+          desc: 'O mesmo sinal R(s) alimenta simultaneamente ambos os canais que convergem no somador:',
+          stageSvgIdx: 0,
+          interactiveLines: [
+            {
+              math: `X_1(s) = G_1(s) \\cdot R(s), \\qquad X_2(s) = G_2(s) \\cdot R(s)`,
+              explanationTitle: 'Sinais nos Dois Ramos Paralelos',
+              explanationHtml: `<ol>
+                <li>O ponto de ramificação duplica o sinal $R(s)$ sem perdas ou divisões de energia para os dois blocos.</li>
+              </ol>`
+            },
+            {
+              math: `C(s) = X_1(s) ${opChar} X_2(s) = \\left[ G_1(s) ${opChar} G_2(s) \\right] \\cdot R(s)`,
+              explanationTitle: 'Combinação no Ponto de Soma',
+              explanationHtml: `<ol>
+                <li>Colocando $R(s)$ em evidência, a função de transferência equivalente é a soma/subtração algébrica direta dos dois blocos.</li>
+              </ol>`
+            }
+          ]
         });
+
+        steps.push({
+          title: 'Etapa 2: Mínimo Múltiplo Comum (MMC) e Simplificação Algébrica',
+          desc: 'Resolução das frações algébricas com denominador comum e soma dos polinômios numeradores:',
+          stageSvgIdx: 1,
+          interactiveLines: parLines
+        });
+
       } else if (selectedKey === 'exemplo1') {
         const G1 = parseRatExpr(formValues.G1 || '10');
         const G2 = parseRatExpr(formValues.G2 || '1/s');
         const G3 = parseRatExpr(formValues.G3 || '2/(s+5)');
         finalT = ratMul(ratMul(G1, G2), G3);
+        stagesCount = 2;
 
         steps.push({
-          title: 'Etapa 1: Associação dos 3 Blocos em Cascata',
-          desc: 'K=10 (ganho proporcional), 1/s (integrador) e 2/(s+5) (filtro de 1ª ordem):',
-          math: `T(s) = K \\cdot G_2(s) \\cdot G_3(s) = 10 \\cdot \\left(\\frac{1}{s}\\right) \\cdot \\left(\\frac{2}{s+5}\\right) = ${ratToLatex(finalT)}`
+          title: 'Etapa 1: Equacionamento dos Três Estágios em Série',
+          desc: 'Ganho proporcional K=10, integrador 1/s e dinâmica de 1ª ordem 2/(s+5):',
+          stageSvgIdx: 0,
+          interactiveLines: [
+            {
+              math: `X_1(s) = 10 \\cdot R(s), \\qquad X_2(s) = \\frac{1}{s} \\cdot X_1(s) = \\frac{10}{s} R(s)`,
+              explanationTitle: 'Equacionamento dos Estágios 1 e 2',
+              explanationHtml: `<ol>
+                <li>O primeiro estágio amplifica a referência por $K=10$. O segundo estágio integra no tempo (multiplica por $1/s$).</li>
+              </ol>`
+            },
+            {
+              math: `C(s) = \\left(\\frac{2}{s+5}\\right) X_2(s) = \\left(\\frac{2}{s+5}\\right) \\cdot \\left(\\frac{10}{s}\\right) R(s)`,
+              explanationTitle: 'Ação do Filtro de 1ª Ordem na Saída',
+              explanationHtml: `<ol>
+                <li>O terceiro estágio adiciona um polo estável em $s = -5$ e ganho $2$.</li>
+              </ol>`
+            }
+          ]
         });
+
+        steps.push({
+          title: 'Etapa 2: Produto Polinomial Consolidado',
+          desc: 'Multiplicação dos 3 termos em cascata:',
+          stageSvgIdx: 1,
+          interactiveLines: [
+            {
+              math: `T(s) = 10 \\cdot \\left(\\frac{1}{s}\\right) \\cdot \\left(\\frac{2}{s+5}\\right) = \\frac{20}{s(s+5)} = ${ratToLatex(finalT)}`,
+              explanationTitle: 'Função de Transferência de Malha Aberta',
+              explanationHtml: `<ol>
+                <li>Numerador: $10 \\cdot 1 \\cdot 2 = 20$.</li>
+                <li>Denominador: $s \\cdot (s+5) = s^2 + 5s$.</li>
+                <li>Sistema do Tipo 1 (um polo na origem) e de 2ª ordem estável.</li>
+              </ol>`
+            }
+          ]
+        });
+
       } else if (selectedKey === 'exemplo2') {
         const G1 = parseRatExpr(formValues.G1 || '(s+3)/(s+1)');
         const G2 = parseRatExpr(formValues.G2 || '2/(s+4)');
         finalT = ratMul(G1, G2);
+        stagesCount = 2;
+
+        const cascataLines = buildCascataInteractiveLines('T(s)', G1, G2, finalT);
 
         steps.push({
-          title: 'Etapa 1: Compensador Lead em Série com a Planta',
-          desc: 'O compensador por avanço de fase introduz zero em s=-3 e polo em s=-1:',
-          math: `T(s) = G_{\\text{lead}}(s) \\cdot G_{\\text{planta}}(s) = \\left(${ratToLatex(G1)}\\right) \\cdot \\left(${ratToLatex(G2)}\\right) = ${ratToLatex(finalT)}`
+          title: 'Etapa 1: Compensador por Avanço de Fase (Lead) em Cascata com a Planta',
+          desc: 'O compensador introduz zero em s=-3 e polo em s=-1:',
+          stageSvgIdx: 0,
+          interactiveLines: [
+            {
+              math: `T(s) = G_{\\text{lead}}(s) \\cdot G_{\\text{planta}}(s) = \\left(\\frac{s+3}{s+1}\\right) \\cdot \\left(\\frac{2}{s+4}\\right)`,
+              explanationTitle: 'Associação Lead-Planta',
+              explanationHtml: `<ol>
+                <li>Compensador: $\\frac{s+3}{s+1}$ (avanço de fase para aumentar margem de fase e estabilidade relativa).</li>
+                <li>Planta: $\\frac{2}{s+4}$ (polo em $s=-4$).</li>
+              </ol>`
+            }
+          ]
         });
+
+        steps.push({
+          title: 'Etapa 2: Multiplicação Algébrica e Polinômio Final',
+          desc: 'Desenvolvimento das multiplicações distributivas nos polinômios:',
+          stageSvgIdx: 1,
+          interactiveLines: cascataLines
+        });
+
       } else {
         // proposto1: duas malhas de realimentação combinadas
         const G1 = parseRatExpr(formValues.G1 || '2/(s+1)');
@@ -141,24 +332,29 @@ export const CalculatorSection: React.FC<CalculatorSectionProps> = ({
         const H2 = parseRatExpr(formValues.H2 || '2');
 
         const innerLoop = ratFeedback(G2, H1, '-');
-        finalT = ratFeedback(ratMul(G1, innerLoop), H2, '-');
+        const cascInner = ratMul(G1, innerLoop);
+        finalT = ratFeedback(cascInner, H2, '-');
+        stagesCount = 3;
 
         steps.push({
-          title: 'Etapa 1: Redução da Malha Interna G2 / (1 + G2·H1)',
-          desc: 'Resolve-se primeiramente o laço menor de realimentação local:',
-          math: `T_{\\text{interna}}(s) = \\frac{G_2(s)}{1 + G_2(s)H_1(s)} = ${ratToLatex(innerLoop)}`
+          title: 'Etapa 1: Redução da Malha Fechada Interna G2 / (1 + G2·H1)',
+          desc: 'Elimina-se o primeiro laço local de realimentação negativa em torno de G2(s):',
+          stageSvgIdx: 1,
+          interactiveLines: buildFeedbackInteractiveLines('T_{\\text{interna}}(s)', G2, H1, '-', innerLoop)
         });
 
         steps.push({
-          title: 'Etapa 2: Cascata com o Bloco Direto G1(s)',
-          desc: 'Associa-se em série o primeiro estágio com o equivalente da malha interna:',
-          math: `G_{\\text{direto}}(s) = G_1(s) \\cdot T_{\\text{interna}}(s) = ${ratToLatex(ratMul(G1, innerLoop))}`
+          title: 'Etapa 2: Associação em Cascata do Bloco Direto G1(s) com a Malha Interna',
+          desc: 'Multiplicam-se os estágios em série ao longo do ramo direto:',
+          stageSvgIdx: 1,
+          interactiveLines: buildCascataInteractiveLines('G_{\\text{direto}}(s)', G1, innerLoop, cascInner)
         });
 
         steps.push({
-          title: 'Etapa 3: Redução da Malha Global com Sensor H2(s)',
-          desc: 'Fecha-se o laço externo completo com realimentação negativa H2(s):',
-          math: `T(s) = \\frac{G_{\\text{direto}}(s)}{1 + G_{\\text{direto}}(s)H_2(s)} = ${ratToLatex(finalT)}`
+          title: 'Etapa 3: Redução da Malha Global Externa com Sensor H2(s)',
+          desc: 'Fecha-se o laço de realimentação completo com o sensor H2(s):',
+          stageSvgIdx: 2,
+          interactiveLines: buildFeedbackInteractiveLines('T(s) = \\frac{C(s)}{R(s)}', cascInner, H2, '-', finalT)
         });
       }
 
@@ -208,7 +404,8 @@ xgrid();
         steps,
         finalT,
         stability,
-        scilabScript
+        scilabScript,
+        stagesCount
       };
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -218,7 +415,8 @@ xgrid();
         steps: [],
         finalT: null,
         stability: null,
-        scilabScript: ''
+        scilabScript: '',
+        stagesCount: 1
       };
     }
   }, [selectedKey, preset, formValues]);
@@ -468,7 +666,7 @@ xgrid();
     );
   }
 
-  // Se uma topologia foi selecionada, exibe a Calculadora com Diagrama, Inputs, T(s) e Memorial
+  // Se uma topologia foi selecionada, exibe a Calculadora com Diagrama, Barra de Evolução, Inputs, T(s) e Memorial
   return (
     <section className="calculator-section" style={{ marginTop: '20px' }}>
       {/* Barra Superior de Navegação do Modelo */}
@@ -518,17 +716,41 @@ xgrid();
 
       {/* Grid Principal: Diagrama + Entradas */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '20px' }}>
-        {/* Lado Esquerdo: Diagrama Esquemático SVG */}
+        {/* Lado Esquerdo: Diagrama Esquemático SVG com Barra de Evolução por Etapas */}
         <div style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)', borderRadius: '10px', padding: '18px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
             <h3 style={{ fontSize: '1rem', color: 'var(--text)', margin: 0 }}>
-              📐 Diagrama de Blocos da Topologia
+              📐 Diagrama Esquemático da Topologia
             </h3>
             <span style={{ fontSize: '0.74rem', color: 'var(--primary)', fontWeight: 600 }}>
               {preset.badge}
             </span>
           </div>
-          <PresetSvgView presetKey={selectedKey} values={formValues} />
+
+          {/* Barra de Navegação das Etapas de Redução do Diagrama */}
+          {calculation.stagesCount > 1 && (
+            <div className="step-nav-bar" style={{ marginBottom: '12px' }}>
+              <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginRight: '4px', fontWeight: 700 }}>
+                Ver evolução do diagrama:
+              </span>
+              {Array.from({ length: calculation.stagesCount }).map((_, sIdx) => (
+                <button
+                  key={sIdx}
+                  type="button"
+                  className={`step-nav-btn ${sIdx === activeStageIdx ? 'active' : ''}`}
+                  onClick={() => setActiveStageIdx(sIdx)}
+                >
+                  {sIdx === 0 ? '0. Original' : `Etapa ${sIdx}`}
+                </button>
+              ))}
+            </div>
+          )}
+
+          <PresetSvgView
+            presetKey={selectedKey}
+            values={formValues}
+            stageIndex={activeStageIdx}
+          />
           <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginTop: '10px', lineHeight: '1.45' }}>
             {preset.desc}
           </p>
@@ -653,31 +875,50 @@ xgrid();
             </div>
           )}
 
-          {/* Memorial Analítico Passo a Passo */}
+          {/* Memorial Analítico Passo a Passo com Linhas Clicáveis e Lupinhas Interativas */}
           <div>
             <h4 style={{ fontSize: '0.96rem', color: 'var(--text)', marginBottom: '12px' }}>
-              📝 Memorial Analítico Passo a Passo (Resolução Algébrica Formal):
+              📝 Memorial Analítico Passo a Passo (Resolução Algébrica Formal com Detalhamento):
             </h4>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               {calculation.steps?.map((st, idx) => (
                 <div
                   key={idx}
+                  className="step-box"
                   style={{
                     borderLeft: '3px solid var(--primary)',
-                    background: 'rgba(2, 6, 23, 0.5)',
-                    padding: '12px 16px',
-                    borderRadius: '0 8px 8px 0'
+                    background: 'rgba(5, 8, 17, 0.6)',
+                    padding: '14px 18px',
+                    borderRadius: '4px'
                   }}
                 >
-                  <div style={{ fontWeight: 700, fontSize: '0.88rem', color: 'var(--primary)' }}>
-                    {st.title}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                    <div style={{ fontWeight: 700, fontSize: '0.92rem', color: 'var(--primary)' }}>
+                      {st.title}
+                    </div>
+                    {st.stageSvgIdx !== undefined && (
+                      <button
+                        type="button"
+                        className="btn-secondary"
+                        onClick={() => {
+                          setActiveStageIdx(st.stageSvgIdx ?? 0);
+                          const el = document.querySelector('.calculator-section');
+                          if (el) el.scrollIntoView({ behavior: 'smooth' });
+                        }}
+                        style={{ fontSize: '0.72rem', padding: '3px 8px' }}
+                        title="Ver diagrama esquemático correspondente a esta etapa no painel acima"
+                      >
+                        🔍 Ver Diagrama desta Etapa
+                      </button>
+                    )}
                   </div>
-                  <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', margin: '4px 0 8px 0' }}>
+
+                  <div style={{ fontSize: '0.84rem', color: 'var(--text)', margin: '4px 0 10px 0', lineHeight: '1.5' }}>
                     {st.desc}
                   </div>
-                  <div style={{ background: 'var(--code-bg)', padding: '8px 12px', borderRadius: '6px' }}>
-                    <MathView math={st.math} block />
-                  </div>
+
+                  {/* Renderizador de linhas interativas com lupinha e explicações */}
+                  <InteractiveMathView lines={st.interactiveLines} stepTitle={st.title} />
                 </div>
               ))}
             </div>
