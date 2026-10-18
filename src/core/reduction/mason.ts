@@ -52,9 +52,15 @@ export interface FeedbackLoop {
   gain: RatFunc;
 }
 
+export interface DisjointLoopPair {
+  loops: [number, number];
+  gain: RatFunc;
+}
+
 export interface MasonAnalysis {
   forwardPaths: ForwardPath[];
   loops: FeedbackLoop[];
+  disjointPairs: DisjointLoopPair[];
   delta: RatFunc;
   cofactors: RatFunc[];
   totalT: RatFunc;
@@ -180,6 +186,19 @@ export function computeMasonAnalysis(graph: DiagramGraph): MasonAnalysis {
   let numSum = ratZero();
   const cofactors: RatFunc[] = [];
 
+  // Identificação de pares de laços que não se tocam (laços disjuntos)
+  const disjointPairs: DisjointLoopPair[] = [];
+  for (let i = 0; i < loops.length; i++) {
+    for (let j = i + 1; j < loops.length; j++) {
+      if (setsDisjoint(loops[i].nodes, loops[j].nodes)) {
+        disjointPairs.push({
+          loops: [i + 1, j + 1],
+          gain: ratMul(loops[i].gain, loops[j].gain)
+        });
+      }
+    }
+  }
+
   forwardPaths.forEach(p => {
     const nonTouchingLoops = loops.filter(lp => setsDisjoint(p.nodes, lp.nodes));
     const dk = calcDeterminant(nonTouchingLoops);
@@ -188,5 +207,5 @@ export function computeMasonAnalysis(graph: DiagramGraph): MasonAnalysis {
   });
 
   const totalT = ratDiv(numSum, delta);
-  return { forwardPaths, loops, delta, cofactors, totalT, elements: G.elements };
+  return { forwardPaths, loops, disjointPairs, delta, cofactors, totalT, elements: G.elements };
 }
