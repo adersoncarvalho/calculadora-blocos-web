@@ -88,7 +88,7 @@ export const SimulationsGalleryModal: React.FC<SimulationsGalleryModalProps> = (
               📊 Banco de 20 Simulações Reais & Casos Práticos
             </h2>
             <p style={{ margin: '4px 0 0 0', color: 'var(--text-muted)', fontSize: '0.86rem' }}>
-              Parâmetros numéricos reais e memorial passo a passo das 4 topologias fundamentais da disciplina EEL6005
+              Parâmetros numéricos reais e memorial passo a passo das 4 topologias fundamentais da Engenharia de Controle
             </p>
           </div>
           <button

@@ -26,7 +26,7 @@ export const Header: React.FC<HeaderProps> = ({
             Calculadora de Redução em Diagrama de Blocos
           </h1>
           <p style={{ margin: '4px 0 0 0', color: 'var(--text-muted)', fontSize: '0.88rem' }}>
-            Disciplina EEL6005 — Modelagem, Álgebra de Blocos e Domínio de Laplace
+            Modelagem, Álgebra de Blocos e Domínio de Laplace
           </p>
         </div>
         <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>

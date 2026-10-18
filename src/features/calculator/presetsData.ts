@@ -65,7 +65,7 @@ export const PRESETS_DATA: Record<string, PresetDef> = {
     title: "Exemplo de Aula 1: Três Blocos em Cascata",
     desc: "Linha contendo ganho estático K=10, integrador 1/s e polo real 2/(s+5).",
     category: "examples",
-    categoryTitle: "Exemplos Didáticos das Aulas EEL6005",
+    categoryTitle: "Exemplos Didáticos das Aulas de Controle",
     badge: "Aula 05 • Ex 1",
     fields: [
       { id: "G1", label: "Ganho Estático K", default: "10", helpText: "Ganho proporcional puro." },
@@ -79,7 +79,7 @@ export const PRESETS_DATA: Record<string, PresetDef> = {
     title: "Exemplo de Aula 2: Compensador Lead e Planta",
     desc: "Compensador por avanço de fase (s+3)/(s+1) em cascata com planta 2/(s+4).",
     category: "examples",
-    categoryTitle: "Exemplos Didáticos das Aulas EEL6005",
+    categoryTitle: "Exemplos Didáticos das Aulas de Controle",
     badge: "Aula 05 • Ex 2",
     fields: [
       { id: "G1", label: "Compensador Lead G1(s)", default: "(s+3)/(s+1)", helpText: "Compensador com zero e polo." },

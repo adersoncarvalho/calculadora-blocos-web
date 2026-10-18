@@ -48,7 +48,7 @@ export const GuideModal: React.FC<GuideModalProps> = ({ isOpen, onClose }) => {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--card-border)', paddingBottom: '14px', marginBottom: '20px' }}>
           <div>
             <h2 style={{ margin: 0, fontSize: '1.4rem', color: 'var(--primary)' }}>
-              📖 Guia Didático e Compêndio Teórico (EEL6005)
+              📖 Guia Didático e Compêndio Teórico
             </h2>
             <p style={{ margin: '4px 0 0 0', color: 'var(--text-muted)', fontSize: '0.84rem' }}>
               Fundamentação analítica clássica: Norman S. Nise e Katsuhiko Ogata

@@ -10,11 +10,16 @@ import {
 } from '@/core/reduction/mason';
 import { parseRatExpr } from '@/core/algebra/parser';
 import { ratToLatex } from '@/core/algebra/rational';
-import { analyzeTransferFunction } from '@/core/analysis/stability';
 import { MathView } from '@/components/MathView';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
-export const BuilderSection: React.FC = () => {
-  // Estado padrão do grafo com uma malha canônica funcional
+interface BuilderSectionProps {
+  onBack: () => void;
+  onOpenGuide: () => void;
+}
+
+export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack, onOpenGuide }) => {
+  // Estado inicial: Malha Fechada Padrão
   const [graph, setGraph] = useState<DiagramGraph>({
     elements: [
       { id: 'IN', type: 'input', name: 'R(s)', x: 40, y: 100 },
@@ -35,39 +40,106 @@ export const BuilderSection: React.FC = () => {
   const [selectedId, setSelectedId] = useState<string | null>('g1');
   const [connectSource, setConnectSource] = useState<string | null>(null);
   const [analysisResult, setAnalysisResult] = useState<MasonAnalysis | null>(null);
+  const [selectedTemplate, setSelectedTemplate] = useState<string>('malha_simples');
 
-  // Adicionar novo Bloco
-  const handleAddBlock = () => {
+  // Carregar Modelos Rápidos
+  const handleLoadTemplate = (tpl: string) => {
+    setSelectedTemplate(tpl);
+    setAnalysisResult(null);
+    if (tpl === 'em_branco') {
+      setGraph({
+        elements: [
+          { id: 'IN', type: 'input', name: 'R(s)', x: 60, y: 120 },
+          { id: 'OUT', type: 'output', name: 'C(s)', x: 500, y: 120 }
+        ],
+        connections: []
+      });
+      setSelectedId(null);
+    } else if (tpl === 'cascata') {
+      setGraph({
+        elements: [
+          { id: 'IN', type: 'input', name: 'R(s)', x: 50, y: 120 },
+          { id: 'g1', type: 'block', name: 'G1', expr: '4/(s+1)', x: 200, y: 120 },
+          { id: 'g2', type: 'block', name: 'G2', expr: '5/(s+2)', x: 380, y: 120 },
+          { id: 'OUT', type: 'output', name: 'C(s)', x: 540, y: 120 }
+        ],
+        connections: [
+          { id: 'c1', from: 'IN', to: 'g1', sign: '+' },
+          { id: 'c2', from: 'g1', to: 'g2', sign: '+' },
+          { id: 'c3', from: 'g2', to: 'OUT', sign: '+' }
+        ]
+      });
+      setSelectedId('g1');
+    } else if (tpl === 'paralelo') {
+      setGraph({
+        elements: [
+          { id: 'IN', type: 'input', name: 'R(s)', x: 50, y: 120 },
+          { id: 'g1', type: 'block', name: 'G1', expr: '6/(s+2)', x: 220, y: 60 },
+          { id: 'g2', type: 'block', name: 'G2', expr: '3/(s+4)', x: 220, y: 180 },
+          { id: 's1', type: 'summer', name: 'S1', x: 380, y: 120 },
+          { id: 'OUT', type: 'output', name: 'C(s)', x: 520, y: 120 }
+        ],
+        connections: [
+          { id: 'c1', from: 'IN', to: 'g1', sign: '+' },
+          { id: 'c2', from: 'IN', to: 'g2', sign: '+' },
+          { id: 'c3', from: 'g1', to: 's1', sign: '+' },
+          { id: 'c4', from: 'g2', to: 's1', sign: '+' },
+          { id: 'c5', from: 's1', to: 'OUT', sign: '+' }
+        ]
+      });
+      setSelectedId('g1');
+    } else {
+      // malha_simples
+      setGraph({
+        elements: [
+          { id: 'IN', type: 'input', name: 'R(s)', x: 40, y: 100 },
+          { id: 's1', type: 'summer', name: 'S1', x: 140, y: 100 },
+          { id: 'g1', type: 'block', name: 'G1', expr: '10/(s+2)', x: 280, y: 100 },
+          { id: 'h1', type: 'block', name: 'H1', expr: '1', x: 280, y: 180, dir: 'left' },
+          { id: 'OUT', type: 'output', name: 'C(s)', x: 440, y: 100 }
+        ],
+        connections: [
+          { id: 'c1', from: 'IN', to: 's1', sign: '+' },
+          { id: 'c2', from: 's1', to: 'g1', sign: '+' },
+          { id: 'c3', from: 'g1', to: 'OUT', sign: '+' },
+          { id: 'c4', from: 'g1', to: 'h1', sign: '+' },
+          { id: 'c5', from: 'h1', to: 's1', sign: '-' }
+        ]
+      });
+      setSelectedId('g1');
+    }
+  };
+
+  const handleAddBlock = (isFeedback = false) => {
     const nextIdx = graph.elements.filter(e => e.type === 'block').length + 1;
-    const newId = `g${Date.now()}`;
+    const newId = `g_${Date.now()}`;
     const newEl: DiagramElement = {
       id: newId,
       type: 'block',
-      name: `G${nextIdx}`,
-      expr: '2/(s+1)',
-      x: 200 + (nextIdx % 4) * 50,
-      y: 120 + (nextIdx % 3) * 40
+      name: isFeedback ? `H${nextIdx}` : `G${nextIdx}`,
+      expr: isFeedback ? '1' : '2/(s+1)',
+      x: 200 + (nextIdx % 4) * 45,
+      y: isFeedback ? 180 : 80 + (nextIdx % 3) * 35,
+      dir: isFeedback ? 'left' : 'right'
     };
     setGraph(prev => ({ ...prev, elements: [...prev.elements, newEl] }));
     setSelectedId(newId);
   };
 
-  // Adicionar novo Ponto de Soma
   const handleAddSummer = () => {
     const nextIdx = graph.elements.filter(e => e.type === 'summer').length + 1;
-    const newId = `s${Date.now()}`;
+    const newId = `s_${Date.now()}`;
     const newEl: DiagramElement = {
       id: newId,
       type: 'summer',
       name: `S${nextIdx}`,
-      x: 180 + (nextIdx % 3) * 60,
-      y: 110 + (nextIdx % 2) * 50
+      x: 160 + (nextIdx % 3) * 60,
+      y: 110 + (nextIdx % 2) * 40
     };
     setGraph(prev => ({ ...prev, elements: [...prev.elements, newEl] }));
     setSelectedId(newId);
   };
 
-  // Excluir selecionado
   const handleDeleteSelected = () => {
     if (!selectedId || selectedId === 'IN' || selectedId === 'OUT') return;
     setGraph(prev => ({
@@ -77,7 +149,10 @@ export const BuilderSection: React.FC = () => {
     setSelectedId(null);
   };
 
-  // Atualizar expressão do bloco selecionado
+  const handleClearAll = () => {
+    handleLoadTemplate('em_branco');
+  };
+
   const handleExprChange = (expr: string) => {
     if (!selectedId) return;
     setGraph(prev => ({
@@ -88,14 +163,12 @@ export const BuilderSection: React.FC = () => {
     }));
   };
 
-  // Lógica de Conexão Rápida entre nós
   const handleNodeClick = (id: string) => {
     if (!connectSource) {
       setConnectSource(id);
       setSelectedId(id);
     } else {
       if (connectSource !== id) {
-        // Criar conexão
         const targetEl = graph.elements.find(e => e.id === id);
         const sign = targetEl?.type === 'summer' ? '-' : '+';
         const newConn: DiagramConnection = {
@@ -113,65 +186,135 @@ export const BuilderSection: React.FC = () => {
     }
   };
 
-  // Executar Mason & Redução
   const handleRunMason = () => {
     try {
       const result = computeMasonAnalysis(graph);
       setAnalysisResult(result);
     } catch {
-      alert('Erro ao calcular regra de Mason. Verifique as conexões do grafo.');
+      alert('Erro ao calcular regra de Mason. Certifique-se de que há conexões contínuas entre R(s) e C(s).');
     }
   };
 
   const selectedElement = graph.elements.find(e => e.id === selectedId);
 
   return (
-    <div style={{ marginTop: '24px', background: 'var(--card-bg)', border: '1px solid var(--card-border)', borderRadius: '12px', padding: '24px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '18px' }}>
-        <div>
-          <h2 style={{ margin: 0, fontSize: '1.3rem', color: 'var(--primary)' }}>
-            🛠️ Construtor Livre de Diagramas de Blocos & Motor de Mason
-          </h2>
-          <p style={{ margin: '4px 0 0 0', color: 'var(--text-muted)', fontSize: '0.86rem' }}>
-            Crie topologias personalizadas ilimitadas, interligue blocos e obtenha a função de transferência global exata via Regra de Mason
-          </p>
+    <div style={{ paddingTop: '8px' }}>
+      {/* Barra de Topo do Construtor com Botão de Voltar */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', background: 'var(--card-bg)', border: '1px solid var(--card-border)', borderRadius: '10px', padding: '14px 20px', marginBottom: '18px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+          <button
+            type="button"
+            className="btn-back-presets"
+            onClick={onBack}
+            style={{
+              background: 'var(--primary)',
+              color: '#050811',
+              fontWeight: 700,
+              border: 'none',
+              padding: '8px 16px',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px'
+            }}
+          >
+            ⬅ Voltar à Calculadora
+          </button>
+          <button
+            type="button"
+            className="btn-open-guide"
+            onClick={onOpenGuide}
+            style={{ padding: '7px 13px', fontSize: '0.85rem' }}
+          >
+            📖 Guia Didático
+          </button>
+          <div>
+            <h2 style={{ margin: 0, fontSize: '1.25rem', color: 'var(--primary)' }}>
+              Criador de Diagrama de Blocos & Redução de Mason
+            </h2>
+          </div>
         </div>
-        <div style={{ display: 'flex', gap: '8px' }}>
-          <button
-            type="button"
-            className="filter-btn"
-            onClick={handleAddBlock}
-          >
-            + Bloco G(s)
-          </button>
-          <button
-            type="button"
-            className="filter-btn"
-            onClick={handleAddSummer}
-          >
-            + Somador ⊕
-          </button>
-          <button
-            type="button"
-            className="filter-btn"
-            onClick={handleDeleteSelected}
-            disabled={!selectedId || selectedId === 'IN' || selectedId === 'OUT'}
-            style={{ opacity: (!selectedId || selectedId === 'IN' || selectedId === 'OUT') ? 0.5 : 1 }}
-          >
-            🗑️ Excluir
-          </button>
-          <button
-            type="button"
-            className="filter-btn active"
-            onClick={handleRunMason}
-            style={{ fontWeight: 700 }}
-          >
-            ⚡ Reduzir via Mason
-          </button>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 600 }}>Modelo:</span>
+            <select
+              value={selectedTemplate}
+              onChange={e => handleLoadTemplate(e.target.value)}
+              style={{
+                padding: '6px 10px',
+                borderRadius: '6px',
+                background: 'var(--code-bg)',
+                color: 'var(--text)',
+                border: '1px solid var(--card-border)',
+                fontSize: '0.84rem'
+              }}
+            >
+              <option value="malha_simples">Malha Fechada Padrão G/(1+GH)</option>
+              <option value="cascata">Associação em Cascata G1 · G2</option>
+              <option value="paralelo">Associação em Paralelo G1 + G2</option>
+              <option value="em_branco">Em Branco (Apenas R e C)</option>
+            </select>
+          </div>
+          <ThemeToggle />
         </div>
       </div>
 
-      {/* Barra de Edição do Elemento Selecionado */}
+      {/* Barra de Ferramentas de Criação */}
+      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center', background: 'var(--card-bg)', border: '1px solid var(--card-border)', borderRadius: '8px', padding: '10px 14px', marginBottom: '16px' }}>
+        <button
+          type="button"
+          className="filter-btn"
+          onClick={() => handleAddBlock(false)}
+          style={{ padding: '7px 12px', fontSize: '0.84rem' }}
+        >
+          ＋ Bloco G(s)
+        </button>
+        <button
+          type="button"
+          className="filter-btn"
+          onClick={() => handleAddBlock(true)}
+          style={{ padding: '7px 12px', fontSize: '0.84rem' }}
+        >
+          ＋ Realimentação H(s)
+        </button>
+        <button
+          type="button"
+          className="filter-btn"
+          onClick={handleAddSummer}
+          style={{ padding: '7px 12px', fontSize: '0.84rem' }}
+        >
+          ⊕ Somador
+        </button>
+        <button
+          type="button"
+          className="filter-btn"
+          onClick={handleDeleteSelected}
+          disabled={!selectedId || selectedId === 'IN' || selectedId === 'OUT'}
+          style={{ opacity: (!selectedId || selectedId === 'IN' || selectedId === 'OUT') ? 0.4 : 1, padding: '7px 12px', fontSize: '0.84rem' }}
+        >
+          ✕ Excluir
+        </button>
+        <button
+          type="button"
+          className="filter-btn"
+          onClick={handleClearAll}
+          style={{ padding: '7px 12px', fontSize: '0.84rem' }}
+        >
+          🗑️ Limpar
+        </button>
+        <button
+          type="button"
+          className="filter-btn active"
+          onClick={handleRunMason}
+          style={{ padding: '7px 18px', fontSize: '0.88rem', fontWeight: 700, marginLeft: 'auto' }}
+        >
+          ⚡ Reduzir Diagrama (Mason)
+        </button>
+      </div>
+
+      {/* Barra Inline de Edição Rápida do Bloco Selecionado */}
       {selectedElement && selectedElement.type === 'block' && (
         <div style={{ background: 'var(--code-bg)', border: '1px solid var(--primary)', borderRadius: '8px', padding: '10px 16px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap' }}>
           <span style={{ fontSize: '0.86rem', fontWeight: 700, color: 'var(--primary)' }}>
@@ -196,13 +339,13 @@ export const BuilderSection: React.FC = () => {
             />
           </div>
           <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-            Dica: Clique em um nó e depois em outro para conectar.
+            Dica: Clique no nó de origem e depois no de destino para criar conexões.
           </span>
         </div>
       )}
 
-      {/* Canvas SVG Interativo dos Nós */}
-      <div style={{ background: '#050811', border: '1px solid var(--card-border)', borderRadius: '10px', padding: '16px', minHeight: '320px', position: 'relative' }}>
+      {/* Canvas SVG Interativo */}
+      <div style={{ background: '#050811', border: '1px solid var(--card-border)', borderRadius: '10px', padding: '16px', minHeight: '340px' }}>
         <svg viewBox="0 0 760 260" width="100%" height="260" style={{ display: 'block' }}>
           <defs>
             <marker id="builder-arr" viewBox="0 0 10 10" refX="7.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
@@ -210,7 +353,7 @@ export const BuilderSection: React.FC = () => {
             </marker>
           </defs>
 
-          {/* Renderização das Arestas/Conexões */}
+          {/* Conexões */}
           {graph.connections.map(conn => {
             const src = graph.elements.find(e => e.id === conn.from);
             const tgt = graph.elements.find(e => e.id === conn.to);
@@ -236,7 +379,7 @@ export const BuilderSection: React.FC = () => {
             );
           })}
 
-          {/* Renderização dos Elementos (Nós) */}
+          {/* Elementos */}
           {graph.elements.map(el => {
             const isSelected = el.id === selectedId;
             const isConnecting = el.id === connectSource;
@@ -245,11 +388,7 @@ export const BuilderSection: React.FC = () => {
 
             if (el.type === 'summer') {
               return (
-                <g
-                  key={el.id}
-                  onClick={() => handleNodeClick(el.id)}
-                  style={{ cursor: 'pointer' }}
-                >
+                <g key={el.id} onClick={() => handleNodeClick(el.id)} style={{ cursor: 'pointer' }}>
                   <circle
                     cx={x}
                     cy={y}
@@ -266,24 +405,15 @@ export const BuilderSection: React.FC = () => {
 
             if (el.type === 'input' || el.type === 'output') {
               return (
-                <g
-                  key={el.id}
-                  onClick={() => handleNodeClick(el.id)}
-                  style={{ cursor: 'pointer' }}
-                >
+                <g key={el.id} onClick={() => handleNodeClick(el.id)} style={{ cursor: 'pointer' }}>
                   <circle cx={x} cy={y} r="18" fill="#131c2e" stroke={isSelected ? '#f59e0b' : '#38bdf8'} strokeWidth="2" />
                   <text x={x} y={y + 4} fill="#f8fafc" fontSize="11" fontWeight="bold" textAnchor="middle">{el.name}</text>
                 </g>
               );
             }
 
-            // Bloco
             return (
-              <g
-                key={el.id}
-                onClick={() => handleNodeClick(el.id)}
-                style={{ cursor: 'pointer' }}
-              >
+              <g key={el.id} onClick={() => handleNodeClick(el.id)} style={{ cursor: 'pointer' }}>
                 <rect
                   x={x - 55}
                   y={y - 24}
@@ -304,11 +434,11 @@ export const BuilderSection: React.FC = () => {
         </svg>
       </div>
 
-      {/* Resultados da Regra de Mason */}
+      {/* Resultado da Regra de Mason */}
       {analysisResult && (
         <div style={{ marginTop: '24px', background: 'var(--code-bg)', border: '1px solid var(--card-border)', borderRadius: '10px', padding: '20px' }}>
           <h3 style={{ margin: '0 0 14px 0', fontSize: '1.15rem', color: 'var(--primary)' }}>
-            📊 Resultado Global por Regra de Mason:
+            📊 Função de Transferência Global Calculada por Regra de Mason:
           </h3>
 
           <div style={{ margin: '16px 0', textAlign: 'center', padding: '16px', background: '#020617', borderRadius: '8px', border: '1px solid var(--card-border)' }}>

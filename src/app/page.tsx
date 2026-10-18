@@ -10,7 +10,7 @@ import { CalculatorSection } from '@/features/calculator/CalculatorSection';
 import { BuilderSection } from '@/features/builder/BuilderSection';
 
 export default function HomePage() {
-  const [activeTab, setActiveTab] = useState<'calculator' | 'builder'>('calculator');
+  const [view, setView] = useState<'home' | 'builder'>('home');
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [showGuide, setShowGuide] = useState(false);
   const [showPractice, setShowPractice] = useState(false);
@@ -32,12 +32,43 @@ export default function HomePage() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
+  // Transição para o Construtor Livre em tela dedicada no topo
+  const handleOpenBuilder = () => {
+    setView('builder');
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, behavior: 'instant' });
+    }
+  };
+
+  const handleBackToHome = () => {
+    setView('home');
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  // Se o usuário está no modo Construtor Livre, abre direto no topo sem banners acumulados
+  if (view === 'builder') {
+    return (
+      <main style={{ padding: '16px 20px', minHeight: '100vh' }}>
+        <BuilderSection
+          onBack={handleBackToHome}
+          onOpenGuide={() => setShowGuide(true)}
+        />
+
+        {/* Modais Globais acessíveis do Construtor */}
+        <GuideModal isOpen={showGuide} onClose={() => setShowGuide(false)} />
+        <ShortcutsModal isOpen={showShortcuts} onClose={() => setShowShortcuts(false)} />
+      </main>
+    );
+  }
+
   return (
-    <main>
-      {/* Top Header */}
+    <main style={{ padding: '16px 20px', minHeight: '100vh' }}>
+      {/* Top Header Principal */}
       <Header
         onOpenShortcuts={() => setShowShortcuts(true)}
-        onOpenBuilder={() => setActiveTab('builder')}
+        onOpenBuilder={handleOpenBuilder}
         onOpenGuide={() => setShowGuide(true)}
         onOpenPractice={() => setShowPractice(true)}
         onOpenSimulations={() => setShowSimulations(true)}
@@ -93,7 +124,10 @@ export default function HomePage() {
 
           <div
             className="learning-step-card"
-            onClick={() => setActiveTab('calculator')}
+            onClick={() => {
+              const el = document.getElementById('calcSectionArea');
+              if (el) el.scrollIntoView({ behavior: 'smooth' });
+            }}
             role="button"
             tabIndex={0}
             style={{ cursor: 'pointer', background: 'var(--card-bg)', border: '1px solid var(--card-border)', borderRadius: '8px', padding: '14px' }}
@@ -117,7 +151,7 @@ export default function HomePage() {
 
           <div
             className="learning-step-card"
-            onClick={() => setActiveTab('builder')}
+            onClick={handleOpenBuilder}
             role="button"
             tabIndex={0}
             style={{ cursor: 'pointer', background: 'var(--card-bg)', border: '1px solid var(--card-border)', borderRadius: '8px', padding: '14px' }}
@@ -129,28 +163,14 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* Tabs de Seleção de Modo (Calculadora Canônica vs Construtor Livre) */}
-      <div style={{ display: 'flex', gap: '10px', marginTop: '28px', borderBottom: '1px solid var(--card-border)', paddingBottom: '10px' }}>
-        <button
-          type="button"
-          className={`filter-btn ${activeTab === 'calculator' ? 'active' : ''}`}
-          onClick={() => setActiveTab('calculator')}
-          style={{ fontSize: '0.92rem', padding: '10px 20px', borderRadius: '8px', fontWeight: 700 }}
-        >
-          📐 Calculadora & Topologias Canônicas
-        </button>
-        <button
-          type="button"
-          className={`filter-btn ${activeTab === 'builder' ? 'active' : ''}`}
-          onClick={() => setActiveTab('builder')}
-          style={{ fontSize: '0.92rem', padding: '10px 20px', borderRadius: '8px', fontWeight: 700 }}
-        >
-          🛠️ Construtor Livre de Diagramas (Mason)
-        </button>
+      {/* Seção da Calculadora e Topologias */}
+      <div id="calcSectionArea">
+        <CalculatorSection
+          onOpenPractice={() => setShowPractice(true)}
+          onOpenBuilder={handleOpenBuilder}
+          onOpenGuide={() => setShowGuide(true)}
+        />
       </div>
-
-      {/* Seção Ativa */}
-      {activeTab === 'calculator' ? <CalculatorSection /> : <BuilderSection />}
 
       {/* Modais Globais */}
       <ShortcutsModal isOpen={showShortcuts} onClose={() => setShowShortcuts(false)} />
@@ -161,7 +181,7 @@ export default function HomePage() {
       {/* Rodapé Acadêmico Institucional */}
       <footer style={{ marginTop: '48px', paddingTop: '20px', borderTop: '1px solid var(--card-border)', textAlign: 'center', fontSize: '0.82rem', color: 'var(--text-muted)' }}>
         <p style={{ margin: '0 0 6px 0' }}>
-          Plataforma Computacional e Educacional para Análise e Redução de Sistemas de Controle (EEL6005)
+          Plataforma Computacional e Educacional para Análise e Redução de Sistemas de Controle
         </p>
         <p style={{ margin: 0, fontWeight: 600 }}>
           Desenvolvido por Aderson Carvalho - Outubro/2026 • contato:{' '}
