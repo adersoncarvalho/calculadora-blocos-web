@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Álgebra de Diagramas de Blocos - EEL6005</title>
+  
+  <!-- KaTeX Local (Offline, sem bloqueios de CDN ou conexões externas) -->
+  <link rel="stylesheet" href="katex.min.css">
+  <link rel="stylesheet" href="styles.css">
+  
+  <script src="katex.min.js"></script>
+  <script src="auto-render.min.js"></script>
+</head>
+<body>
+  <a href="#hubSection" class="skip-link">Pular para o conteúdo principal</a>
+
+  <div class="container" id="mainContent">
+    <header id="mainPageHeader">
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+        <div>
+          <h1>Calculadora de Redução em Diagrama de Blocos</h1>
+          <p>Disciplina EEL6005 - Modelagem e Redução no Domínio de Laplace</p>
+        </div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+          <button type="button" class="btn-shortcuts-helper" onclick="toggleShortcutsModal(true)" title="Visualizar atalhos de teclado (Pressione '?')" aria-label="Atalhos de Teclado">
+            ⌨️ Atalhos (?)
+          </button>
+          <button type="button" class="btn-open-guide btn-highlight-builder" onclick="abrirConstrutorLivre()" aria-label="Criar Meu Próprio Diagrama no Construtor Livre">
+            🛠️ Criar Meu Próprio Diagrama
+          </button>
+          <button type="button" class="btn-open-guide" onclick="abrirPaginaGuiaDidatico()" aria-label="Abrir Guia Didático Completo">
+            📖 Guia Didático
+          </button>
+          <button type="button" class="btn-open-guide btn-practice-trigger" onclick="abrirModoPratica()" aria-label="Abrir Modo de Prática com 3 Níveis">
+            🧪 Modo de Prática
+          </button>
+          <a href="Simulacoes_Resultados/index.html" class="btn-open-guide" style="text-decoration:none; display:inline-flex; align-items:center; gap:6px; font-weight:600;" aria-label="Abrir Painel com 20 Simulações Reais">
+            📊 20 Simulações
+          </a>
+          <button type="button" id="themeToggleBtn" class="btn-theme-toggle" onclick="toggleAppTheme()" aria-label="Alternar Tema Claro/Escuro" title="Alternar entre Modo Claro e Escuro">
+            ☀️ Modo Claro
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Hero Banner Profissional com Descrição de Alto Nível -->
+    <section class="hero-banner" id="heroBanner">
+      <div class="hero-eyebrow">⚡ Engenharia de Controle & Automação • Domínio de Laplace</div>
+      <h1 class="hero-title">Calculadora e Laboratório de Redução em Diagrama de Blocos</h1>
+      <p class="hero-desc">
+        Ambiente analítico interativo para modelagem e redução passo a passo de diagramas de blocos no domínio de Laplace.
+        Obtenha a função de transferência equivalente \(T(s) = \frac{C(s)}{R(s)}\), acompanhe o memorial de cálculo em \(\LaTeX\),
+        explore diferentes topologias e visualize as transformações gráficas de cada etapa.
+      </p>
+      <div class="hero-features-row">
+        <span class="hero-feature-pill">🧪 <b>Modo de Prática</b> com 3 Níveis & Dicas</span>
+        <span class="hero-feature-pill">📐 <b>8 Topologias</b> Canônicas e Desafios</span>
+        <span class="hero-feature-pill">📝 <b>Memorial Analítico</b> em \(\LaTeX\)</span>
+        <span class="hero-feature-pill">🔢 <b>Cálculo de MMC</b> Passo a Passo</span>
+        <span class="hero-feature-pill">💻 <b>Exportação de Scripts</b> para Scilab</span>
+        <span class="hero-feature-pill">📚 <b>Guia Didático</b> com Teoria e Regras</span>
+      </div>
+    </section>
+
+    <!-- Trilha Recomendada de Aprendizagem para Iniciantes (P4) -->
+    <div class="learning-path-banner" id="learningPathBanner">
+      <div class="learning-path-header">
+        <span class="learning-path-badge">🎯 Percurso Acadêmico</span>
+        <h3 class="learning-path-title">Trilha Progressiva de Aplicação e Estudo</h3>
+        <p class="learning-path-desc">Roteiro estruturado para resolver exercícios, explorar transformações canônicas e projetar diagramas com autonomia:</p>
+      </div>
+      <div class="learning-path-steps-grid">
+        <div class="learning-step-card" onclick="abrirPaginaGuiaDidatico()" role="button" tabindex="0" aria-label="Etapa 1: Guia Didático e Fundamentos" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); abrirPaginaGuiaDidatico();}">
+          <div class="step-badge">Etapa 1 • Teoria</div>
+          <div class="step-card-title">📚 Fundamentos & Regras</div>
+          <div class="step-card-text">Estude premissas de isolamento, equações nodais e contraexemplos visuais de regras de blocos.</div>
+          <div class="step-card-cta">Acessar Guia ➔</div>
+        </div>
+
+        <div class="learning-step-card" onclick="selectPresetFromHub('mf_padrao')" role="button" tabindex="0" aria-label="Etapa 2: Topologias Canônicas" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); selectPresetFromHub('mf_padrao');}">
+          <div class="step-badge">Etapa 2 • Modelos</div>
+          <div class="step-card-title">📐 Topologias Canônicas</div>
+          <div class="step-card-text">Calcule e analise a malha fechada clássica G/(1+GH) com memorial analítico em LaTeX.</div>
+          <div class="step-card-cta">Explorar Topologia ➔</div>
+        </div>
+
+        <div class="learning-step-card" onclick="abrirModoPratica()" role="button" tabindex="0" aria-label="Etapa 3: Modo de Prática Autônoma" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); abrirModoPratica();}">
+          <div class="step-badge">Etapa 3 • Prática</div>
+          <div class="step-card-title">🧪 Laboratório Interativo</div>
+          <div class="step-card-text">Exercícios em 3 níveis com dicas graduais e verificador de equivalência algébrica real.</div>
+          <div class="step-card-cta">Resolver Exercício ➔</div>
+        </div>
+
+        <div class="learning-step-card" onclick="toggleDedicatedBuilder(true)" role="button" tabindex="0" aria-label="Etapa 4: Construtor Livre" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); toggleDedicatedBuilder(true);}">
+          <div class="step-badge">Etapa 4 • Criação</div>
+          <div class="step-card-title">🛠️ Construtor Livre</div>
+          <div class="step-card-text">Monte qualquer diagrama arbitrário, faça conexões com a caneta e reduza passo a passo.</div>
+          <div class="step-card-cta">Montar Diagrama ➔</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Central de Seleção por Categorias (Hub Clicável e Acessível por Teclado) -->
+    <section class="hub-section" id="hubSection">
+      <div class="hub-section-title">
+        <span>Selecione uma Categoria de Estudo (Ou navegue com a tecla Tab):</span>
+      </div>
+
+      <div class="hub-cards-grid">
+        <!-- Categoria 1: Topologias Básicas -->
+        <div class="hub-category-card" id="cardCat_basic" role="button" tabindex="0" aria-label="Categoria 1: Topologias Básicas Canônicas. Pressione Enter ou Espaço para abrir opções." aria-expanded="false" onclick="toggleCategoryTray('basic')" onkeydown="handleCardKeydown(event, 'basic')">
+          <div class="hub-card-top">
+            <span class="hub-card-icon">📐</span>
+            <span class="hub-card-badge">3 Modelos</span>
+          </div>
+          <div class="hub-card-title">Topologias Básicas</div>
+          <div class="hub-card-desc">Malha Fechada canônica (Feedback Loop), associação em Cascata (Série) e blocos em Paralelo.</div>
+          <div class="hub-card-cta">Ver Opções ▾</div>
+        </div>
+
+        <!-- Categoria 2: Exemplos Clássicos -->
+        <div class="hub-category-card" id="cardCat_examples" role="button" tabindex="0" aria-label="Categoria 2: Exemplos Clássicos Resolvidos. Pressione Enter ou Espaço para abrir opções." aria-expanded="false" onclick="toggleCategoryTray('examples')" onkeydown="handleCardKeydown(event, 'examples')">
+          <div class="hub-card-top">
+            <span class="hub-card-icon">📖</span>
+            <span class="hub-card-badge">3 Casos</span>
+          </div>
+          <div class="hub-card-title">Exemplos Clássicos</div>
+          <div class="hub-card-desc">Transposição de blocos através de somadores, unificação de múltiplos somadores e ramos quadráticos.</div>
+          <div class="hub-card-cta">Ver Opções ▾</div>
+        </div>
+
+        <!-- Categoria 3: Exercícios Propostos -->
+        <div class="hub-category-card" id="cardCat_exercises" role="button" tabindex="0" aria-label="Categoria 3: Exercícios Propostos de Fixação. Pressione Enter ou Espaço para abrir opções." aria-expanded="false" onclick="toggleCategoryTray('exercises')" onkeydown="handleCardKeydown(event, 'exercises')">
+          <div class="hub-card-top">
+            <span class="hub-card-icon">✏️</span>
+            <span class="hub-card-badge">2 Desafios</span>
+          </div>
+          <div class="hub-card-title">Exercícios Propostos</div>
+          <div class="hub-card-desc">Diagramas com malhas internas de realimentação combinadas e sistemas de malhas cruzadas interdependentes.</div>
+          <div class="hub-card-cta">Ver Opções ▾</div>
+        </div>
+
+        <!-- Categoria 4: Método Algébrico -->
+        <div class="hub-category-card" id="cardCat_algebraic" role="button" tabindex="0" aria-label="Categoria 4: Método Algébrico de Nós. Pressione Enter ou Espaço para abrir opções." aria-expanded="false" onclick="toggleCategoryTray('algebraic')" onkeydown="handleCardKeydown(event, 'algebraic')">
+          <div class="hub-card-top">
+            <span class="hub-card-icon">🔢</span>
+            <span class="hub-card-badge">Equações [1], [2]...</span>
+          </div>
+          <div class="hub-card-title">Método Algébrico</div>
+          <div class="hub-card-desc">Resolução analítica direta por equacionamento de nós nos somadores e substituição sucessiva passo a passo.</div>
+          <div class="hub-card-cta">Ver Opções ▾</div>
+        </div>
+
+        <!-- Categoria 5: Modo de Prática & Exercícios Interativos (P3) -->
+        <div class="hub-category-card hub-card-practice" id="cardCat_practice" role="button" tabindex="0" aria-label="Categoria 5: Laboratório de Prática Interativa com 3 Níveis. Pressione Enter ou Espaço para acessar." onclick="abrirModoPratica()" onkeydown="handleCardKeydown(event, 'practice')">
+          <div class="hub-card-top">
+            <span class="hub-card-icon">🧪</span>
+            <span class="hub-card-badge">3 Níveis</span>
+          </div>
+          <div class="hub-card-title">Modo de Prática Interativo</div>
+          <div class="hub-card-desc">Exercícios com 3 níveis: Reconhecimento, Próxima Transformação e Verificador Independente de T(s) com dicas graduais.</div>
+          <div class="hub-card-cta">Entrar no Laboratório ▶</div>
+        </div>
+
+        <!-- Categoria 6: Criar Meu Próprio Diagrama (Construtor Interativo) -->
+        <div class="hub-category-card hub-card-builder" id="cardCat_builder" role="button" tabindex="0" aria-label="Categoria 6: Criar Meu Próprio Diagrama no Construtor Livre. Pressione Enter ou Espaço para abrir." onclick="abrirConstrutorLivre()" onkeydown="handleCardKeydown(event, 'builder')">
+          <div class="hub-card-top">
+            <span class="hub-card-icon">🛠️</span>
+            <span class="hub-card-badge">Lápis & Blocos</span>
+          </div>
+          <div class="hub-card-title">Criar Meu Próprio Diagrama</div>
+          <div class="hub-card-desc">Desenhe blocos G(s), ramos de realimentação H(s), somadores e puxe conexões com o lápis para reduzir qualquer circuito.</div>
+          <div class="hub-card-cta">Abrir Construtor Interativo ▶</div>
+        </div>
+      </div>
+
+      <!-- Bandeja Dinâmica de Opções da Categoria Clicada -->
+      <div id="categoryOptionsTray" class="category-options-tray" style="display: none;" role="region" aria-live="polite"></div>
+    </section>
+
+    <div class="grid-layout" id="presetMainGrid" style="display: none;">
+      <!-- Painel de Entradas -->
+      <div class="card">
+        <h2 id="parametersCardTitle">1. Parâmetros da Topologia</h2>
+
+        <!-- Seletor preservado de forma invisível para compatibilidade com o motor de cálculo -->
+        <select id="presetSelect" onchange="loadPreset()" style="display: none;">
+          <option value="" selected>— Selecione uma Topologia —</option>
+          <option value="mf_padrao">Formato em Malha Fechada [G(s) e H(s)]</option>
+          <option value="cascata_dupla">Formato em Cascata / Série</option>
+          <option value="paralelo">Formato em Paralelo</option>
+          <option value="exemplo1">Exemplo 1 — Movendo Bloco G1</option>
+          <option value="exemplo2">Exemplo 2 — Múltiplos Somadores</option>
+          <option value="exemplo3">Exemplo 3 — Ramos s·s e 1/s em Paralelo</option>
+          <option value="proposto1">Exercício Proposto 1 — Malha Interna e Feedback Combinado</option>
+          <option value="proposto2">Exercício Proposto 2 — Malhas Cruzadas</option>
+          <option value="custom">Equações Algébricas de Nós (Substituição [1], [2]...)</option>
+        </select>
+
+        <div id="dynamicInputs"></div>
+
+        <div class="btn-group" id="presetActionButtons" style="display: none;">
+          <button class="btn-primary" onclick="calcular()">▶ Executar Redução (Run)</button>
+          <button class="btn-secondary" onclick="resetForm()">↺ Restaurar Padrões</button>
+        </div>
+      </div>
+
+      <!-- Painel do Diagrama Esquemático (Oculto até selecionar uma topologia) -->
+      <div class="card" id="schematicCard" style="display: none;">
+        <h2>2. Esquemático do Diagrama</h2>
+        <div class="diagram-view" id="diagramContainer">
+          <svg id="schematicSvg" viewBox="0 0 600 240"></svg>
+        </div>
+        <div id="presetStepNav" class="step-nav-bar" style="display: none;"></div>
+        <div id="topologiaDesc" style="font-size: 0.82rem; color: var(--text-muted);"></div>
+      </div>
+    </div>
+
+    <!-- Painel do Memorial (Oculto até selecionar uma topologia) -->
+    <div class="memorial-section" id="memorialContainer" style="display: none;">
+      <h2>3. Memorial de Cálculo Analítico Passo a Passo</h2>
+      <div id="stepsList"></div>
+    </div>
+
+    <!-- Tela Exclusiva de Criação de Diagrama de Blocos -->
+    <div class="memorial-section builder-section" id="customBuilderSection" style="display: none;">
+      <div class="builder-header">
+        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+          <button type="button" class="btn-back-presets" onclick="voltarPaginaExemplos()" title="Recarregar página com os exemplos">
+            ⬅ Voltar aos Exemplos
+          </button>
+          <button type="button" class="btn-open-guide" style="padding: 7px 13px; font-size: 0.8rem;" onclick="abrirPaginaGuiaDidatico()">
+            📚 Guia Didático
+          </button>
+          <div>
+            <h2 style="margin-bottom: 2px;">Criador de Diagrama de Blocos</h2>
+          </div>
+        </div>
+        <div class="builder-templates">
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <span style="font-size: 0.78rem; color: var(--text-muted); font-weight: 600;">Modelo:</span>
+            <select id="builderTemplateSelect" style="margin-bottom: 0; width: auto; min-width: 220px; padding: 6px 10px;">
+              <option value="em_branco" selected>Em Branco (Apenas Entrada R e Saída C)</option>
+              <option value="malha_simples">Malha Fechada Padrão (G, H)</option>
+              <option value="exemplo1">Exemplo 1 (Movendo Bloco G1)</option>
+              <option value="exemplo2">Exemplo 2 (3 Realimentações H1, H2, H3)</option>
+              <option value="exemplo3">Exemplo 3 (Ramos s·s e 1/s em Paralelo)</option>
+              <option value="proposto1">Exercício Proposto 1 (Malha H2, 1/G2 e H1)</option>
+              <option value="malhas_cruzadas">Exercício Proposto 2 (Malhas Cruzadas)</option>
+              <option value="cascata_paralelo">Cascata + Paralelo + Realimentação</option>
+              <option value="malhas_duplas">Duas Malhas Aninhadas (G1, G2, H1, H2)</option>
+            </select>
+            <button class="btn-secondary" style="padding: 6px 12px;" onclick="loadBuilderTemplate()">Carregar</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Barra de Ferramentas de Criação -->
+      <div class="builder-toolbar">
+        <button class="btn-tool" id="btnUndo" onclick="builderUndo()" title="Desfazer última ação (Ctrl+Z)" disabled>↶ Desfazer</button>
+        <button class="btn-tool" id="btnRedo" onclick="builderRedo()" title="Refazer ação (Ctrl+Y)" disabled>↷ Refazer</button>
+        <button class="btn-tool btn-tool-danger" id="btnDeleteSelected" onclick="builderDeleteSelected()" title="Excluir bloco, somador ou linha selecionada (Tecla Delete)" disabled>✕ Excluir</button>
+        <button class="btn-tool btn-tool-pen" id="btnConnectMode" onclick="toggleConnectMode()" title="Ferramenta Lápis/Caneta: selecione, clique em qualquer linha ou bloco e arraste até outro bloco (sempre termina com seta)">✏️ Lápis / Puxar Linha: OFF</button>
+        <button class="btn-tool btn-tool-block" onclick="builderAddBlock(false)">＋ Bloco G(s)</button>
+        <button class="btn-tool btn-tool-fb" onclick="builderAddBlock(true)">＋ Realimentação H(s)</button>
+        <button class="btn-tool btn-tool-summer" onclick="builderAddSummer()">⊕ Somador</button>
+        <button class="btn-tool" id="btnToggleSign" onclick="builderToggleSelectedSign()" title="Alternar sinal (+ / -) da entrada do somador ou linha selecionada" style="border-left: 3px solid #10b981; font-weight: 700;">± Sinal (+ / -)</button>
+        <button class="btn-tool" onclick="builderAutoLayout()">📐 Organizar</button>
+        <button class="btn-tool btn-tool-danger" onclick="builderClearAll()">🗑️ Limpar</button>
+        <button class="btn-tool" id="btnToggleLists" onclick="toggleBuilderExtraPanels()" title="Mostrar ou ocultar tabela de blocos e ligações">📋 Lista de Blocos</button>
+        <button class="btn-tool btn-tool-focus" id="btnFocusMode" onclick="toggleBuilderFocusMode()" title="Deixar tela cheia apenas com o canvas e barra de ferramentas">⛶ Tela Cheia</button>
+      </div>
+
+      <!-- Barra Inline de Edição Rápida do Bloco Selecionado (aparece apenas quando um bloco está selecionado) -->
+      <div id="quickBlockEditorBar" class="quick-block-editor-bar" style="display: none;"></div>
+
+      <!-- Barra Rápida de Ligações e Listas (ocultas por padrão para não poluir a tela) -->
+      <div id="builderExtraPanelsWrapper" style="display: none;">
+        <div class="connection-bar">
+          <div class="conn-field">
+            <label>Origem (De)</label>
+            <select id="connFromSelect"></select>
+          </div>
+          <div class="conn-arrow">➔</div>
+          <div class="conn-field">
+            <label>Destino (Para)</label>
+            <select id="connToSelect" onchange="updateConnSignVisibility()"></select>
+          </div>
+          <div class="conn-field" id="connSignWrapper" style="max-width: 140px;">
+            <label>Sinal no Somador</label>
+            <select id="connSignSelect">
+              <option value="+">＋ Positivo (+)</option>
+              <option value="-">－ Negativo (-)</option>
+            </select>
+          </div>
+          <div class="conn-field" style="max-width: 175px;">
+            <label>Trajeto da Linha</label>
+            <select id="connRouteSelect">
+              <option value="auto">Automático</option>
+              <option value="direct">Direto / Meio</option>
+              <option value="bottom">Por Baixo (Laço Inferior)</option>
+              <option value="top">Por Cima (Laço Superior)</option>
+            </select>
+          </div>
+          <div class="conn-field" style="flex: 0 0 auto; align-self: flex-end;">
+            <button class="btn-primary" style="margin-bottom: 12px; white-space: nowrap;" onclick="builderAddConnectionFromBar()">🔗 Fazer Ligação</button>
+          </div>
+        </div>
+
+        <div class="builder-lists-grid" id="builderListsGrid" style="margin-bottom: 14px;">
+          <div class="builder-list-card">
+            <h3>📦 Blocos e Somadores (<span id="elementsCount">0</span>)</h3>
+            <div id="builderElementsList" class="builder-items-list"></div>
+          </div>
+          <div class="builder-list-card">
+            <h3>🔗 Ligações do Diagrama (<span id="connectionsCount">0</span>)</h3>
+            <div id="builderConnectionsList" class="builder-items-list"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Legenda Visual Padronizada dos Diagramas (P4) -->
+      <div class="diagram-color-legend" aria-label="Legenda de Cores do Diagrama">
+        <span style="font-weight: 700; color: #94a3b8;">Legenda Visual:</span>
+        <span class="legend-chip"><span class="legend-color-dot forward"></span> Caminho Direto R(s) → C(s) (Forward Path)</span>
+        <span class="legend-chip"><span class="legend-color-dot feedback"></span> Laço de Realimentação H(s) (Feedback)</span>
+        <span class="legend-chip"><span class="legend-color-dot branch"></span> Ponto de Ramificação (Pickoff Point)</span>
+        <span class="legend-chip"><span class="legend-color-dot negative"></span> Sinal Subtrativo (−) no Somador</span>
+      </div>
+
+      <!-- Canvas Interativo do Construtor -->
+      <div class="builder-canvas-wrapper">
+        <div class="builder-canvas-hint" id="builderHintBar">
+          <span>💡 <b>Inserir Valores no Circuito:</b> Dê <b>duplo clique no bloco</b> (ou selecione-o para editar na barra amarela acima) • Suporta ganhos (ex: <code>5</code>), frações polinomiais <code>10/(s+2)</code>, <code>1/s</code> ou variáveis • <b>📋 Lista de Blocos</b> exibe tabela completa.</span>
+        </div>
+        <div class="diagram-view builder-diagram-view" id="builderCanvasContainer">
+          <div class="canvas-zoom-controls">
+            <button type="button" class="btn-zoom btn-zoom-pen" id="btnCanvasPen" onclick="toggleConnectMode()" title="Ferramenta Lápis/Caneta: clique na linha ou bloco e arraste até outro bloco">✏️ Lápis: OFF</button>
+            <button type="button" class="btn-zoom" onclick="builderZoom(-1)" title="Diminuir Zoom do Circuito (-)">🔍－</button>
+            <button type="button" class="btn-zoom btn-zoom-label" id="zoomLevelLabel" onclick="builderZoomReset()" title="Clique para restaurar Zoom em 100%">100%</button>
+            <button type="button" class="btn-zoom" onclick="builderZoom(1)" title="Aumentar Zoom do Circuito (+)">🔍＋</button>
+            <button type="button" class="btn-zoom" onclick="builderZoomFit()" title="Centralizar e enquadrar todo o circuito na tela">🎯 Enquadrar</button>
+            <button type="button" class="btn-zoom btn-zoom-focus" id="btnCanvasFocus" onclick="toggleBuilderFocusMode()" title="Alternar tela cheia apenas com blocos e comandos">⛶ Expandir Tela</button>
+          </div>
+          <svg id="builderSvg" viewBox="0 0 900 360"></svg>
+        </div>
+      </div>
+
+      <div class="btn-group" id="builderReduceBtnGroup" style="margin-top: 10px;">
+        <button class="btn-primary" style="padding: 11px 18px; font-size: 0.96rem;" onclick="executarReducaoConstrutor()">
+          ▶ Calcular Redução Passo a Passo do Meu Diagrama
+        </button>
+      </div>
+
+      <!-- Saída da Redução Passo a Passo do Construtor -->
+      <div id="builderReductionOutput" style="margin-top: 16px;"></div>
+    </div>
+
+    <!-- Aba / Página Exclusiva do Guia Didático Completo (Teoria e Fundamentos + Passo a Passo) -->
+    <div class="memorial-section guide-section" id="guiaDidaticoSection" style="display: none;">
+      <div class="builder-header" style="margin-bottom: 14px;">
+        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+          <button type="button" class="btn-back-presets" onclick="voltarPaginaExemplos()">
+            ⬅ Voltar à Calculadora
+          </button>
+          <div>
+            <h2 style="margin-bottom: 2px;">📚 Guia Didático Completo — Álgebra de Diagramas de Blocos</h2>
+          </div>
+        </div>
+      </div>
+
+      <!-- Barra de Navegação por Tópicos do Guia (Sequência Didática Progressiva) -->
+      <div class="guide-nav-bar" id="guideNavBar">
+        <button type="button" class="guide-tab-btn active" onclick="filterGuideTopic('todos', this)">🧭 Trilha Completa</button>
+        <button type="button" class="guide-tab-btn" onclick="filterGuideTopic('componentes', this)">1. Componentes & Sinais</button>
+        <button type="button" class="guide-tab-btn" onclick="filterGuideTopic('ft_laplace', this)">2. Função de Transferência</button>
+        <button type="button" class="guide-tab-btn" onclick="filterGuideTopic('cascata', this)">3. Cascata & Contra-exemplos</button>
+        <button type="button" class="guide-tab-btn" onclick="filterGuideTopic('paralelo', this)">4. Paralelo & Contra-exemplos</button>
+        <button type="button" class="guide-tab-btn" onclick="filterGuideTopic('malha_fechada', this)">5. Malha Fechada & Dedução</button>
+        <button type="button" class="guide-tab-btn" onclick="filterGuideTopic('movendo_blocos', this)">6. Movendo Blocos & Nós</button>
+        <button type="button" class="guide-tab-btn" onclick="filterGuideTopic('estrategia', this)">7. Estratégia de Redução</button>
+        <button type="button" class="guide-tab-btn" onclick="filterGuideTopic('matematica_base', this)">8. MMC & Álgebra de Laplace</button>
+        <button type="button" class="guide-tab-btn" onclick="filterGuideTopic('quiz_fixacao', this)">9. Teste seu Entendimento</button>
+      </div>
+
+      <div id="guideContentContainer"></div>
+    </div>
+
+    <!-- Aba / Página Exclusiva do Modo de Prática e Exercícios Interativos (P3) -->
+    <div class="memorial-section practice-section" id="practiceSection" style="display: none;">
+      <div class="builder-header" style="margin-bottom: 14px;">
+        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+          <button type="button" class="btn-back-presets" onclick="voltarDaPratica()">
+            ⬅ Voltar à Calculadora
+          </button>
+          <div>
+            <h2 style="margin-bottom: 2px;">🧪 Laboratório de Prática Interativa — 3 Níveis de Aprendizagem</h2>
+            <p style="font-size: 0.85rem; color: var(--text-muted); margin: 0;">
+              Exercite sua autonomia: teste reconhecimento de padrões, escolha de operações e verifique sua resposta analítica de forma independente com dicas graduais.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Barra de Navegação dos Níveis de Prática -->
+      <div class="practice-nav-bar" id="practiceNavBar">
+        <button type="button" class="practice-tab-btn active" onclick="switchPracticeTab('level1', this)">
+          🔍 Nível 1: Reconhecimento Topológico
+        </button>
+        <button type="button" class="practice-tab-btn" onclick="switchPracticeTab('level2', this)">
+          ⚡ Nível 2: Escolha da Próxima Transformação
+        </button>
+        <button type="button" class="practice-tab-btn" onclick="switchPracticeTab('level3', this)">
+          📐 Nível 3: Resolução Completa & Verificador Independente
+        </button>
+      </div>
+
+      <!-- Container do Conteúdo dos Níveis -->
+      <div id="practiceContentContainer">
+        <div id="practiceLevel1Pane" class="practice-pane"></div>
+        <div id="practiceLevel2Pane" class="practice-pane" style="display: none;"></div>
+        <div id="practiceLevel3Pane" class="practice-pane" style="display: none;"></div>
+      </div>
+    </div>
+  <!-- Modal de Atalhos de Teclado e Ajuda de Acessibilidade (P4) -->
+  <div id="shortcutsModal" class="shortcuts-modal-overlay" style="display: none;" onclick="if(event.target===this) toggleShortcutsModal(false);">
+    <div class="shortcuts-modal-card" role="dialog" aria-modal="true" aria-labelledby="shortcutsModalTitle">
+      <div class="shortcuts-modal-header">
+        <h3 id="shortcutsModalTitle">⌨️ Atalhos de Teclado e Navegação Rápida</h3>
+        <button type="button" class="btn-close-modal" onclick="toggleShortcutsModal(false)" aria-label="Fechar janela de atalhos">✕</button>
+      </div>
+      <div class="shortcuts-modal-body">
+        <p style="color: var(--text-muted); font-size: 0.82rem; margin-bottom: 14px;">
+          Navegue por todo o ambiente sem a necessidade de mouse utilizando atalhos diretos:
+        </p>
+        <table class="shortcuts-table">
+          <thead>
+            <tr>
+              <th>Tecla</th>
+              <th>Ação / Destino</th>
+              <th>Contexto</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><kbd>1</kbd> ou <kbd>H</kbd></td>
+              <td>Ir para a <strong>Página Inicial (Hub de Topologias)</strong></td>
+              <td>Global</td>
+            </tr>
+            <tr>
+              <td><kbd>2</kbd> ou <kbd>G</kbd></td>
+              <td>Abrir o <strong>Guia Didático Completo</strong></td>
+              <td>Global</td>
+            </tr>
+            <tr>
+              <td><kbd>3</kbd> ou <kbd>P</kbd></td>
+              <td>Abrir o <strong>Modo de Prática (3 Níveis)</strong></td>
+              <td>Global</td>
+            </tr>
+            <tr>
+              <td><kbd>4</kbd> ou <kbd>B</kbd></td>
+              <td>Abrir o <strong>Construtor Livre de Diagramas</strong></td>
+              <td>Global</td>
+            </tr>
+            <tr>
+              <td><kbd>C</kbd></td>
+              <td><strong>Calcular Redução</strong> da topologia ou diagrama ativo</td>
+              <td>Calculadora / Construtor</td>
+            </tr>
+            <tr>
+              <td><kbd>Tab</kbd> / <kbd>Shift+Tab</kbd></td>
+              <td>Navegar entre botões, cards e campos de entrada com <strong>Foco Visível</strong></td>
+              <td>Acessibilidade WCAG</td>
+            </tr>
+            <tr>
+              <td><kbd>Enter</kbd> ou <kbd>Espaço</kbd></td>
+              <td>Acionar botão ou card selecionado</td>
+              <td>Acessibilidade WCAG</td>
+            </tr>
+            <tr>
+              <td><kbd>Ctrl+Z</kbd> / <kbd>Ctrl+Y</kbd></td>
+              <td>Desfazer / Refazer conexões e movimentações</td>
+              <td>Construtor Livre</td>
+            </tr>
+            <tr>
+              <td><kbd>Delete</kbd></td>
+              <td>Excluir bloco ou linha selecionada</td>
+              <td>Construtor Livre</td>
+            </tr>
+            <tr>
+              <td><kbd>?</kbd></td>
+              <td>Abrir / Fechar esta <strong>Janela de Atalhos</strong></td>
+              <td>Global</td>
+            </tr>
+            <tr>
+              <td><kbd>Esc</kbd></td>
+              <td>Fechar modais, menus suspensos ou retornar ao início</td>
+              <td>Global</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <!-- Rodapé do Desenvolvedor -->
+    <footer class="app-footer">
+      <p>Desenvolvido por Aderson Carvalho - Outubro/2026 • contato: <a href="mailto:aderson@alunos.utfpr.edu.br">aderson@alunos.utfpr.edu.br</a></p>
+    </footer>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

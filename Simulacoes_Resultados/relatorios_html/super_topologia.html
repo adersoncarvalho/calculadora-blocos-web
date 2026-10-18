@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Super-Topologia Unificada — Todas as Topologias Possíveis de Diagramas de Blocos</title>
+  <link rel="stylesheet" href="../../katex.min.css">
+  <link rel="stylesheet" href="../../styles.css">
+  <style>
+    body {
+      background: #080c16;
+      color: #f8fafc;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      padding: 24px;
+      margin: 0;
+    }
+    .sim-card {
+      max-width: 1040px;
+      margin: 0 auto;
+      background: #0d1424;
+      border: 1px solid #1e293b;
+      border-radius: 14px;
+      padding: 28px;
+      box-shadow: 0 12px 30px rgba(0,0,0,0.6);
+    }
+    .badge-master {
+      display: inline-block;
+      padding: 5px 12px;
+      border-radius: 6px;
+      font-size: 0.82rem;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      background: linear-gradient(90deg, rgba(236, 72, 153, 0.25) 0%, rgba(56, 189, 248, 0.25) 100%);
+      color: #f472b6;
+      border: 1px solid #ec4899;
+      margin-bottom: 12px;
+    }
+    h1 { font-size: 1.55rem; color: #f8fafc; margin: 4px 0 10px 0; }
+    p.desc { color: #94a3b8; font-size: 0.9rem; margin-bottom: 20px; line-height: 1.55; }
+    .catalog-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 10px;
+      margin: 16px 0 20px 0;
+    }
+    .catalog-item {
+      background: #050811;
+      border: 1px solid #1e293b;
+      border-radius: 6px;
+      padding: 8px 12px;
+      font-size: 0.78rem;
+      color: #cbd5e1;
+    }
+    .catalog-item b { color: #38bdf8; display: block; margin-bottom: 2px; }
+    .diagram-container {
+      background: #050811;
+      border: 1px solid #1e293b;
+      border-radius: 10px;
+      padding: 16px;
+      margin: 20px 0;
+      text-align: center;
+    }
+    .step-box {
+      background: #090e1a;
+      border: 1px solid #1e293b;
+      border-left: 4px solid #38bdf8;
+      border-radius: 8px;
+      padding: 14px 18px;
+      margin: 14px 0;
+    }
+    .step-title { font-size: 0.95rem; font-weight: 700; color: #38bdf8; margin-bottom: 6px; }
+    .step-desc { font-size: 0.86rem; color: #cbd5e1; margin-bottom: 8px; line-height: 1.45; }
+    .result-box {
+      background: rgba(30, 58, 138, 0.35);
+      border: 1px solid #2563eb;
+      border-radius: 10px;
+      padding: 20px;
+      margin: 22px 0;
+    }
+    .result-title { font-size: 1.05rem; font-weight: 700; color: #60a5fa; margin-bottom: 12px; }
+    .math-target { margin: 12px 0; font-size: 1.05rem; }
+    .poles-zeros {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-top: 14px;
+      font-size: 0.85rem;
+    }
+    .pole-card {
+      background: #090e1a;
+      border: 1px solid #1e293b;
+      border-radius: 8px;
+      padding: 12px 14px;
+    }
+    .btn-theme-toggle {
+      background: #090e1a;
+      border: 1px solid #1e293b;
+      color: #f8fafc;
+      padding: 6px 14px;
+      border-radius: 6px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+    .btn-theme-toggle:hover {
+      border-color: #38bdf8;
+      color: #38bdf8;
+    }
+    .app-footer {
+      margin-top: 36px;
+      padding: 20px 16px;
+      border-top: 1px solid #1e293b;
+      text-align: center;
+      font-size: 0.88rem;
+      color: #94a3b8;
+    }
+    .app-footer p { margin: 0; }
+    .app-footer a { color: #38bdf8; text-decoration: none; font-weight: 600; }
+    .app-footer a:hover { text-decoration: underline; }
+
+    /* MODO CLARO */
+    body.light-theme {
+      background: #f8fafc;
+      color: #0f172a;
+    }
+    body.light-theme .sim-card {
+      background: #ffffff;
+      border-color: #cbd5e1;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+    }
+    body.light-theme h1 { color: #0284c7; }
+    body.light-theme p.desc { color: #475569; }
+    body.light-theme .catalog-item {
+      background: #f8fafc;
+      border-color: #cbd5e1;
+      color: #334155;
+    }
+    body.light-theme .step-box {
+      background: #f8fafc;
+      border-color: #cbd5e1;
+      border-left-color: #0284c7;
+    }
+    body.light-theme .step-desc { color: #334155; }
+    body.light-theme .pole-card {
+      background: #f8fafc;
+      border-color: #cbd5e1;
+    }
+    body.light-theme .result-box {
+      background: #f0fdf4;
+      border-color: #86efac;
+    }
+    body.light-theme .result-title { color: #15803d; }
+    body.light-theme .diagram-container {
+      background: #f8fafc;
+      border-color: #cbd5e1;
+    }
+    body.light-theme .diagram-container svg rect[fill="#050811"] { fill: #f8fafc; }
+    body.light-theme .diagram-container svg rect[fill="#0d1424"],
+    body.light-theme .diagram-container svg rect[fill="#131c2e"] { fill: #ffffff; stroke: #94a3b8; }
+    body.light-theme .diagram-container svg text[fill="#f8fafc"] { fill: #0f172a; }
+    body.light-theme .btn-theme-toggle {
+      background: #ffffff;
+      border-color: #cbd5e1;
+      color: #0f172a;
+    }
+    body.light-theme .app-footer {
+      border-top-color: #cbd5e1;
+      color: #64748b;
+    }
+  </style>
+  <script src="../../katex.min.js"></script>
+</head>
+<body>
+  <div class="sim-card">
+    <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:10px; margin-bottom:8px;">
+      <span class="badge-master">SUPER-TOPOLOGIA UNIFICADA — TODAS AS TOPOLOGIAS DA ÁLGEBRA DE BLOCOS</span>
+      <button type="button" id="themeToggleBtn" class="btn-theme-toggle" onclick="toggleSimTheme()" title="Alternar entre Modo Claro e Escuro">☀️ Modo Claro</button>
+    </div>
+    <h1>Circuito Integrado Mestre: Todas as Topologias Possíveis</h1>
+    <p class="desc">
+      Este circuito foi projetado para integrar e demonstrar <b>simultaneamente todas as configurações e transformações fundamentais</b> da Álgebra de Diagramas de Blocos da Engenharia de Controle Clássico com valores numéricos e funções polinomiais reais.
+    </p>
+
+    <!-- Catálogo de Topologias Presentes -->
+    <div class="catalog-grid">
+      <div class="catalog-item">
+        <b>1. Cascata / Série</b>
+        Pré-filtro de entrada e acoplamento serial entre $G_1(s)$ e $G_2(s)$.
+      </div>
+      <div class="catalog-item">
+        <b>2. Paralelo Aditivo (Soma)</b>
+        Controlador PI composto por ramos proporcional $K_p$ e integral $K_i/s$.
+      </div>
+      <div class="catalog-item">
+        <b>3. Canal Feedforward</b>
+        Ramo de avanço direto contornando a malha de controle da entrada até a saída.
+      </div>
+      <div class="catalog-item">
+        <b>4. Malha Fechada Aninhada</b>
+        Laço interno de velocidade/taxa secundária envolvendo a planta $G_1(s)$.
+      </div>
+      <div class="catalog-item">
+        <b>5. Realimentação Positiva</b>
+        Retorno regenerativo com sinal positivo $(+)$ no somador secundário $\Sigma_2$.
+      </div>
+      <div class="catalog-item">
+        <b>6. Realimentação Negativa</b>
+        Laço clássico estabilizador com sinal subtrativo $(-)$ no somador $\Sigma_1$.
+      </div>
+      <div class="catalog-item">
+        <b>7. Malhas Sobrepostas</b>
+        Múltiplos retornos cruzados a partir dos nós intermediários $X$ e $Y$.
+      </div>
+      <div class="catalog-item">
+        <b>8. Injeção de Distúrbio</b>
+        Ponto somador de perturbação de carga $D(s)$ entre o atuador e a planta.
+      </div>
+    </div>
+
+    <!-- Diagrama SVG do Circuito -->
+    <div class="diagram-container">
+      <div style="font-size: 0.82rem; font-weight: 700; color: #94a3b8; margin-bottom: 8px; text-align: left;">Diagrama Esquemático Completo da Super-Topologia:</div>
+      <svg viewBox="0 0 960 340" width="100%" height="340">
+        <defs>
+          <marker id="arr-blue" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#38bdf8" />
+          </marker>
+          <marker id="arr-green" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#10b981" />
+          </marker>
+          <marker id="arr-amber" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#f59e0b" />
+          </marker>
+          <marker id="arr-purple" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#c084fc" />
+          </marker>
+          <marker id="arr-red" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#f87171" />
+          </marker>
+        </defs>
+
+        <rect x="0" y="0" width="960" height="340" rx="8" fill="#050811" />
+
+        <!-- 1. ENTRADA R(s) -->
+        <rect x="15" y="146" width="46" height="28" rx="14" fill="#131c2e" stroke="#38bdf8" stroke-width="2" />
+        <text x="38" y="164" text-anchor="middle" fill="#f8fafc" font-size="11" font-weight="bold">R(s)</text>
+
+        <!-- Linha R(s) -> Pre-filtro G_pre -->
+        <path d="M 61 160 L 90 160" stroke="#38bdf8" stroke-width="2" fill="none" marker-end="url(#arr-blue)" />
+
+        <!-- Pre-filtro G_pre -->
+        <text x="125" y="132" text-anchor="middle" fill="#94a3b8" font-size="8.5">G_pre (Cascata)</text>
+        <rect x="95" y="138" width="60" height="44" rx="5" fill="#0d1424" stroke="#38bdf8" stroke-width="2" />
+        <text x="125" y="154" text-anchor="middle" fill="#f8fafc" font-size="10" font-weight="bold">2</text>
+        <line x1="105" y1="160" x2="145" y2="160" stroke="#64748b" stroke-width="1.2" />
+        <text x="125" y="173" text-anchor="middle" fill="#f8fafc" font-size="10" font-weight="bold">s + 2</text>
+
+        <!-- No de Ramificacao R1 -->
+        <circle cx="175" cy="160" r="4.5" fill="#38bdf8" />
+        <path d="M 155 160 L 175 160" stroke="#38bdf8" stroke-width="2" fill="none" />
+
+        <!-- RAMO FEEDFORWARD (Cima - Laranja) -->
+        <path d="M 175 160 L 175 45 L 805 45 L 805 142" stroke="#f59e0b" stroke-width="2" stroke-dasharray="5 3" fill="none" marker-end="url(#arr-amber)" />
+        <text x="490" y="36" text-anchor="middle" fill="#f59e0b" font-size="9" font-weight="bold">Canal Feedforward Direto (G_ff = 1)</text>
+
+        <!-- Ramo R1 -> Somador Sigma1 -->
+        <path d="M 175 160 L 205 160" stroke="#38bdf8" stroke-width="2" fill="none" marker-end="url(#arr-blue)" />
+        <text x="195" y="153" fill="#10b981" font-size="10" font-weight="bold">+</text>
+
+        <!-- SOMADOR PRINCIPAL SIGMA1 -->
+        <circle cx="218" cy="160" r="13" fill="#131c2e" stroke="#38bdf8" stroke-width="2" />
+        <text x="218" y="164" text-anchor="middle" fill="#f8fafc" font-size="10" font-weight="bold">Σ1</text>
+        <text x="207" y="186" fill="#f87171" font-size="11" font-weight="bold">-</text>
+        <text x="228" y="186" fill="#f87171" font-size="11" font-weight="bold">-</text>
+
+        <!-- Linha Sigma1 -> Controlador Paralelo (Bifurcacao) -->
+        <path d="M 231 160 L 255 160" stroke="#38bdf8" stroke-width="2" fill="none" />
+        <circle cx="255" cy="160" r="4" fill="#38bdf8" />
+
+        <!-- CONTROLADOR PARALELO PI -->
+        <!-- Ramo Superior: Kp = 2 -->
+        <path d="M 255 160 L 255 125 L 275 125" stroke="#38bdf8" stroke-width="1.8" fill="none" marker-end="url(#arr-blue)" />
+        <rect x="278" y="108" width="48" height="34" rx="4" fill="#0d1424" stroke="#a78bfa" stroke-width="1.8" />
+        <text x="302" y="129" text-anchor="middle" fill="#f8fafc" font-size="10.5" font-weight="bold">Kp = 2</text>
+        <path d="M 326 125 L 345 125 L 345 147" stroke="#38bdf8" stroke-width="1.8" fill="none" marker-end="url(#arr-blue)" />
+        <text x="336" y="142" fill="#10b981" font-size="9" font-weight="bold">+</text>
+
+        <!-- Ramo Inferior: Ki/s = 4/s -->
+        <path d="M 255 160 L 255 195 L 275 195" stroke="#38bdf8" stroke-width="1.8" fill="none" marker-end="url(#arr-blue)" />
+        <rect x="278" y="176" width="48" height="38" rx="4" fill="#0d1424" stroke="#a78bfa" stroke-width="1.8" />
+        <text x="302" y="191" text-anchor="middle" fill="#f8fafc" font-size="10" font-weight="bold">4</text>
+        <line x1="286" y1="195" x2="318" y2="195" stroke="#64748b" stroke-width="1.2" />
+        <text x="302" y="208" text-anchor="middle" fill="#f8fafc" font-size="10" font-weight="bold">s</text>
+        <path d="M 326 195 L 345 195 L 345 173" stroke="#38bdf8" stroke-width="1.8" fill="none" marker-end="url(#arr-blue)" />
+        <text x="336" y="183" fill="#10b981" font-size="9" font-weight="bold">+</text>
+
+        <!-- Somador do Controlador Sigma_c -->
+        <circle cx="345" cy="160" r="10" fill="#131c2e" stroke="#a78bfa" stroke-width="1.8" />
+        <text x="345" y="163" text-anchor="middle" fill="#a78bfa" font-size="8" font-weight="bold">Σc</text>
+
+        <!-- Linha Sigma_c -> Somador de Disturbio Sigma_d -->
+        <path d="M 355 160 L 385 160" stroke="#38bdf8" stroke-width="2" fill="none" marker-end="url(#arr-blue)" />
+        <text x="374" y="153" fill="#10b981" font-size="10" font-weight="bold">+</text>
+
+        <!-- ENTRADA DE DISTURBIO D(s) -->
+        <rect x="375" y="80" width="42" height="24" rx="6" fill="#131c2e" stroke="#f87171" stroke-width="1.8" />
+        <text x="396" y="96" text-anchor="middle" fill="#f8fafc" font-size="9.5" font-weight="bold">D(s)</text>
+        <path d="M 396 104 L 396 147" stroke="#f87171" stroke-width="1.8" fill="none" marker-end="url(#arr-red)" />
+        <text x="403" y="142" fill="#10b981" font-size="9" font-weight="bold">+</text>
+
+        <!-- Somador de Disturbio Sigma_d -->
+        <circle cx="396" cy="160" r="11" fill="#131c2e" stroke="#f87171" stroke-width="1.8" />
+        <text x="396" y="163" text-anchor="middle" fill="#f87171" font-size="8" font-weight="bold">Σd</text>
+
+        <!-- Linha Sigma_d -> Somador Interno Sigma2 -->
+        <path d="M 407 160 L 440 160" stroke="#38bdf8" stroke-width="2" fill="none" marker-end="url(#arr-blue)" />
+        <text x="428" y="153" fill="#10b981" font-size="10" font-weight="bold">+</text>
+
+        <!-- SOMADOR DA MALHA INTERNA SIGMA2 -->
+        <circle cx="452" cy="160" r="12" fill="#131c2e" stroke="#c084fc" stroke-width="2" />
+        <text x="452" y="164" text-anchor="middle" fill="#f8fafc" font-size="9" font-weight="bold">Σ2</text>
+        <text x="452" y="183" fill="#10b981" font-size="11" font-weight="bold">+</text>
+
+        <!-- Linha Sigma2 -> Planta G1 -->
+        <path d="M 464 160 L 495 160" stroke="#38bdf8" stroke-width="2" fill="none" marker-end="url(#arr-blue)" />
+
+        <!-- PLANTA 1: G1(s) = 3/(s+1) -->
+        <text x="525" y="132" text-anchor="middle" fill="#94a3b8" font-size="8.5">G1 (Malha Interna)</text>
+        <rect x="498" y="138" width="54" height="44" rx="5" fill="#0d1424" stroke="#c084fc" stroke-width="2" />
+        <text x="525" y="154" text-anchor="middle" fill="#f8fafc" font-size="10" font-weight="bold">3</text>
+        <line x1="506" y1="160" x2="544" y2="160" stroke="#64748b" stroke-width="1.2" />
+        <text x="525" y="173" text-anchor="middle" fill="#f8fafc" font-size="10" font-weight="bold">s + 1</text>
+
+        <!-- NO INTERMEDIARIO X -->
+        <circle cx="585" cy="160" r="4.5" fill="#c084fc" />
+        <path d="M 552 160 L 585 160" stroke="#38bdf8" stroke-width="2" fill="none" />
+        <text x="585" y="150" text-anchor="middle" fill="#c084fc" font-size="9" font-weight="bold">X</text>
+
+        <!-- LACO DE REALIMENTACAO POSITIVA (H1 = 1) -->
+        <path d="M 585 160 L 585 220 L 452 220 L 452 174" stroke="#c084fc" stroke-width="1.8" fill="none" marker-end="url(#arr-purple)" />
+        <rect x="495" y="210" width="50" height="20" rx="3" fill="#0d1424" stroke="#c084fc" stroke-width="1.5" />
+        <text x="520" y="224" text-anchor="middle" fill="#c084fc" font-size="8.5" font-weight="bold">H1 = 1 (+)</text>
+
+        <!-- LACO DE REALIMENTACAO DE TAXA CRUZADA (H_taxa = 1) -->
+        <path d="M 585 160 L 585 260 L 218 260 L 218 175" stroke="#ec4899" stroke-width="1.8" fill="none" marker-end="url(#arr-red)" />
+        <rect x="365" y="250" width="70" height="20" rx="3" fill="#0d1424" stroke="#ec4899" stroke-width="1.5" />
+        <text x="400" y="264" text-anchor="middle" fill="#ec4899" font-size="8.5" font-weight="bold">H_taxa = 1 (-)</text>
+
+        <!-- Linha X -> Planta G2 -->
+        <path d="M 585 160 L 635 160" stroke="#38bdf8" stroke-width="2" fill="none" marker-end="url(#arr-blue)" />
+
+        <!-- PLANTA 2: G2(s) = 2/(s+3) -->
+        <text x="665" y="132" text-anchor="middle" fill="#94a3b8" font-size="8.5">G2 (Cascata)</text>
+        <rect x="638" y="138" width="54" height="44" rx="5" fill="#0d1424" stroke="#38bdf8" stroke-width="2" />
+        <text x="665" y="154" text-anchor="middle" fill="#f8fafc" font-size="10" font-weight="bold">2</text>
+        <line x1="646" y1="160" x2="684" y2="160" stroke="#64748b" stroke-width="1.2" />
+        <text x="665" y="173" text-anchor="middle" fill="#f8fafc" font-size="10" font-weight="bold">s + 3</text>
+
+        <!-- NO DE SAIDA DA PLANTA Y -->
+        <circle cx="725" cy="160" r="4.5" fill="#10b981" />
+        <path d="M 692 160 L 725 160" stroke="#38bdf8" stroke-width="2" fill="none" />
+        <text x="725" y="150" text-anchor="middle" fill="#10b981" font-size="9" font-weight="bold">Y</text>
+
+        <!-- LACO GLOBAL DE RETORNO COM SENSOR DINAMICO H_ext = 2 -->
+        <path d="M 725 160 L 725 300 L 205 300 L 205 260 L 214 174" stroke="#38bdf8" stroke-width="1.8" fill="none" marker-end="url(#arr-blue)" />
+        <rect x="420" y="290" width="80" height="20" rx="3" fill="#0d1424" stroke="#38bdf8" stroke-width="1.5" />
+        <text x="460" y="304" text-anchor="middle" fill="#38bdf8" font-size="8.5" font-weight="bold">H_ext = 2 (-)</text>
+
+        <!-- Linha Y -> Somador Final Sigma4 -->
+        <path d="M 725 160 L 793 160" stroke="#38bdf8" stroke-width="2" fill="none" marker-end="url(#arr-blue)" />
+        <text x="782" y="153" fill="#10b981" font-size="10" font-weight="bold">+</text>
+        <text x="811" y="146" fill="#f59e0b" font-size="9" font-weight="bold">+</text>
+
+        <!-- SOMADOR DE SAIDA SIGMA4 -->
+        <circle cx="805" cy="160" r="12" fill="#131c2e" stroke="#10b981" stroke-width="2" />
+        <text x="805" y="164" text-anchor="middle" fill="#f8fafc" font-size="9" font-weight="bold">Σ4</text>
+
+        <!-- Linha Sigma4 -> Saida C(s) -->
+        <path d="M 817 160 L 880 160" stroke="#10b981" stroke-width="2.2" fill="none" marker-end="url(#arr-green)" />
+
+        <!-- SAIDA FINAL C(s) -->
+        <rect x="885" y="146" width="46" height="28" rx="14" fill="#131c2e" stroke="#10b981" stroke-width="2" />
+        <text x="908" y="164" text-anchor="middle" fill="#f8fafc" font-size="11" font-weight="bold">C(s)</text>
+      </svg>
+    </div>
+
+    <!-- ETAPAS DA RESOLUÇÃO ANALÍTICA -->
+    <div class="step-box">
+      <div class="step-title">Etapa 1: Resolução do Controlador PI na Topologia Paralela Aditiva</div>
+      <div class="step-desc">
+        O erro $E_1(s)$ bifurca para um ganho proporcional $K_p = 2$ e uma ação integral pura $K_i/s = 4/s$. A função de transferência do controlador é a soma direta das frações:
+      </div>
+      <div id="mathStep1" class="math-target"></div>
+    </div>
+
+    <div class="step-box">
+      <div class="step-title">Etapa 2: Fechamento da Malha Interna com Realimentação Positiva / Regenerativa</div>
+      <div class="step-desc">
+        A planta interna $G_1(s) = \frac{3}{s+1}$ possui retorno unitário com sinal positivo $(+)$ em $\Sigma_2$. Pela fórmula de realimentação positiva, o denominador recebe sinal negativo $(-)$:
+      </div>
+      <div id="mathStep2" class="math-target"></div>
+    </div>
+
+    <div class="step-box">
+      <div class="step-title">Etapa 3: Ramo Direto em Cascata com a Segunda Planta G2(s)</div>
+      <div class="step-desc">
+        O sinal após o somador de distúrbio atravessa a malha interna $G_{\text{int}}(s)$ e segue em cascata com a planta $G_2(s) = \frac{2}{s+3}$ até o nó de saída $Y(s)$:
+      </div>
+      <div id="mathStep3" class="math-target"></div>
+    </div>
+
+    <div class="step-box">
+      <div class="step-title">Etapa 4: Resolução das Malhas Cruzadas / Sobrepostas e Determinante de Malha</div>
+      <div class="step-desc">
+        O Somador $\Sigma_1$ recebe dois laços de realimentação negativa $(-)$: o laço de taxa intermediária $L_1(s) = -[G_c \cdot G_{\text{int}}] \cdot H_{\text{taxa}}$ e o laço de posição global $L_2(s) = -P_1(s) \cdot H_{\text{ext}}$ com $H_{\text{ext}} = 2$. O determinante da malha $\Delta(s) = 1 - L_1 - L_2$ resulta em:
+      </div>
+      <div id="mathStep4" class="math-target"></div>
+    </div>
+
+    <div class="step-box">
+      <div class="step-title">Etapa 5: Resposta da Malha de Controle Principal T_{Y/R1}(s)</div>
+      <div class="step-desc">
+        Pela Fórmula de Ganho de Mason ou divisão direta do caminho direto pelo determinante de laços, obtém-se a relação entre $R_1(s)$ e a saída $Y(s)$:
+      </div>
+      <div id="mathStep5" class="math-target"></div>
+    </div>
+
+    <div class="step-box">
+      <div class="step-title">Etapa 6: Adição do Ramo Feedforward e Cascata com o Pré-Filtro</div>
+      <div class="step-desc">
+        O sinal $V(s)$ soma em paralelo a malha direta com o canal feedforward $G_{\text{ff}} = 1$. Multiplicando-se pelo pré-filtro de entrada $G_{\text{pre}}(s) = \frac{2}{s+2}$, obtém-se a Função de Transferência Global $T(s)$:
+      </div>
+      <div id="mathStep6" class="math-target"></div>
+    </div>
+
+    <div class="step-box">
+      <div class="step-title">Etapa 7: Rejeição de Perturbação de Carga / Distúrbio D(s) em Regime</div>
+      <div class="step-desc">
+        Com referência nula ($R = 0$), o caminho direto de $D(s)$ até $Y(s)$ é $P_D(s) = G_{\text{int}}(s) \cdot G_2(s)$. Graças à ação integradora pura do controlador PI, a resposta a distúrbio de degrau é perfeitamente nula em regime permanente:
+      </div>
+      <div id="mathStep7" class="math-target"></div>
+    </div>
+
+    <!-- BOX DE RESULTADOS FINAIS -->
+    <div class="result-box">
+      <div class="result-title">Função de Transferência Global Equivalente</div>
+      <div id="mathFinal" class="math-target"></div>
+      <div class="poles-zeros">
+        <div class="pole-card">
+          <b style="color:#38bdf8;">Pólos do Sistema Completo:</b><br>
+          <span class="katex-inline" data-latex="s_1 = -2.000 \text{ (Pólo do pré-filtro)}"></span><br>
+          <span class="katex-inline" data-latex="s_2 = -2.251 \text{ (Pólo real da malha)}"></span><br>
+          <span class="katex-inline" data-latex="s_{3,4} = -2.374 \pm j5.628 \text{ (Pólos complexos)}"></span><br>
+          <span style="color:#34d399; font-size:0.82rem; font-weight:700;">• Sistema Estável (Todos os pólos com \text{Re}\{s\} \le -2.0)</span>
+        </div>
+        <div class="pole-card">
+          <b style="color:#fbbf24;">Zeros e Desempenho Estático:</b><br>
+          <span class="katex-inline" data-latex="z_1 = -2.182"></span><br>
+          <span class="katex-inline" data-latex="z_{2,3} = -2.409 \pm j6.609"></span><br>
+          Ordem do Sistema: <b>4ª Ordem</b> (Grau do Denominador = 4)<br>
+          Ganho DC a Degrau de Referência: <span class="katex-inline" data-latex="T(0) = \frac{216}{168} = \frac{9}{7} \approx 1.286"></span><br>
+          Erro em Regime a Distúrbio de Carga: <span class="katex-inline" data-latex="T_D(0) = 0 \text{ (Rejeição Total)}"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="text/plain" id="rawStep1">
+G_c(s) = K_p + \frac{K_i}{s} = 2 + \frac{4}{s} = \frac{2s + 4}{s} = \frac{2(s + 2)}{s}
+  </script>
+  <script type="text/plain" id="rawStep2">
+G_{\text{int}}(s) = \frac{G_1(s)}{1 - G_1(s) H_1} = \frac{\frac{3}{s + 1}}{1 - \left(\frac{3}{s + 1}\right) \cdot 1} = \frac{3}{(s + 1) - 3} = \frac{3}{s - 2}
+  </script>
+  <script type="text/plain" id="rawStep3">
+P_1(s) = G_c(s) \cdot G_{\text{int}}(s) \cdot G_2(s) = \left(\frac{2(s + 2)}{s}\right) \cdot \left(\frac{3}{s - 2}\right) \cdot \left(\frac{2}{s + 3}\right) = \frac{12(s + 2)}{s(s - 2)(s + 3)}
+  </script>
+  <script type="text/plain" id="rawStep4">
+\begin{aligned}
+\Delta(s) &= 1 - L_1(s) - L_2(s) = 1 + \left(\frac{6(s + 2)}{s(s - 2)}\right) \cdot 1 + \left(\frac{12(s + 2)}{s(s - 2)(s + 3)}\right) \cdot 2 \\
+&= \frac{s(s - 2)(s + 3) + 6(s + 2)(s + 3) + 24(s + 2)}{s(s - 2)(s + 3)} = \frac{s^3 + 7s^2 + 48s + 84}{s(s - 2)(s + 3)}
+\end{aligned}
+  </script>
+  <script type="text/plain" id="rawStep5">
+T_{Y/R_1}(s) = \frac{P_1(s)}{\Delta(s)} = \frac{\frac{12(s + 2)}{s(s - 2)(s + 3)}}{\frac{s^3 + 7s^2 + 48s + 84}{s(s - 2)(s + 3)}} = \frac{12s + 24}{s^3 + 7s^2 + 48s + 84}
+  </script>
+  <script type="text/plain" id="rawStep6">
+\begin{aligned}
+T(s) &= G_{\text{pre}}(s) \cdot \left[ T_{Y/R_1}(s) + G_{\text{ff}} \right] = \left(\frac{2}{s + 2}\right) \cdot \left( \frac{12s + 24}{s^3 + 7s^2 + 48s + 84} + 1 \right) \\
+&= \left(\frac{2}{s + 2}\right) \cdot \left( \frac{s^3 + 7s^2 + 60s + 108}{s^3 + 7s^2 + 48s + 84} \right) = \frac{2s^3 + 14s^2 + 120s + 216}{s^4 + 9s^3 + 62s^2 + 180s + 168}
+\end{aligned}
+  </script>
+  <script type="text/plain" id="rawStep7">
+T_D(s) = \frac{C(s)}{D(s)} = \frac{G_{\text{int}}(s) \cdot G_2(s)}{\Delta(s)} = \frac{\frac{6}{(s - 2)(s + 3)}}{\frac{s^3 + 7s^2 + 48s + 84}{s(s - 2)(s + 3)}} = \mathbf{\frac{6s}{s^3 + 7s^2 + 48s + 84}}
+  </script>
+  <script type="text/plain" id="rawFinal">
+T(s) = \frac{C(s)}{R(s)} = \mathbf{\frac{2s^3 + 14s^2 + 120s + 216}{s^4 + 9s^3 + 62s^2 + 180s + 168}}
+  </script>
+
+  <script>
+    const renderInlineText = (el) => {
+      if (!el) return;
+      el.innerHTML = el.innerHTML.replace(/\$([^$]+)\$/g, (m, latex) => {
+        try {
+          return katex.renderToString(latex, { displayMode: false, throwOnError: false });
+        } catch(e) {
+          return latex;
+        }
+      });
+    };
+
+    document.querySelectorAll(".catalog-item, .step-desc, .desc").forEach(renderInlineText);
+
+    const steps = [
+      { id: "rawStep1", target: "mathStep1" },
+      { id: "rawStep2", target: "mathStep2" },
+      { id: "rawStep3", target: "mathStep3" },
+      { id: "rawStep4", target: "mathStep4" },
+      { id: "rawStep5", target: "mathStep5" },
+      { id: "rawStep6", target: "mathStep6" },
+      { id: "rawStep7", target: "mathStep7" },
+      { id: "rawFinal", target: "mathFinal" }
+    ];
+
+    steps.forEach(st => {
+      const latex = document.getElementById(st.id).textContent.trim();
+      katex.render(latex, document.getElementById(st.target), { displayMode: true, throwOnError: false });
+    });
+
+    document.querySelectorAll(".katex-inline").forEach(el => {
+      try {
+        katex.render(el.getAttribute("data-latex"), el, { displayMode: false, throwOnError: false });
+      } catch(e) {}
+    });
+
+    function initSimTheme() {
+      const params = new URLSearchParams(window.location.search);
+      const themeParam = params.get("theme");
+      const savedTheme = themeParam || localStorage.getItem("app_theme") || "dark";
+      applySimTheme(savedTheme);
+    }
+
+    function applySimTheme(theme) {
+      const isLight = theme === "light";
+      document.body.classList.toggle("light-theme", isLight);
+      document.documentElement.setAttribute("data-theme", theme);
+      const btn = document.getElementById("themeToggleBtn");
+      if (btn) {
+        btn.innerHTML = isLight ? "🌙 Modo Escuro" : "☀️ Modo Claro";
+        btn.setAttribute("title", isLight ? "Alternar para Modo Escuro" : "Alternar para Modo Claro");
+      }
+      localStorage.setItem("app_theme", theme);
+    }
+
+    function toggleSimTheme() {
+      const current = document.body.classList.contains("light-theme") ? "light" : "dark";
+      const next = current === "light" ? "dark" : "light";
+      applySimTheme(next);
+    }
+
+    initSimTheme();
+  </script>
+
+  <!-- Rodapé do Desenvolvedor -->
+  <footer class="app-footer">
+    <p>Desenvolvido por Aderson Carvalho - Outubro/2026 • contato: <a href="mailto:aderson@alunos.utfpr.edu.br">aderson@alunos.utfpr.edu.br</a></p>
+  </footer>
+</body>
+</html>

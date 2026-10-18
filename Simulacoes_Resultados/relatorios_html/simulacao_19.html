@@ -1,0 +1,267 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Simulação 19 — Feedforward Direto em Paralelo com Malha Fechada</title>
+  <link rel="stylesheet" href="../../katex.min.css">
+  <link rel="stylesheet" href="../../styles.css">
+  <style>
+    body {
+      background: #080c16;
+      color: #f8fafc;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      padding: 24px;
+      margin: 0;
+    }
+    .sim-card {
+      max-width: 960px;
+      margin: 0 auto;
+      background: #0d1424;
+      border: 1px solid #1e293b;
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+    }
+    .badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    .badge-top1 { background: rgba(56, 189, 248, 0.18); color: #38bdf8; border: 1px solid #0284c7; }
+    .badge-top2 { background: rgba(167, 139, 250, 0.18); color: #a78bfa; border: 1px solid #7c3aed; }
+    .badge-top3 { background: rgba(245, 158, 11, 0.18); color: #f59e0b; border: 1px solid #d97706; }
+    .badge-top4 { background: rgba(236, 72, 153, 0.18); color: #ec4899; border: 1px solid #db2777; }
+    h1 { font-size: 1.35rem; color: #f8fafc; margin: 4px 0 12px 0; }
+    p.desc { color: #94a3b8; font-size: 0.88rem; margin-bottom: 16px; line-height: 1.5; }
+    .diagram-container {
+      background: #050811;
+      border: 1px solid #1e293b;
+      border-radius: 8px;
+      padding: 12px;
+      margin: 16px 0;
+      text-align: center;
+    }
+    .step-box {
+      background: #090e1a;
+      border: 1px solid #1e293b;
+      border-left: 4px solid #38bdf8;
+      border-radius: 8px;
+      padding: 14px 16px;
+      margin: 14px 0;
+    }
+    .step-title { font-size: 0.92rem; font-weight: 700; color: #38bdf8; margin-bottom: 6px; }
+    .step-desc { font-size: 0.85rem; color: #cbd5e1; margin-bottom: 8px; line-height: 1.4; }
+    .result-box {
+      background: rgba(30, 58, 138, 0.35);
+      border: 1px solid #2563eb;
+      border-radius: 8px;
+      padding: 16px;
+      margin: 18px 0;
+    }
+    .result-title { font-size: 1rem; font-weight: 700; color: #60a5fa; margin-bottom: 10px; }
+    .math-target { margin: 10px 0; font-size: 1.05rem; }
+    .poles-zeros {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 12px;
+      font-size: 0.84rem;
+    }
+    .pole-card {
+      background: #090e1a;
+      border: 1px solid #1e293b;
+      border-radius: 6px;
+      padding: 10px 12px;
+    }
+    .btn-theme-toggle {
+      background: #090e1a;
+      border: 1px solid #1e293b;
+      color: #f8fafc;
+      padding: 5px 12px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+    .btn-theme-toggle:hover {
+      border-color: #38bdf8;
+      color: #38bdf8;
+    }
+    .app-footer {
+      margin-top: 32px;
+      padding: 18px 16px;
+      border-top: 1px solid #1e293b;
+      text-align: center;
+      font-size: 0.85rem;
+      color: #94a3b8;
+    }
+    .app-footer p { margin: 0; }
+    .app-footer a { color: #38bdf8; text-decoration: none; font-weight: 600; }
+    .app-footer a:hover { text-decoration: underline; }
+
+    /* MODO CLARO */
+    body.light-theme {
+      background: #f8fafc;
+      color: #0f172a;
+    }
+    body.light-theme .sim-card {
+      background: #ffffff;
+      border-color: #cbd5e1;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.06);
+    }
+    body.light-theme h1 { color: #0284c7; }
+    body.light-theme p.desc { color: #475569; }
+    body.light-theme .step-box {
+      background: #f8fafc;
+      border-color: #cbd5e1;
+      border-left-color: #0284c7;
+    }
+    body.light-theme .step-desc { color: #334155; }
+    body.light-theme .pole-card {
+      background: #f8fafc;
+      border-color: #cbd5e1;
+    }
+    body.light-theme .result-box {
+      background: #f0fdf4;
+      border-color: #86efac;
+    }
+    body.light-theme .result-title { color: #15803d; }
+    body.light-theme .diagram-container {
+      background: #f8fafc;
+      border-color: #cbd5e1;
+    }
+    body.light-theme .diagram-container svg rect[fill="#050811"],
+    body.light-theme .diagram-container svg rect[fill="#090e1a"] { fill: #f8fafc; }
+    body.light-theme .diagram-container svg rect[fill="#0d1424"],
+    body.light-theme .diagram-container svg rect[fill="#131c2e"] { fill: #ffffff; stroke: #94a3b8; }
+    body.light-theme .diagram-container svg text[fill="#f8fafc"] { fill: #0f172a; }
+    body.light-theme .btn-theme-toggle {
+      background: #ffffff;
+      border-color: #cbd5e1;
+      color: #0f172a;
+    }
+    body.light-theme .app-footer {
+      border-top-color: #cbd5e1;
+      color: #64748b;
+    }
+  </style>
+  <script src="../../katex.min.js"></script>
+</head>
+<body>
+  <div class="sim-card">
+    <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:8px; margin-bottom:8px;">
+      <span class="badge badge-top4">TOPOLOGIA 4 - MISTA / ANINHADA</span>
+      <button type="button" id="themeToggleBtn" class="btn-theme-toggle" onclick="toggleSimTheme()" title="Alternar entre Modo Claro e Escuro">☀️ Modo Claro</button>
+    </div>
+    <h1>Simulação 19 — Feedforward Direto em Paralelo com Malha Fechada</h1>
+    <p class="desc" id="simDesc">Arquitetura com canal feedforward direto G_ff=1 somado em paralelo com uma malha fechada (G=6/(s+2), H=1).</p>
+
+    <!-- Diagrama SVG do Circuito -->
+    <div class="diagram-container">
+      <div style="font-size: 0.78rem; font-weight: 700; color: #94a3b8; margin-bottom: 6px; text-align: left;">Diagrama do Circuito Inicial:</div>
+      <svg viewBox="0 0 780 250" width="100%" height="250"><defs><marker id="arrow" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#38bdf8" /></marker></defs><rect x="25" y="111" width="46" height="28" rx="14" fill="#131c2e" stroke="#38bdf8" stroke-width="2" /><text x="48" y="129" text-anchor="middle" fill="#f8fafc" font-size="11.5" font-weight="bold">R(s)</text><path d="M 71 125 L 140 125" stroke="#38bdf8" stroke-width="2" fill="none" marker-end="url(#arrow)" /><circle cx="140" cy="125" r="4.5" fill="#38bdf8" /><path d="M 140 125 L 140 55 L 290 55" stroke="#38bdf8" stroke-width="2" fill="none" marker-end="url(#arrow)" /><text x="330" y="32" text-anchor="middle" fill="#94a3b8" font-size="9">G_ff (Feedforward)</text><rect x="295" y="38" width="70" height="34" rx="4" fill="#050811" stroke="#38bdf8" stroke-width="2" /><text x="330" y="59" text-anchor="middle" fill="#f8fafc" font-size="11" font-weight="bold">1</text><path d="M 365 55 L 535 55 L 535 112" stroke="#38bdf8" stroke-width="2" fill="none" marker-end="url(#arrow)" /><text x="522" y="85" fill="#10b981" font-size="11" font-weight="bold">+</text><path d="M 140 125 L 140 175 L 220 175" stroke="#38bdf8" stroke-width="2" fill="none" marker-end="url(#arrow)" /><text x="210" y="168" fill="#10b981" font-size="11" font-weight="bold">+</text><circle cx="233" cy="175" r="13" fill="#131c2e" stroke="#38bdf8" stroke-width="2.2" /><text x="233" y="179" text-anchor="middle" fill="#f8fafc" font-size="10" font-weight="bold">Σ1</text><path d="M 246 175 L 315 175" stroke="#38bdf8" stroke-width="2" fill="none" marker-end="url(#arrow)" /><text x="360" y="152" text-anchor="middle" fill="#94a3b8" font-size="9">G1</text><rect x="320" y="155" width="80" height="40" rx="4" fill="#050811" stroke="#38bdf8" stroke-width="2" /><text x="360" y="169" text-anchor="middle" fill="#f8fafc" font-size="10.5" font-weight="bold">6</text><line x1="330" y1="175" x2="390" y2="175" stroke="#64748b" stroke-width="1.2" /><text x="360" y="188" text-anchor="middle" fill="#f8fafc" font-size="10.5" font-weight="bold">s + 2</text><path d="M 400 175 L 465 175" stroke="#38bdf8" stroke-width="2" fill="none" marker-end="url(#arrow)" /><circle cx="465" cy="175" r="4.5" fill="#38bdf8" /><path d="M 465 175 L 465 225 L 233 225 L 233 188" stroke="#a855f7" stroke-width="1.8" fill="none" marker-end="url(#arrow)" /><text x="349" y="218" text-anchor="middle" fill="#c084fc" font-size="9">H = 1</text><text x="223" y="202" fill="#ef4444" font-size="12" font-weight="bold">-</text><path d="M 465 175 L 535 175 L 535 138" stroke="#38bdf8" stroke-width="2" fill="none" marker-end="url(#arrow)" /><text x="522" y="160" fill="#10b981" font-size="11" font-weight="bold">+</text><circle cx="535" cy="125" r="13" fill="#131c2e" stroke="#38bdf8" stroke-width="2.2" /><text x="535" y="129" text-anchor="middle" fill="#f8fafc" font-size="10" font-weight="bold">Σ2</text><path d="M 548 125 L 640 125" stroke="#38bdf8" stroke-width="2" fill="none" marker-end="url(#arrow)" /><rect x="645" y="111" width="46" height="28" rx="14" fill="#131c2e" stroke="#10b981" stroke-width="2" /><text x="668" y="129" text-anchor="middle" fill="#f8fafc" font-size="11.5" font-weight="bold">C(s)</text></svg>
+    </div>
+
+    <!-- Etapa de Redução -->
+    <div class="step-box">
+      <div class="step-title">Etapa 1: Reducao da Malha Inferior e Soma em Paralelo com o Ramo Direto</div>
+      <div class="step-desc" id="simStepDesc">1o: Malha fechada inferior G_mf = 6 / (s + 2 + 6) = 6 / (s + 8). 2o: Soma em paralelo com o feedforward G_ff = 1:</div>
+      <div id="mathStep1" class="math-target"></div>
+    </div>
+
+    <!-- Resultado Final -->
+    <div class="result-box">
+      <div class="result-title">Função de Transferência Equivalente Final</div>
+      <div id="mathFinal" class="math-target"></div>
+      <div class="poles-zeros">
+        <div class="pole-card">
+          <b style="color:#38bdf8;">Pólos do Sistema:</b><br>
+          <span class="katex-inline" data-latex="s_1 = -8"></span><br>
+
+          <span style="color:#34d399; font-size:0.78rem; font-weight:700;">Estavel (Zero real em s = -14)</span>
+        </div>
+        <div class="pole-card">
+          <b style="color:#fbbf24;">Ordem e Características:</b><br>
+          Ordem: <b>1a Ordem</b><br>
+          Zeros: <b>z_1 = -14</b><br>
+          Ganho DC em Regime: <span class="katex-inline" data-latex="T(0) = \frac{14}{8} = 1.75"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="text/plain" id="rawStepLatex">
+\begin{aligned} G_{\text{mf}}(s) &= \frac{\frac{6}{s + 2}}{1 + \frac{6}{s + 2}} = \frac{6}{s + 8} \\[6pt] T(s) &= G_{\text{ff}}(s) + G_{\text{mf}}(s) = 1 + \frac{6}{s + 8} = \frac{(s + 8) + 6}{s + 8} = \frac{s + 14}{s + 8} \end{aligned}
+  </script>
+  <script type="text/plain" id="rawFinalLatex">
+T(s) = \frac{C(s)}{R(s)} = \mathbf{\frac{s + 14}{s + 8}}
+  </script>
+
+  <script>
+    const renderInlineText = (el) => {
+      if (!el) return;
+      el.innerHTML = el.innerHTML.replace(/\$([^$]+)\$/g, (m, latex) => {
+        try {
+          return katex.renderToString(latex, { displayMode: false, throwOnError: false });
+        } catch(e) {
+          return latex;
+        }
+      });
+    };
+
+    renderInlineText(document.getElementById("simDesc"));
+    renderInlineText(document.getElementById("simStepDesc"));
+
+    const stepLatex = document.getElementById("rawStepLatex").textContent.trim();
+    katex.render(stepLatex, document.getElementById("mathStep1"), { displayMode: true, throwOnError: false });
+
+    const finalLatex = document.getElementById("rawFinalLatex").textContent.trim();
+    katex.render(finalLatex, document.getElementById("mathFinal"), { displayMode: true, throwOnError: false });
+
+    document.querySelectorAll(".katex-inline").forEach(el => {
+      try {
+        katex.render(el.getAttribute("data-latex"), el, { displayMode: false, throwOnError: false });
+      } catch(e) {}
+    });
+
+    function initSimTheme() {
+      const params = new URLSearchParams(window.location.search);
+      const themeParam = params.get("theme");
+      const savedTheme = themeParam || localStorage.getItem("app_theme") || "dark";
+      applySimTheme(savedTheme);
+    }
+
+    function applySimTheme(theme) {
+      const isLight = theme === "light";
+      document.body.classList.toggle("light-theme", isLight);
+      document.documentElement.setAttribute("data-theme", theme);
+      const btn = document.getElementById("themeToggleBtn");
+      if (btn) {
+        btn.innerHTML = isLight ? "🌙 Modo Escuro" : "☀️ Modo Claro";
+        btn.setAttribute("title", isLight ? "Alternar para Modo Escuro" : "Alternar para Modo Claro");
+      }
+      localStorage.setItem("app_theme", theme);
+    }
+
+    function toggleSimTheme() {
+      const current = document.body.classList.contains("light-theme") ? "light" : "dark";
+      const next = current === "light" ? "dark" : "light";
+      applySimTheme(next);
+    }
+
+    initSimTheme();
+  </script>
+
+  <!-- Rodapé do Desenvolvedor -->
+  <footer class="app-footer">
+    <p>Desenvolvido por Aderson Carvalho - Outubro/2026 • contato: <a href="mailto:aderson@alunos.utfpr.edu.br">aderson@alunos.utfpr.edu.br</a></p>
+  </footer>
+</body>
+</html>
