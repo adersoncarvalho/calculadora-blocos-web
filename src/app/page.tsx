@@ -43,7 +43,6 @@ export default function HomePage() {
       <main style={{ padding: '16px 20px', minHeight: '100vh' }}>
         <BuilderSection
           onBack={() => handleSetView('home')}
-          onOpenGuide={() => handleSetView('guide')}
         />
         <ShortcutsModal isOpen={showShortcuts} onClose={() => setShowShortcuts(false)} />
       </main>
