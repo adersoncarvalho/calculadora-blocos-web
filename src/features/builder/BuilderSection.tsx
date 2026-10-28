@@ -28,7 +28,7 @@ import {
   Point,
   GRID_SIZE
 } from './layoutEngine';
-import { MasonDeductionView } from './MasonDeductionView';
+import { MasonDeductionView, SplitPanelMode } from './MasonDeductionView';
 
 interface BuilderSectionProps {
   onBack: () => void;
@@ -174,11 +174,74 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
   const [pastedImageForModal, setPastedImageForModal] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  // Redução de Mason
+  // Redução de Mason e Visualização Dividida (Painel 1: Circuito | Painel 2: Cálculos)
   const [analysisResult, setAnalysisResult] = useState<MasonAnalysis | null>(null);
+  const [analysisSnapshot, setAnalysisSnapshot] = useState<{
+    graph: DiagramGraph;
+    inputEl: DiagramElement;
+    outputEl: DiagramElement;
+  } | null>(null);
+  const [splitMode, setSplitMode] = useState<SplitPanelMode>('split');
+  const [splitRatio, setSplitRatio] = useState<number>(48); // % destinada ao Painel 1 (Circuito)
+  const [isDraggingSplitter, setIsDraggingSplitter] = useState<boolean>(false);
+  const [isVerticalSplit, setIsVerticalSplit] = useState<boolean>(false);
+  const workspaceSplitRef = useRef<HTMLDivElement | null>(null);
+
   const [selectedTemplate, setSelectedTemplate] = useState<string>('em_branco');
   const [activeInputId, setActiveInputId] = useState<string>('IN');
   const [activeOutputId, setActiveOutputId] = useState<string>('OUT');
+
+  // Adapta automaticamente a orientação da divisão (horizontal em desktop >= 960px, vertical em telas menores)
+  useEffect(() => {
+    const updateOrientation = () => {
+      if (typeof window !== 'undefined') {
+        setIsVerticalSplit(window.innerWidth < 960);
+      }
+    };
+    updateOrientation();
+    window.addEventListener('resize', updateOrientation);
+    return () => window.removeEventListener('resize', updateOrientation);
+  }, []);
+
+  // Arraste interativo da divisória entre Painel 1 (Circuito) e Painel 2 (Cálculos)
+  useEffect(() => {
+    if (!isDraggingSplitter) return;
+
+    const handleMove = (clientX: number, clientY: number) => {
+      const container = workspaceSplitRef.current;
+      if (!container) return;
+      const rect = container.getBoundingClientRect();
+      if (isVerticalSplit) {
+        if (rect.height <= 0) return;
+        const pct = ((clientY - rect.top) / rect.height) * 100;
+        setSplitRatio(Math.min(82, Math.max(18, Math.round(pct * 10) / 10)));
+      } else {
+        if (rect.width <= 0) return;
+        const pct = ((clientX - rect.left) / rect.width) * 100;
+        setSplitRatio(Math.min(82, Math.max(18, Math.round(pct * 10) / 10)));
+      }
+      setSplitMode('split');
+    };
+
+    const onMouseMove = (e: MouseEvent) => handleMove(e.clientX, e.clientY);
+    const onTouchMove = (e: TouchEvent) => {
+      if (e.touches.length > 0) {
+        handleMove(e.touches[0].clientX, e.touches[0].clientY);
+      }
+    };
+    const onEnd = () => setIsDraggingSplitter(false);
+
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('touchmove', onTouchMove);
+    window.addEventListener('mouseup', onEnd);
+    window.addEventListener('touchend', onEnd);
+    return () => {
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('touchmove', onTouchMove);
+      window.removeEventListener('mouseup', onEnd);
+      window.removeEventListener('touchend', onEnd);
+    };
+  }, [isDraggingSplitter, isVerticalSplit]);
 
   const showToast = useCallback((msg: string, duration = 3500) => {
     setToastMessage(msg);
@@ -1516,6 +1579,17 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
       return;
     }
 
+    // Verifica se existem conexões pendentes/incompletas no diagrama
+    const pendingConns = graph.connections.filter(c => c.isPending || !c.to);
+    if (pendingConns.length > 0) {
+      setSelectedConnId(pendingConns[0].id);
+      showToast(
+        '⚠️ Existem conexões interrompidas (incompletas) no circuito. Conclua ou exclua a conexão pendente antes de reduzir.',
+        5000
+      );
+      return;
+    }
+
     const chosenInput = inputs.find(i => i.id === activeInputId) || inputs[0];
     const chosenOutput = outputs.find(o => o.id === activeOutputId) || outputs[0];
 
@@ -1550,6 +1624,12 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
       }
 
       setAnalysisResult(result);
+      setAnalysisSnapshot({
+        graph: mappedGraph,
+        inputEl: chosenInput,
+        outputEl: chosenOutput
+      });
+      setSplitMode('split');
       showToast(`⚡ Redução de Mason calculada com sucesso para ${chosenOutput.name} / ${chosenInput.name}!`);
     } catch (err) {
       console.error(err);
@@ -2763,24 +2843,171 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
       </aside>
 
       {/* ===================================================================
-          ÁREA CENTRAL DE DESENHO: EXPANDE AUTOMATICAMENTE E OCUPA TODO O ESPAÇO RESTANTE
+          ÁREA DE TRABALHO DIVIDIDA: PAINEL 1 (CIRCUITO) + DIVISÓRIA + PAINEL 2 (CÁLCULOS)
          =================================================================== */}
-      <section
-        ref={canvasContainerRef}
-        aria-label="Área Central de Desenho do Circuito"
+      <div
+        ref={workspaceSplitRef}
+        data-testid="builder-split-workspace"
         style={{
           flex: 1,
           height: '100%',
-          background: '#040711',
-          position: 'relative',
+          minWidth: 0,
+          minHeight: 0,
+          display: 'flex',
+          flexDirection: isVerticalSplit ? 'column' : 'row',
           overflow: 'hidden',
-          cursor: getCanvasCursor(),
-          boxShadow: 'inset 0 2px 24px rgba(0,0,0,0.92)'
+          position: 'relative',
+          background: '#040711'
         }}
-        onContextMenu={e => e.preventDefault()}
-        onMouseMove={handleSvgMouseMove}
-        onMouseUp={handleSvgMouseUp}
       >
+        {/* ===============================================================
+            PAINEL 1 — CIRCUITO (DIAGRAMA DE BLOCOS INTERATIVO)
+           =============================================================== */}
+        <section
+          ref={canvasContainerRef}
+          data-testid="builder-circuit-panel"
+          aria-label="Painel 1 — Circuito"
+          style={{
+            width: !analysisResult
+              ? '100%'
+              : splitMode === 'calc-maximized'
+              ? '0px'
+              : splitMode === 'circuit-maximized' || isVerticalSplit
+              ? '100%'
+              : `${splitRatio}%`,
+            height: !analysisResult
+              ? '100%'
+              : splitMode === 'calc-maximized'
+              ? '0px'
+              : splitMode === 'circuit-maximized' || !isVerticalSplit
+              ? '100%'
+              : `${splitRatio}%`,
+            flexShrink: 0,
+            display: analysisResult && splitMode === 'calc-maximized' ? 'none' : 'block',
+            background: '#040711',
+            position: 'relative',
+            overflow: 'hidden',
+            cursor: getCanvasCursor(),
+            boxShadow: 'inset 0 2px 24px rgba(0,0,0,0.92)'
+          }}
+          onContextMenu={e => e.preventDefault()}
+          onMouseMove={handleSvgMouseMove}
+          onMouseUp={handleSvgMouseUp}
+        >
+          {/* Barra Discreta do Painel 1 — Circuito quando a Visualização Dividida está ativa */}
+          {analysisResult && (
+            <div
+              data-testid="circuit-panel-header"
+              style={{
+                position: 'absolute',
+                top: '14px',
+                left: isSidebarCollapsed ? '230px' : '14px',
+                zIndex: 30,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                background: 'rgba(15, 23, 42, 0.9)',
+                border: '1px solid rgba(56, 189, 248, 0.35)',
+                borderRadius: '8px',
+                padding: '5px 10px',
+                backdropFilter: 'blur(6px)'
+              }}
+            >
+              <span
+                style={{
+                  fontSize: '0.72rem',
+                  fontWeight: 800,
+                  color: '#38bdf8',
+                  letterSpacing: '0.4px'
+                }}
+              >
+                PAINEL 1 — CIRCUITO
+              </span>
+              <button
+                type="button"
+                className="filter-btn"
+                onClick={() => setSplitMode('calc-maximized')}
+                style={{ padding: '3px 8px', fontSize: '0.72rem' }}
+                title="Minimizar temporariamente o painel do circuito"
+              >
+                🗕 Minimizar Circuito
+              </button>
+              {splitMode !== 'split' && (
+                <button
+                  type="button"
+                  className="filter-btn"
+                  onClick={() => setSplitMode('split')}
+                  style={{
+                    padding: '3px 8px',
+                    fontSize: '0.72rem',
+                    borderColor: '#38bdf8',
+                    color: '#38bdf8'
+                  }}
+                  title="Restaurar visualização dividida (Circuito + Cálculos)"
+                >
+                  ⚖️ Restaurar Ambos
+                </button>
+              )}
+              {splitMode !== 'circuit-maximized' && (
+                <button
+                  type="button"
+                  className="filter-btn"
+                  onClick={() => setSplitMode('circuit-maximized')}
+                  style={{ padding: '3px 8px', fontSize: '0.72rem' }}
+                  title="Maximizar temporariamente o painel do circuito (minimiza os cálculos)"
+                >
+                  🗖 Maximizar Circuito
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Barra Discreta para Restaurar o Painel 2 (Cálculos) quando Minimizado */}
+          {analysisResult && splitMode === 'circuit-maximized' && (
+            <div
+              data-testid="restore-calculations-bar"
+              style={{
+                position: 'absolute',
+                top: '58px',
+                right: '14px',
+                zIndex: 35,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                background: 'rgba(15, 23, 42, 0.94)',
+                border: '1px solid #38bdf8',
+                borderRadius: '8px',
+                padding: '6px 12px',
+                boxShadow: '0 6px 20px rgba(0,0,0,0.6)'
+              }}
+            >
+              <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#e2e8f0' }}>
+                🧮 Painel 2 (Cálculos) Minimizado
+              </span>
+              <button
+                type="button"
+                className="filter-btn"
+                onClick={() => setSplitMode('split')}
+                style={{
+                  padding: '4px 9px',
+                  fontSize: '0.73rem',
+                  borderColor: '#38bdf8',
+                  color: '#38bdf8',
+                  fontWeight: 700
+                }}
+              >
+                ⚖️ Restaurar Divisão
+              </button>
+              <button
+                type="button"
+                className="filter-btn"
+                onClick={() => setSplitMode('calc-maximized')}
+                style={{ padding: '4px 9px', fontSize: '0.73rem' }}
+              >
+                🗖 Maximizar Cálculos
+              </button>
+            </div>
+          )}
         {/* Botão Flutuante para Expandir o Painel Esquerdo quando Recolhido */}
         {isSidebarCollapsed && (
           <button
@@ -3702,38 +3929,190 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
           </div>
         )}
 
+        </section>
+
         {/* ===============================================================
-            PAINEL DESLIZANTE DE RESULTADO DE MASON (SOBREPOSTO COM ROLAGEM PRÓPRIA)
+            DIVISÓRIA INTERATIVA REDIMENSIONÁVEL ENTRE PAINEL 1 E PAINEL 2
            =============================================================== */}
-        {analysisResult && (
+        {analysisResult && splitMode === 'split' && (
           <div
+            data-testid="builder-split-divider"
+            onMouseDown={e => {
+              e.preventDefault();
+              setIsDraggingSplitter(true);
+            }}
+            onTouchStart={() => setIsDraggingSplitter(true)}
+            title="Arraste para redimensionar livremente a proporção entre o Circuito e os Cálculos"
             style={{
-              position: 'absolute',
-              inset: '16px',
-              zIndex: 55,
-              background: 'rgba(9, 13, 26, 0.97)',
-              border: '1px solid var(--primary)',
-              borderRadius: '12px',
-              padding: '16px 20px',
-              overflowY: 'auto',
-              boxShadow: '0 20px 50px rgba(0,0,0,0.85)',
-              backdropFilter: 'blur(10px)'
+              width: isVerticalSplit ? '100%' : '12px',
+              height: isVerticalSplit ? '12px' : '100%',
+              flexShrink: 0,
+              background: isDraggingSplitter
+                ? 'rgba(56, 189, 248, 0.35)'
+                : 'rgba(15, 23, 42, 0.96)',
+              borderLeft: isVerticalSplit ? 'none' : '1px solid rgba(56, 189, 248, 0.28)',
+              borderRight: isVerticalSplit ? 'none' : '1px solid rgba(56, 189, 248, 0.28)',
+              borderTop: isVerticalSplit ? '1px solid rgba(56, 189, 248, 0.28)' : 'none',
+              borderBottom: isVerticalSplit ? '1px solid rgba(56, 189, 248, 0.28)' : 'none',
+              cursor: isVerticalSplit ? 'row-resize' : 'col-resize',
+              display: 'flex',
+              flexDirection: isVerticalSplit ? 'row' : 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '6px',
+              zIndex: 40,
+              userSelect: 'none'
             }}
           >
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '8px' }}>
-              <button
-                type="button"
-                className="btn-secondary"
-                onClick={() => setAnalysisResult(null)}
-                style={{ padding: '6px 14px', fontSize: '0.82rem', fontWeight: 800 }}
-              >
-                ✕ Fechar Memorial e Voltar ao Diagrama
-              </button>
-            </div>
-            <MasonDeductionView analysis={analysisResult} />
+            {/* Botão Discreto: Minimizar Circuito (Maximizar Cálculos) */}
+            <button
+              type="button"
+              onMouseDown={e => e.stopPropagation()}
+              onClick={e => {
+                e.stopPropagation();
+                setSplitMode('calc-maximized');
+              }}
+              style={{
+                background: 'rgba(30, 41, 59, 0.9)',
+                border: '1px solid rgba(56, 189, 248, 0.35)',
+                color: '#38bdf8',
+                borderRadius: '4px',
+                width: isVerticalSplit ? '22px' : '10px',
+                height: isVerticalSplit ? '10px' : '24px',
+                fontSize: '0.62rem',
+                padding: 0,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+              title="Minimizar Painel do Circuito (Maximizar Cálculos)"
+            >
+              {isVerticalSplit ? '▲' : '◀'}
+            </button>
+
+            {/* Indicador Central de Arraste */}
+            <div
+              style={{
+                width: isVerticalSplit ? '32px' : '4px',
+                height: isVerticalSplit ? '4px' : '32px',
+                borderRadius: '2px',
+                background: isDraggingSplitter ? '#38bdf8' : 'rgba(148, 163, 184, 0.5)'
+              }}
+            />
+
+            {/* Botão Discreto: Minimizar Cálculos (Maximizar Circuito) */}
+            <button
+              type="button"
+              onMouseDown={e => e.stopPropagation()}
+              onClick={e => {
+                e.stopPropagation();
+                setSplitMode('circuit-maximized');
+              }}
+              style={{
+                background: 'rgba(30, 41, 59, 0.9)',
+                border: '1px solid rgba(56, 189, 248, 0.35)',
+                color: '#38bdf8',
+                borderRadius: '4px',
+                width: isVerticalSplit ? '22px' : '10px',
+                height: isVerticalSplit ? '10px' : '24px',
+                fontSize: '0.62rem',
+                padding: 0,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+              title="Minimizar Painel dos Cálculos (Maximizar Circuito)"
+            >
+              {isVerticalSplit ? '▼' : '▶'}
+            </button>
           </div>
         )}
-      </section>
+
+        {/* ===============================================================
+            PAINEL 2 — DESENVOLVIMENTO DOS CÁLCULOS (PASSO A PASSO DE MASON)
+           =============================================================== */}
+        {analysisResult && splitMode !== 'circuit-maximized' && (
+          <section
+            data-testid="builder-calculations-panel"
+            aria-label="Painel 2 — Desenvolvimento dos Cálculos"
+            style={{
+              flex: 1,
+              minWidth: 0,
+              minHeight: 0,
+              height: isVerticalSplit ? undefined : '100%',
+              background: '#050914',
+              overflowY: 'auto',
+              overflowX: 'hidden',
+              padding: '14px 18px',
+              boxSizing: 'border-box',
+              position: 'relative',
+              zIndex: 35
+            }}
+          >
+            {/* Barra superior rápida quando o Painel 1 (Circuito) está temporariamente minimizado */}
+            {splitMode === 'calc-maximized' && (
+              <div
+                data-testid="restore-circuit-bar"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  flexWrap: 'wrap',
+                  gap: '8px',
+                  background: 'rgba(15, 23, 42, 0.92)',
+                  border: '1px solid rgba(56, 189, 248, 0.4)',
+                  borderRadius: '8px',
+                  padding: '8px 12px',
+                  marginBottom: '12px'
+                }}
+              >
+                <span style={{ fontSize: '0.76rem', fontWeight: 700, color: '#e2e8f0' }}>
+                  📐 Painel 1 (Circuito) está minimizado temporariamente
+                </span>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button
+                    type="button"
+                    className="filter-btn"
+                    onClick={() => setSplitMode('split')}
+                    style={{
+                      padding: '4px 10px',
+                      fontSize: '0.74rem',
+                      borderColor: '#38bdf8',
+                      color: '#38bdf8',
+                      fontWeight: 700
+                    }}
+                  >
+                    ⚖️ Restaurar Circuito + Cálculos
+                  </button>
+                  <button
+                    type="button"
+                    className="filter-btn"
+                    onClick={() => setSplitMode('circuit-maximized')}
+                    style={{ padding: '4px 10px', fontSize: '0.74rem' }}
+                  >
+                    🗖 Maximizar Circuito
+                  </button>
+                </div>
+              </div>
+            )}
+
+            <MasonDeductionView
+              analysis={analysisResult}
+              graph={analysisSnapshot?.graph || graph}
+              inputElement={analysisSnapshot?.inputEl}
+              outputElement={analysisSnapshot?.outputEl}
+              splitMode={splitMode}
+              onChangeSplitMode={setSplitMode}
+              onClose={() => {
+                setAnalysisResult(null);
+                setSplitMode('split');
+              }}
+            />
+          </section>
+        )}
+      </div>
 
       {/* Toast Flutuante */}
       {toastMessage && (

@@ -13,6 +13,7 @@ import {
 } from '../src/features/builder/layoutEngine';
 import { DiagramGraph, DiagramElement, computeMasonAnalysis } from '../src/core/reduction/mason';
 import { ratToLatex } from '../src/core/algebra/rational';
+import { formatElementSymbolToLatex } from '../src/features/builder/MasonDeductionView';
 
 describe('Layout Engine, 8-Point Compass Routing & 2-DOF Exercise Integration', () => {
   it('deve espaçar blocos de avanço garantindo distância mínima de 120px', () => {
@@ -210,5 +211,49 @@ describe('Layout Engine, 8-Point Compass Routing & 2-DOF Exercise Integration', 
 
     expect(b1.y).toBe(b2.y);
     expect(b3.y).toBe(310); // Permaneceu bloqueado
+  });
+
+  it('deve formatar símbolos matemáticos para LaTeX corretamente e identificar laços disjuntos no memorial', () => {
+    expect(formatElementSymbolToLatex('G1(s)')).toBe('G_{1}(s)');
+    expect(formatElementSymbolToLatex('Hf(s)')).toBe('H_{f}(s)');
+    expect(formatElementSymbolToLatex('ref(s)')).toBe('\\text{ref}(s)');
+    expect(formatElementSymbolToLatex('R(s)')).toBe('R(s)');
+    expect(formatElementSymbolToLatex('S1')).toBe('S_{1}');
+
+    // Sistema com 2 malhas disjuntas em série:
+    // IN -> S1 -> G1 -> S2 -> G2 -> OUT
+    // L1: G1 -> H1 -> S1 (-)
+    // L2: G2 -> H2 -> S2 (-)
+    const disjointGraph: DiagramGraph = {
+      elements: [
+        { id: 'IN', type: 'input', name: 'R(s)' },
+        { id: 's1', type: 'summer', name: 'S1' },
+        { id: 'g1', type: 'block', name: 'G1(s)', expr: '2' },
+        { id: 'h1', type: 'block', name: 'H1(s)', expr: '3', dir: 'left' },
+        { id: 's2', type: 'summer', name: 'S2' },
+        { id: 'g2', type: 'block', name: 'G2(s)', expr: '4' },
+        { id: 'h2', type: 'block', name: 'H2(s)', expr: '5', dir: 'left' },
+        { id: 'OUT', type: 'output', name: 'C(s)' }
+      ],
+      connections: [
+        { id: 'c1', from: 'IN', to: 's1', sign: '+' },
+        { id: 'c2', from: 's1', to: 'g1', sign: '+' },
+        { id: 'c3', from: 'g1', to: 'h1', sign: '+' },
+        { id: 'c4', from: 'h1', to: 's1', sign: '-' },
+        { id: 'c5', from: 'g1', to: 's2', sign: '+' },
+        { id: 'c6', from: 's2', to: 'g2', sign: '+' },
+        { id: 'c7', from: 'g2', to: 'h2', sign: '+' },
+        { id: 'c8', from: 'h2', to: 's2', sign: '-' },
+        { id: 'c9', from: 'g2', to: 'OUT', sign: '+' }
+      ]
+    };
+
+    const res = computeMasonAnalysis(disjointGraph);
+    expect(res.loops).toHaveLength(2);
+    expect(res.disjointPairs).toHaveLength(1);
+    // L1 = -6, L2 = -20, L1*L2 = 120 => Delta = 1 - (-6 - 20) + 120 = 147
+    // P1 = 2 * 4 = 8 => T(s) = 8 / 147
+    expect(ratToLatex(res.delta)).toBe('147');
+    expect(ratToLatex(res.totalT)).toBe('\\frac{8}{147}');
   });
 });
