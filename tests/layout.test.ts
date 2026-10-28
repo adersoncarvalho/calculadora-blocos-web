@@ -5,7 +5,11 @@ import {
   getElementEightPorts,
   getElementBoundingBox,
   splitTransferFunction,
-  combineTransferFunction
+  combineTransferFunction,
+  getDraggableSegments,
+  moveConnectionSegment,
+  validateTransferFunction,
+  alignElementsOnGrid
 } from '../src/features/builder/layoutEngine';
 import { DiagramGraph, DiagramElement, computeMasonAnalysis } from '../src/core/reduction/mason';
 import { ratToLatex } from '../src/core/algebra/rational';
@@ -144,5 +148,67 @@ describe('Layout Engine, 8-Point Compass Routing & 2-DOF Exercise Integration', 
     expect(analysisRef.loops).toHaveLength(1);
     expect(ratToLatex(analysisRef.totalT)).toContain('24');
     expect(ratToLatex(analysisRef.totalT)).toContain('13');
+  });
+
+  it('deve suportar blocos G(s) e H(s) inicialmente genéricos (vazios) e validar funções de transferência', () => {
+    expect(splitTransferFunction('')).toEqual({ num: '', den: '' });
+    expect(combineTransferFunction('', '')).toBe('');
+
+    const emptyCheck = validateTransferFunction('', '', '');
+    expect(emptyCheck.isEmpty).toBe(true);
+    expect(emptyCheck.valid).toBe(false);
+
+    const validCheck = validateTransferFunction('10/(s+2)', '10', 's+2');
+    expect(validCheck.isEmpty).toBe(false);
+    expect(validCheck.valid).toBe(true);
+
+    const invalidDenCheck = validateTransferFunction('10/0', '10', '0');
+    expect(invalidDenCheck.valid).toBe(false);
+  });
+
+  it('deve identificar segmentos arrastáveis e mover segmentos horizontais/verticais na grade de 20px preservando portas', () => {
+    const src: DiagramElement = { id: 'g1', type: 'block', name: 'G1(s)', x: 200, y: 220 };
+    const s1: DiagramElement = { id: 's1', type: 'summer', name: 'S1', x: 500, y: 220 };
+    const conn = { id: 'c_fb', from: 'g1', to: 's1', fromPort: 'S', toPort: 'S', sign: '-' as const };
+
+    const initialRoute = computeSmartConnectionPath(src, s1, conn, 0, 1, [src, s1]);
+    const segments = getDraggableSegments(initialRoute.points);
+    expect(segments.length).toBeGreaterThanOrEqual(1);
+
+    const horizSeg = segments.find(s => s.orientation === 'horizontal');
+    expect(horizSeg).toBeDefined();
+
+    // Arrastar segmento horizontal para Y = 363 -> deve alinhar na grade em 360 e preservar extremos nas portas
+    const movedPoints = moveConnectionSegment(initialRoute.points, horizSeg!.index, 363, [src, s1], 'g1', 's1');
+    expect(movedPoints[0]).toEqual(initialRoute.points[0]);
+    expect(movedPoints[movedPoints.length - 1]).toEqual(initialRoute.points[initialRoute.points.length - 1]);
+    expect(movedPoints.some(p => p.y === 360)).toBe(true);
+
+    // Verifica persistência via manualPoints mesmo após recalcular a rota
+    const persistedRoute = computeSmartConnectionPath(
+      src,
+      s1,
+      { ...conn, manualPoints: movedPoints.slice(1, -1) },
+      0,
+      1,
+      [src, s1]
+    );
+    expect(persistedRoute.points.some(p => p.y === 360)).toBe(true);
+  });
+
+  it('deve alinhar múltiplos elementos na grade respeitando elementos bloqueados (locked)', () => {
+    const elements: DiagramElement[] = [
+      { id: 'b1', type: 'block', name: 'G1(s)', x: 200, y: 180 },
+      { id: 'b2', type: 'block', name: 'G2(s)', x: 380, y: 260 },
+      { id: 'b3', type: 'block', name: 'G3(s)', x: 540, y: 310, locked: true }
+    ];
+
+    const aligned = alignElementsOnGrid(elements, ['b1', 'b2', 'b3'], 'align-y');
+    const b1 = aligned.find(e => e.id === 'b1')!;
+    const b2 = aligned.find(e => e.id === 'b2')!;
+    const b3 = aligned.find(e => e.id === 'b3')!;
+
+    expect(b1.y).toBe(b2.y);
+    expect(b3.y).toBe(310); // Permaneceu bloqueado
   });
 });
