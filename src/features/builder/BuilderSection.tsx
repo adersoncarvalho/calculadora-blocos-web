@@ -21,6 +21,7 @@ import {
   combineTransferFunction,
   validateTransferFunction,
   moveConnectionSegment,
+  moveConnectionCorner,
   alignElementsOnGrid,
   snapToGrid,
   snapPointToGrid,
@@ -29,13 +30,14 @@ import {
   GRID_SIZE
 } from './layoutEngine';
 import { MasonDeductionView, SplitPanelMode } from './MasonDeductionView';
+import { runMasonForInputTargetPair } from './symbolicMasonEngine';
 
 interface BuilderSectionProps {
   onBack: () => void;
   onOpenGuide?: () => void;
 }
 
-export type ActiveTool = 'select' | 'pan' | 'connect' | 'cut' | 'adjust' | 'delete';
+export type ActiveTool = 'select' | 'pan' | 'connect' | 'cut' | 'adjust' | 'delete' | 'polarity';
 
 interface ActiveDraftConnection {
   pendingConnId?: string;
@@ -136,6 +138,13 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
     connId: string;
     segmentIndex: number;
     orientation: 'horizontal' | 'vertical';
+    initialPoints: Point[];
+  } | null>(null);
+
+  // Arrastar Vértice de Curva/Passagem de Conexão na Grade 20px
+  const [draggingCorner, setDraggingCorner] = useState<{
+    connId: string;
+    cornerIndex: number;
     initialPoints: Point[];
   } | null>(null);
 
@@ -434,7 +443,7 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
     setSelectedConnId(null);
   };
 
-  // 4. Adicionar Bloco G(s) ou H(s) GENÉRICO (Sem função de transferência predefinida!)
+  // 4. Adicionar Bloco G(s) ou H(s) GENÉRICO (Valores iniciais unitários: num=1, den=1, expr=1)
   const handleAddBlock = (isFeedback = false) => {
     const prefix = isFeedback ? 'H' : 'G';
     const code = allocateExclusiveCode(prefix); // Ex: G1, G2, G3... / H1, H2, H3...
@@ -447,9 +456,10 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
       code, // Identificação interna exclusiva: G1, G2... / H1, H2...
       type: 'block',
       name: `${code}(s)`, // Nome exibido inicial: G1(s), G2(s)... / H1(s), H2(s)...
-      expr: '', // Função de transferência inicialmente vazia (não definida)
-      num: '', // Numerador inicialmente vazio
-      den: '', // Denominador inicialmente vazio
+      expr: '1', // Função de transferência inicial: 1
+      num: '1', // Numerador inicial: 1
+      den: '1', // Denominador inicial: 1
+      rat: parseRatExpr('1'),
       x: snapToGrid(300 + (count % 4) * 160, GRID_SIZE),
       y: snapToGrid(isFeedback ? 360 + (count % 2) * 80 : 240, GRID_SIZE),
       dir: isFeedback ? 'left' : 'right'
@@ -1243,10 +1253,20 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
       return;
     }
 
-    // 4. Modo Ajustar Conexão ou Cortar Conexão: não movimenta blocos!
-    if (activeTool === 'adjust' || activeTool === 'cut') {
+    // 4. Modo Ajustar Conexão, Cortar Conexão ou Configurar Polaridade: não movimenta blocos!
+    if (activeTool === 'adjust' || activeTool === 'cut' || activeTool === 'polarity') {
       setSelectedId(id);
       setSelectedConnId(null);
+      const clickedEl = graph.elements.find(el => el.id === id);
+      if (activeTool === 'polarity' && clickedEl?.type === 'summer') {
+        const inc = graph.connections.filter(c => !c.isPending && c.to === id);
+        if (inc.length === 1) {
+          const nextSign = inc[0].sign === '-' ? '+' : '-';
+          handleSetConnectionSign(inc[0].id, nextSign);
+        } else if (isSidebarCollapsed) {
+          setIsSidebarCollapsed(false);
+        }
+      }
       return;
     }
 
@@ -1326,6 +1346,13 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
       return;
     }
 
+    if (activeTool === 'polarity') {
+      setSelectedConnId(conn.id);
+      setSelectedIds([]);
+      handleSetConnectionSign(conn.id, conn.sign === '-' ? '+' : '-');
+      return;
+    }
+
     if (activeTool === 'connect' && !activeDraft) {
       const clickPt = getLogicalCoordinates(e.clientX, e.clientY);
       setActiveDraft({
@@ -1345,6 +1372,33 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
       connId: conn.id,
       segmentIndex,
       orientation,
+      initialPoints: currentPoints.map(p => ({ ...p }))
+    });
+  };
+
+  // Iniciar arraste manual de uma dobra/vértice intermediário de uma conexão
+  const handleCornerMouseDown = (
+    e: React.MouseEvent,
+    conn: DiagramConnection,
+    pointIndex: number,
+    currentPoints: Point[]
+  ) => {
+    e.stopPropagation();
+    setContextMenu(null);
+    if (e.button !== 0) return;
+
+    if (activeTool === 'cut' || activeTool === 'delete') {
+      handleDeleteById([], conn.id);
+      return;
+    }
+
+    if (activeTool !== 'adjust' && activeTool !== 'select') return;
+
+    setSelectedConnId(conn.id);
+    setSelectedIds([]);
+    setDraggingCorner({
+      connId: conn.id,
+      cornerIndex: pointIndex,
       initialPoints: currentPoints.map(p => ({ ...p }))
     });
   };
@@ -1411,7 +1465,28 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
       return;
     }
 
-    // 2. Movimentação Manual de Segmento Horizontal ou Vertical de Conexão (Alinhado à Grade de 20px)
+    // 2. Movimentação Manual de Dobra/Vértice de Conexão (Alinhado à Grade de 20px)
+    if (draggingCorner) {
+      setGraph(prev => ({
+        ...prev,
+        connections: prev.connections.map(c => {
+          if (c.id !== draggingCorner.connId) return c;
+          const updatedPts = moveConnectionCorner(
+            draggingCorner.initialPoints,
+            draggingCorner.cornerIndex,
+            logicalPt
+          );
+          const interior = updatedPts.slice(1, updatedPts.length - 1);
+          return {
+            ...c,
+            manualPoints: interior
+          };
+        })
+      }));
+      return;
+    }
+
+    // 2b. Movimentação Manual de Segmento Horizontal ou Vertical de Conexão (Alinhado à Grade de 20px)
     if (draggingSegment) {
       const targetCoord =
         draggingSegment.orientation === 'horizontal' ? logicalPt.y : logicalPt.x;
@@ -1525,6 +1600,10 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
     if (isPanning) {
       setIsPanning(false);
     }
+    if (draggingCorner) {
+      setDraggingCorner(null);
+      pushHistory(graph);
+    }
     if (draggingSegment) {
       setDraggingSegment(null);
       pushHistory(graph);
@@ -1594,30 +1673,7 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
     const chosenOutput = outputs.find(o => o.id === activeOutputId) || outputs[0];
 
     try {
-      const idMap = new Map<string, string>();
-      graph.elements.forEach(el => {
-        if (el.id === chosenInput.id) idMap.set(el.id, 'IN');
-        else if (el.id === chosenOutput.id) idMap.set(el.id, 'OUT');
-        else idMap.set(el.id, el.id);
-      });
-
-      const mappedGraph: DiagramGraph = {
-        elements: graph.elements
-          .filter(el => el.type !== 'input' || el.id === chosenInput.id)
-          .map(el => ({
-            ...el,
-            id: idMap.get(el.id) || el.id
-          })),
-        connections: graph.connections
-          .filter(c => !c.isPending && c.to && idMap.has(c.from) && idMap.has(c.to))
-          .map(c => ({
-            ...c,
-            from: idMap.get(c.from) || c.from,
-            to: idMap.get(c.to) || c.to
-          }))
-      };
-
-      const result = computeMasonAnalysis(mappedGraph);
+      const result = runMasonForInputTargetPair(graph, chosenInput.id, chosenOutput.id);
       if (result.forwardPaths.length === 0) {
         showToast(`⚠️ Não há caminho contínuo conectado entre ${chosenInput.name} e ${chosenOutput.name}.`);
         return;
@@ -1625,7 +1681,7 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
 
       setAnalysisResult(result);
       setAnalysisSnapshot({
-        graph: mappedGraph,
+        graph,
         inputEl: chosenInput,
         outputEl: chosenOutput
       });
@@ -1636,6 +1692,29 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
       showToast('⚠️ Erro ao calcular a redução de Mason. Verifique as expressões e conexões.');
     }
   };
+
+  // Mantém o memorial matemático sincronizado em tempo real caso o usuário altere polaridades ou ganhos com o painel aberto
+  useEffect(() => {
+    if (!analysisResult || !analysisSnapshot) return;
+    const inputs = graph.elements.filter(e => e.type === 'input');
+    const outputs = graph.elements.filter(e => e.type === 'output');
+    if (inputs.length === 0 || outputs.length === 0) return;
+    const chosenInput = inputs.find(i => i.id === activeInputId) || inputs[0];
+    const chosenOutput = outputs.find(o => o.id === activeOutputId) || outputs[0];
+    try {
+      const updatedResult = runMasonForInputTargetPair(graph, chosenInput.id, chosenOutput.id);
+      if (updatedResult.forwardPaths.length > 0) {
+        setAnalysisResult(updatedResult);
+        setAnalysisSnapshot({
+          graph,
+          inputEl: chosenInput,
+          outputEl: chosenOutput
+        });
+      }
+    } catch {
+      // ignora durante edições transitórias
+    }
+  }, [graph, activeInputId, activeOutputId]);
 
   // Cursor contextual da Área Central conforme a ferramenta ativa
   const getCanvasCursor = (): string => {
@@ -1653,6 +1732,8 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
         return 'not-allowed';
       case 'adjust':
         return 'default';
+      case 'polarity':
+        return 'pointer';
       default:
         return 'default';
     }
@@ -1698,7 +1779,14 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
       id: 'adjust',
       icon: '✥',
       label: 'Ajustar Conexão',
-      tooltip: 'Ajustar Conexão: arraste manualmente os segmentos horizontais e verticais das linhas na grade de 20px'
+      tooltip: 'Ajustar Conexão: arraste manualmente os segmentos horizontais e verticais ou dobras das linhas na grade de 20px'
+    },
+    {
+      id: 'polarity',
+      icon: '±',
+      label: 'Configurar Polaridade',
+      tooltip: 'Configurar Polaridade: clique em uma linha conectada a um somador ou no sinal +/- para alternar entre entrada positiva (+) e negativa (−)',
+      accentColor: '#10b981'
     },
     {
       id: 'cut',
@@ -3235,7 +3323,8 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
               if (!conn.isPending && !tgt) return null;
 
               const isSelected = conn.id === selectedConnId;
-              const isDraggingThis = draggingSegment?.connId === conn.id;
+              const isDraggingThis =
+                draggingSegment?.connId === conn.id || draggingCorner?.connId === conn.id;
               const isCutHovered =
                 (activeTool === 'cut' || activeTool === 'delete') && hoveredConnId === conn.id;
 
@@ -3249,7 +3338,8 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
               );
 
               const showSegmentHandles =
-                !conn.isPending && (activeTool === 'adjust' || isSelected || isDraggingThis);
+                !conn.isPending &&
+                (activeTool === 'adjust' || isSelected || isDraggingThis || hoveredConnId === conn.id);
 
               return (
                 <g
@@ -3261,6 +3351,12 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
                     e.stopPropagation();
                     if (activeTool === 'cut' || activeTool === 'delete') {
                       handleDeleteById([], conn.id);
+                      return;
+                    }
+                    if (activeTool === 'polarity') {
+                      setSelectedConnId(conn.id);
+                      setSelectedId(null);
+                      handleSetConnectionSign(conn.id, conn.sign === '-' ? '+' : '-');
                       return;
                     }
                     if (activeDraft) return;
@@ -3315,7 +3411,9 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
                         ? 'pointer'
                         : activeTool === 'delete'
                         ? 'not-allowed'
-                        : activeTool === 'adjust' || isSelected
+                        : activeTool === 'polarity'
+                        ? 'pointer'
+                        : activeTool === 'adjust' || isSelected || hoveredConnId === conn.id
                         ? seg.orientation === 'horizontal'
                           ? 'ns-resize'
                           : 'ew-resize'
@@ -3366,6 +3464,30 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
                       </g>
                     );
                   })}
+
+                  {/* Vértices / Dobras Intermediárias Individualmente Arrastáveis */}
+                  {showSegmentHandles &&
+                    points.slice(1, points.length - 1).map((cornerPt, cIdx) => {
+                      const pointIndex = cIdx + 1;
+                      return (
+                        <g
+                          key={`${conn.id}_corner_${pointIndex}`}
+                          data-testid={`conn-corner-${conn.id}-${pointIndex}`}
+                          onMouseDown={e => handleCornerMouseDown(e, conn, pointIndex, points)}
+                          style={{ cursor: 'move' }}
+                        >
+                          <title>Dobra da linha: arraste para reposicionar este vértice na grade de 20px</title>
+                          <circle
+                            cx={cornerPt.x}
+                            cy={cornerPt.y}
+                            r="5.5"
+                            fill={isSelected || isDraggingThis ? '#f59e0b' : '#38bdf8'}
+                            stroke="#ffffff"
+                            strokeWidth="1.5"
+                          />
+                        </g>
+                      );
+                    })}
 
                   {/* Bolinha de Conexão Interrompida / Pendente */}
                   {conn.isPending && (
@@ -3482,13 +3604,17 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
 
               const elementCursor =
                 activeTool === 'select'
-                  ? el.locked
-                    ? 'pointer'
-                    : 'move'
+                  ? draggingIds.includes(el.id)
+                    ? 'grabbing'
+                    : isSelected && !el.locked
+                    ? 'grab'
+                    : 'pointer'
                   : activeTool === 'pan'
                   ? 'grab'
                   : activeTool === 'connect'
                   ? 'crosshair'
+                  : activeTool === 'polarity'
+                  ? 'pointer'
                   : activeTool === 'delete'
                   ? 'not-allowed'
                   : 'default';

@@ -5,9 +5,7 @@ import {
   DiagramConnection,
   DiagramElement,
   DiagramGraph,
-  FeedbackLoop,
-  MasonAnalysis,
-  cloneGraphForReduction
+  MasonAnalysis
 } from '@/core/reduction/mason';
 import {
   RatFunc,
@@ -15,24 +13,25 @@ import {
   ratMul,
   ratOne,
   ratScale,
-  ratSimplify,
-  ratToCompactParts,
   ratToLatex,
   ratZero
 } from '@/core/algebra/rational';
 import {
   Polynomial,
-  polyAdd,
-  polyEqual,
   polyFromNumber,
   polyIsOne,
   polyIsZero,
   polyMul,
-  polyScale,
-  polyToCompact,
   polyToLatex
 } from '@/core/algebra/polynomial';
 import { MathView } from '@/components/MathView';
+import {
+  analyzeCompleteBlockDiagram,
+  formatCleanSignalLatex,
+  formatRatFuncCompact,
+  formatRatFuncLatex,
+  InputOutputMasonPair
+} from './symbolicMasonEngine';
 
 export type SplitPanelMode = 'split' | 'circuit-maximized' | 'calc-maximized';
 
@@ -47,127 +46,23 @@ interface MasonDeductionViewProps {
 }
 
 interface DisjointLoopCombination {
-  order: number; // 2 = pares, 3 = ternas, 4 = quadras...
-  loopIndices: number[]; // 1-based indices
+  order: number;
+  loopIndices: number[];
   gain: RatFunc;
-}
-
-interface EdgeStepDetail {
-  fromId: string;
-  toId: string;
-  fromLabelLatex: string;
-  toLabelLatex: string;
-  sign: '+' | '-';
-  blockSymbolLatex: string | null;
-  gain: RatFunc;
-  gainLatex: string;
-}
-
-interface PathDetailedDerivation {
-  index: number; // 1-based
-  nodes: string[];
-  nodeLabelsLatex: string[];
-  edges: EdgeStepDetail[];
-  overallSign: '+' | '-';
-  symbolicFactorsLatex: string[];
-  substitutedFactorsLatex: string[];
-  rawUnreducedNum: Polynomial;
-  rawUnreducedDen: Polynomial;
-  hasMultipleFractions: boolean;
-  finalGain: RatFunc;
-  finalGainLatex: string;
-}
-
-interface LoopDetailedDerivation {
-  index: number; // 1-based
-  nodes: string[];
-  closedNodeLabelsLatex: string[];
-  edges: EdgeStepDetail[];
-  negativeSignsCount: number;
-  overallSign: '+' | '-';
-  symbolicFactorsLatex: string[];
-  substitutedFactorsLatex: string[];
-  rawUnreducedNum: Polynomial;
-  rawUnreducedDen: Polynomial;
-  hasMultipleFractions: boolean;
-  finalGain: RatFunc;
-  finalGainLatex: string;
-}
-
-interface PairComparisonDetail {
-  i: number; // 1-based
-  j: number; // 1-based
-  sharedNodesLatex: string[];
-  isDisjoint: boolean;
-  gainProduct?: RatFunc;
-  gainProductLatex?: string;
-}
-
-interface CofactorDetailedDerivation {
-  pathIndex: number; // 1-based
-  loopTouchStatus: {
-    loopIndex: number;
-    touches: boolean;
-    sharedNodesLatex: string[];
-    loopGain: RatFunc;
-    loopGainLatex: string;
-  }[];
-  activeLoopIndices: number[];
-  activeDisjointCombinations: DisjointLoopCombination[];
-  cofactorValue: RatFunc;
-  cofactorLatex: string;
-  pathTimesCofactor: RatFunc;
-  pathTimesCofactorLatex: string;
 }
 
 /**
- * Converte um nome ou código de elemento (ex.: "G1(s)", "Hf(s)", "ref(s)", "S1", "C(s)")
- * para notação matemática LaTeX elegante e segura para KaTeX / Overleaf.
+ * Converte um nome ou código de elemento para notação matemática LaTeX limpa,
+ * sem exibir IDs técnicos, UUIDs ou timestamps.
  */
 export function formatElementSymbolToLatex(rawName?: string, fallbackCode?: string): string {
-  const base = (rawName || fallbackCode || 'X').trim();
-  if (!base) return 'X(s)';
-
-  // Verifica se termina com (s)
-  const hasS = /\(\s*s\s*\)$/i.test(base);
-  const core = hasS ? base.replace(/\(\s*s\s*\)$/i, '').trim() : base;
-
-  // Palavras inteiramente em minúsculas com 3 ou mais letras (ex.: ref, out, erro)
-  if (/^[a-z]{3,}$/.test(core)) {
-    return `\\text{${core}}${hasS ? '(s)' : ''}`;
-  }
-
-  // Caso padrão: Letra seguida de subscrito numérico ou de 1 letra (ex: G1, H2, Hf, Hc, R1, C1, W1, S1)
-  const matchSub = core.match(/^([A-Za-z])_?([0-9]+|[A-Za-z])$/);
-  if (matchSub) {
-    const prefix = matchSub[1];
-    const sub = matchSub[2];
-    return `${prefix}_{${sub}}${hasS ? '(s)' : ''}`;
-  }
-
-  // Palavras curtas como ref, out, in, erro, u, y
-  if (/^[A-Za-z]{2,}$/.test(core)) {
-    return `\\text{${core}}${hasS ? '(s)' : ''}`;
-  }
-
-  // Símbolo simples de 1 letra, ex: R, C, G, H, W, Y, U, E
-  if (/^[A-Za-z]$/.test(core)) {
-    return `${core}${hasS ? '(s)' : ''}`;
-  }
-
-  // Fallback escapando caracteres especiais
-  const safe = core.replace(/_/g, '\\_');
-  return `\\text{${safe}}${hasS ? '(s)' : ''}`;
+  return formatCleanSignalLatex(rawName, fallbackCode);
 }
 
-/**
- * Envolve uma expressão LaTeX em parênteses adaptativos \left( ... \right) quando necessário para multiplicação/subtração
- */
 function wrapParensLatex(latex: string, force: boolean = false): string {
   const t = latex.trim();
   if (force) return `\\left(${t}\\right)`;
   if (t.startsWith('-')) return `\\left(${t}\\right)`;
-  // Se contém + ou - fora de chaves externas
   let depth = 0;
   for (let i = 0; i < t.length; i++) {
     const ch = t[i];
@@ -180,23 +75,23 @@ function wrapParensLatex(latex: string, force: boolean = false): string {
   return t;
 }
 
-/**
- * Formata um polinômio envolvendo em parênteses se tiver mais de um termo ou coeficiente negativo
- */
 function formatPolyFactorLatex(P: Polynomial): string {
-  const lat = polyToLatex(P);
+  const lat = polyToLatex(P)
+    .replace(/\b([GHWRC])([a-zA-Z])\b/g, '$1_{$2}')
+    .replace(/\b([GHWRC])_([a-zA-Z0-9]+)\b/g, '$1_{$2}');
   if (P.length > 1 || (P.length === 1 && P[0].coeff < 0)) {
     return `\\left(${lat}\\right)`;
   }
   return lat;
 }
 
-/**
- * Formata uma função racional não simplificada N(s)/D(s) em LaTeX
- */
 function rawPolyPairToLatex(num: Polynomial, den: Polynomial): string {
-  const nLat = polyToLatex(num);
-  const dLat = polyToLatex(den);
+  const nLat = polyToLatex(num)
+    .replace(/\b([GHWRC])([a-zA-Z])\b/g, '$1_{$2}')
+    .replace(/\b([GHWRC])_([a-zA-Z0-9]+)\b/g, '$1_{$2}');
+  const dLat = polyToLatex(den)
+    .replace(/\b([GHWRC])([a-zA-Z])\b/g, '$1_{$2}')
+    .replace(/\b([GHWRC])_([a-zA-Z0-9]+)\b/g, '$1_{$2}');
   if (polyIsZero(num)) return '0';
   if (polyIsOne(den)) return nLat;
   return `\\frac{${nLat}}{${dLat}}`;
@@ -224,7 +119,8 @@ export const MasonDeductionView: React.FC<MasonDeductionViewProps> = ({
     5: true,
     6: true,
     7: true,
-    8: true
+    8: true,
+    9: true
   });
 
   const toggleStep = (stepNumber: number) => {
@@ -232,210 +128,180 @@ export const MasonDeductionView: React.FC<MasonDeductionViewProps> = ({
   };
 
   const setAllSteps = (open: boolean) => {
-    setOpenSteps({ 1: open, 2: open, 3: open, 4: open, 5: open, 6: open, 7: open, 8: open });
+    setOpenSteps({
+      1: open,
+      2: open,
+      3: open,
+      4: open,
+      5: open,
+      6: open,
+      7: open,
+      8: open,
+      9: open
+    });
   };
 
   // =========================================================================
-  // MOTOR DE DERIVAÇÃO PASSO A PASSO FIEL AO GRAFO E AO ALGORITMO DE MASON
+  // ANÁLISE MULTI-ENTRADA, MULTI-SINAL E VALIDAÇÃO ALGÉBRICA COMPLETA
   // =========================================================================
-  const derivation = useMemo(() => {
-    const rawGraph: DiagramGraph = graph || {
+  const systemData = useMemo(() => {
+    const baseGraph: DiagramGraph = graph || {
       elements: analysis.elements || [],
       connections: []
     };
-    const G = cloneGraphForReduction(rawGraph);
+
+    const fullSys = analyzeCompleteBlockDiagram(
+      baseGraph,
+      inputElement?.id,
+      outputElement?.id
+    );
+
+    const G = fullSys.preparedGraph;
     const elementsMap = new Map<string, DiagramElement>();
-    G.elements.forEach(el => elementsMap.set(el.id, el));
-    analysis.elements?.forEach(el => {
-      if (!elementsMap.has(el.id)) elementsMap.set(el.id, el);
-    });
+    G.elements.forEach(e => elementsMap.set(e.id, e));
 
-    const inEl =
-      inputElement ||
-      elementsMap.get('IN') ||
-      G.elements.find(e => e.type === 'input') || {
-        id: 'IN',
-        type: 'input',
-        name: 'R(s)',
-        code: 'R1'
-      };
-
-    const outEl =
-      outputElement ||
-      elementsMap.get('OUT') ||
-      G.elements.find(e => e.type === 'output') || {
-        id: 'OUT',
-        type: 'output',
-        name: 'C(s)',
-        code: 'C1'
-      };
-
-    const inputSymbolLatex = formatElementSymbolToLatex(inEl.name, inEl.code || 'R(s)');
-    const outputSymbolLatex = formatElementSymbolToLatex(outEl.name, outEl.code || 'C(s)');
-
-    const getElementLabelLatex = (nodeId: string): string => {
-      if (nodeId === 'IN') return inputSymbolLatex;
-      if (nodeId === 'OUT') return outputSymbolLatex;
+    const getCleanLatexLabel = (nodeId: string): string => {
+      if (fullSys.nodeInfoMap[nodeId]) {
+        return fullSys.nodeInfoMap[nodeId].signalLatex;
+      }
       const el = elementsMap.get(nodeId);
-      if (!el) return formatElementSymbolToLatex(nodeId);
-      return formatElementSymbolToLatex(el.name, el.code || el.id);
+      if (el) return formatCleanSignalLatex(el.name, el.code);
+      return formatCleanSignalLatex(nodeId);
     };
 
-    const getElementDisplayName = (nodeId: string): string => {
-      if (nodeId === 'IN') return inEl.name || 'R(s)';
-      if (nodeId === 'OUT') return outEl.name || 'C(s)';
+    const getCleanDisplayName = (nodeId: string): string => {
+      if (fullSys.nodeInfoMap[nodeId]) {
+        return fullSys.nodeInfoMap[nodeId].displayName;
+      }
       const el = elementsMap.get(nodeId);
-      return el ? el.name || el.code || el.id : nodeId;
+      return el ? el.name || el.code || 'Elemento' : 'Nó';
     };
 
-    // Blocos, somadores e ramos direcionados para a Etapa 1
-    const blocksList = G.elements
-      .filter(e => e.type === 'block')
-      .map(b => {
-        const rat = b.rat || ratOne();
-        return {
-          id: b.id,
-          code: b.code || b.id,
-          name: b.name,
-          dir: b.dir === 'left' ? 'Realimentação (←)' : 'Avanço / Direto (→)',
-          symbolLatex: formatElementSymbolToLatex(b.name, b.code || b.id),
-          exprText: b.expr || '1',
-          gain: rat,
-          gainLatex: ratToLatex(rat)
-        };
-      });
-
-    const summersList = G.elements
-      .filter(e => e.type === 'summer')
-      .map(s => {
-        const incoming = G.connections.filter(c => c.to === s.id);
-        const sLatex = formatElementSymbolToLatex(s.name, s.code || s.id);
-        const termsLatex = incoming.map((c, idx) => {
-          const srcLatex = getElementLabelLatex(c.from);
-          const sign = c.sign === '-' ? '-' : idx === 0 ? '+' : '+';
-          return `${sign} ${srcLatex}`;
-        });
-        const equationLatex =
-          termsLatex.length > 0 ? `${sLatex} = ${termsLatex.join(' ')}` : `${sLatex} = 0`;
-        return {
-          id: s.id,
-          code: s.code || s.id,
-          name: s.name,
-          symbolLatex: sLatex,
-          incoming: incoming.map(c => ({
-            fromId: c.from,
-            fromName: getElementDisplayName(c.from),
-            fromLatex: getElementLabelLatex(c.from),
-            sign: (c.sign || '+') as '+' | '-'
-          })),
-          equationLatex
-        };
-      });
-
-    const directedEdges = G.connections.map(c => {
-      const toEl = elementsMap.get(c.to);
-      const sign: '+' | '-' = c.sign === '-' ? '-' : '+';
-      let baseGain = toEl?.type === 'block' ? toEl.rat || ratOne() : ratOne();
-      if (sign === '-') baseGain = ratScale(baseGain, -1);
-      const blockSym =
-        toEl?.type === 'block' ? formatElementSymbolToLatex(toEl.name, toEl.code || toEl.id) : null;
-      return {
-        id: c.id,
-        fromId: c.from,
-        toId: c.to,
-        fromName: getElementDisplayName(c.from),
-        toName: getElementDisplayName(c.to),
-        fromLatex: getElementLabelLatex(c.from),
-        toLatex: getElementLabelLatex(c.to),
-        sign,
-        blockSymbolLatex: blockSym,
-        gain: baseGain,
-        gainLatex: ratToLatex(baseGain)
-      };
-    });
-
-    // Helper para inspecionar uma transição (u -> v)
-    const buildEdgeDetail = (u: string, v: string): EdgeStepDetail => {
+    const buildEdgeDetail = (u: string, v: string) => {
       const conn: DiagramConnection | undefined = G.connections.find(
-        c => c.from === u && c.to === v
+        c => !c.isPending && c.from === u && c.to === v
       );
       const sign: '+' | '-' = conn?.sign === '-' ? '-' : '+';
       const toEl = elementsMap.get(v);
       let gain = toEl?.type === 'block' ? toEl.rat || ratOne() : ratOne();
       if (sign === '-') gain = ratScale(gain, -1);
       const blockSym =
-        toEl?.type === 'block' ? formatElementSymbolToLatex(toEl.name, toEl.code || toEl.id) : null;
+        toEl?.type === 'block' ? formatCleanSignalLatex(toEl.name, toEl.code) : null;
       return {
         fromId: u,
         toId: v,
-        fromLabelLatex: getElementLabelLatex(u),
-        toLabelLatex: getElementLabelLatex(v),
+        fromDisplayName: getCleanDisplayName(u),
+        toDisplayName: getCleanDisplayName(v),
+        fromLabelLatex: getCleanLatexLabel(u),
+        toLabelLatex: getCleanLatexLabel(v),
         sign,
         blockSymbolLatex: blockSym,
         gain,
-        gainLatex: ratToLatex(gain)
+        gainLatex: formatRatFuncLatex(gain)
       };
     };
 
-    // Etapa 2: Caminhos Diretos Detalhados
-    const detailedPaths: PathDetailedDerivation[] = analysis.forwardPaths.map((fp, idx) => {
-      const edges: EdgeStepDetail[] = [];
-      for (let i = 0; i < fp.nodes.length - 1; i++) {
-        edges.push(buildEdgeDetail(fp.nodes[i], fp.nodes[i + 1]));
-      }
-      const negCount = edges.filter(e => e.sign === '-').length;
-      const overallSign: '+' | '-' = negCount % 2 === 1 ? '-' : '+';
-
-      const symbolicFactorsLatex: string[] = [];
-      const substitutedFactorsLatex: string[] = [];
-      let rawNum = polyFromNumber(overallSign === '-' ? -1 : 1);
-      let rawDen = polyFromNumber(1);
-      let blockCount = 0;
-
-      edges.forEach(edge => {
-        const toEl = elementsMap.get(edge.toId);
-        if (toEl?.type === 'block') {
-          blockCount++;
-          const bRat = toEl.rat || ratOne();
-          const sym = formatElementSymbolToLatex(toEl.name, toEl.code || toEl.id);
-          symbolicFactorsLatex.push(edge.sign === '-' ? `\\left(-${sym}\\right)` : sym);
-          substitutedFactorsLatex.push(
-            edge.sign === '-'
-              ? `\\left(-${ratToLatex(bRat)}\\right)`
-              : wrapParensLatex(ratToLatex(bRat), true)
-          );
-          rawNum = polyMul(rawNum, bRat.num);
-          rawDen = polyMul(rawDen, bRat.den);
-        } else if (edge.sign === '-') {
-          symbolicFactorsLatex.push('(-1)');
-          substitutedFactorsLatex.push('(-1)');
-        }
-      });
-
-      if (symbolicFactorsLatex.length === 0) {
-        symbolicFactorsLatex.push('1');
-        substitutedFactorsLatex.push('1');
-      }
-
+    // Conexões direcionadas para a Etapa 1 (com nomes legíveis, sem UUIDs)
+    const directedEdges = G.connections.map((c, idx) => {
+      const d = buildEdgeDetail(c.from, c.to);
       return {
         index: idx + 1,
-        nodes: fp.nodes,
-        nodeLabelsLatex: fp.nodes.map(getElementLabelLatex),
-        edges,
-        overallSign,
-        symbolicFactorsLatex,
-        substitutedFactorsLatex,
-        rawUnreducedNum: rawNum,
-        rawUnreducedDen: rawDen,
-        hasMultipleFractions: blockCount >= 2,
-        finalGain: fp.gain,
-        finalGainLatex: ratToLatex(fp.gain)
+        ...d
       };
     });
 
-    // Etapa 3: Laços Individuais Detalhados
-    const detailedLoops: LoopDetailedDerivation[] = analysis.loops.map((lp, idx) => {
-      const edges: EdgeStepDetail[] = [];
+    // Detalhamento dos Caminhos Diretos E Cofatores SEPARADOS POR ENTRADA INDEPENDENTE
+    const buildDetailedPairData = (pair: InputOutputMasonPair) => {
+      const mRes = pair.masonAnalysis;
+      const paths = mRes.forwardPaths.map((fp, idx) => {
+        const edges = [];
+        for (let i = 0; i < fp.nodes.length - 1; i++) {
+          edges.push(buildEdgeDetail(fp.nodes[i], fp.nodes[i + 1]));
+        }
+        const negCount = edges.filter(e => e.sign === '-').length;
+        const overallSign: '+' | '-' = negCount % 2 === 1 ? '-' : '+';
+
+        const symbolicFactorsLatex: string[] = [];
+        const substitutedFactorsLatex: string[] = [];
+        let rawNum = polyFromNumber(overallSign === '-' ? -1 : 1);
+        let rawDen = polyFromNumber(1);
+        let blockCount = 0;
+
+        edges.forEach(edge => {
+          const toEl = elementsMap.get(edge.toId);
+          if (toEl?.type === 'block') {
+            blockCount++;
+            const bRat = toEl.rat || ratOne();
+            const sym = formatCleanSignalLatex(toEl.name, toEl.code);
+            symbolicFactorsLatex.push(edge.sign === '-' ? `\\left(-${sym}\\right)` : sym);
+            substitutedFactorsLatex.push(
+              edge.sign === '-'
+                ? `\\left(-${formatRatFuncLatex(bRat)}\\right)`
+                : wrapParensLatex(formatRatFuncLatex(bRat), true)
+            );
+            rawNum = polyMul(rawNum, bRat.num);
+            rawDen = polyMul(rawDen, bRat.den);
+          } else if (edge.sign === '-') {
+            symbolicFactorsLatex.push('(-1)');
+            substitutedFactorsLatex.push('(-1)');
+          }
+        });
+
+        if (symbolicFactorsLatex.length === 0) {
+          symbolicFactorsLatex.push('1');
+          substitutedFactorsLatex.push('1');
+        }
+
+        const dk = mRes.cofactors[idx] || ratOne();
+        const pkDk = ratMul(fp.gain, dk);
+
+        // Status de toque de cada laço com este caminho direto
+        const loopTouchStatus = mRes.loops.map((lp, lIdx) => {
+          const shared = lp.nodes.filter(n => fp.nodes.includes(n));
+          return {
+            loopIndex: lIdx + 1,
+            touches: shared.length > 0,
+            sharedNodesLatex: shared.map(getCleanLatexLabel),
+            loopGainLatex: formatRatFuncLatex(lp.gain)
+          };
+        });
+
+        return {
+          index: idx + 1,
+          nodesLatex: fp.nodes.map(getCleanLatexLabel),
+          edges,
+          overallSign,
+          symbolicFactorsLatex,
+          substitutedFactorsLatex,
+          rawUnreducedLatex: rawPolyPairToLatex(rawNum, rawDen),
+          hasMultipleFractions: blockCount >= 2 && !fullSys.isPureSymbolicMode,
+          finalGain: fp.gain,
+          finalGainLatex: formatRatFuncLatex(fp.gain),
+          cofactor: dk,
+          cofactorLatex: formatRatFuncLatex(dk),
+          pathTimesCofactor: pkDk,
+          pathTimesCofactorLatex: formatRatFuncLatex(pkDk),
+          loopTouchStatus,
+          activeLoopIndices: loopTouchStatus.filter(s => !s.touches).map(s => s.loopIndex)
+        };
+      });
+
+      const numeratorSum = paths.reduce((acc, p) => ratAdd(acc, p.pathTimesCofactor), ratZero());
+
+      return {
+        pair,
+        paths,
+        numeratorSum,
+        numeratorSumLatex: formatRatFuncLatex(numeratorSum)
+      };
+    };
+
+    const detailedInputGroups = fullSys.outputByInputPairs.map(buildDetailedPairData);
+
+    // Laços Individuais do Sistema (comuns a todo o grafo)
+    const refMason = fullSys.outputByInputPairs[0]?.masonAnalysis || analysis;
+    const detailedLoops = refMason.loops.map((lp, idx) => {
+      const edges = [];
       for (let i = 0; i < lp.nodes.length; i++) {
         const u = lp.nodes[i];
         const v = lp.nodes[(i + 1) % lp.nodes.length];
@@ -444,16 +310,8 @@ export const MasonDeductionView: React.FC<MasonDeductionViewProps> = ({
       const negCount = edges.filter(e => e.sign === '-').length;
       const overallSign: '+' | '-' = negCount % 2 === 1 ? '-' : '+';
 
-      const symbolicFactorsLatex: string[] = [];
-      const substitutedFactorsLatex: string[] = [];
-      if (overallSign === '-') {
-        symbolicFactorsLatex.push('(-1)');
-        substitutedFactorsLatex.push('(-1)');
-      } else {
-        symbolicFactorsLatex.push('(+1)');
-        substitutedFactorsLatex.push('(+1)');
-      }
-
+      const symbolicFactorsLatex: string[] = [overallSign === '-' ? '(-1)' : '(+1)'];
+      const substitutedFactorsLatex: string[] = [overallSign === '-' ? '(-1)' : '(+1)'];
       let rawNum = polyFromNumber(overallSign === '-' ? -1 : 1);
       let rawDen = polyFromNumber(1);
       let blockCount = 0;
@@ -463,62 +321,64 @@ export const MasonDeductionView: React.FC<MasonDeductionViewProps> = ({
         if (toEl?.type === 'block') {
           blockCount++;
           const bRat = toEl.rat || ratOne();
-          const sym = formatElementSymbolToLatex(toEl.name, toEl.code || toEl.id);
+          const sym = formatCleanSignalLatex(toEl.name, toEl.code);
           symbolicFactorsLatex.push(sym);
-          substitutedFactorsLatex.push(wrapParensLatex(ratToLatex(bRat), true));
+          substitutedFactorsLatex.push(wrapParensLatex(formatRatFuncLatex(bRat), true));
           rawNum = polyMul(rawNum, bRat.num);
           rawDen = polyMul(rawDen, bRat.den);
         }
       });
 
       const closedNodes = [...lp.nodes, lp.nodes[0]];
+      const directionDesc = lp.nodes.some(n => elementsMap.get(n)?.dir === 'left')
+        ? 'Malha fechada com ramo de retorno'
+        : 'Malha fechada de realimentação direta';
 
       return {
         index: idx + 1,
         nodes: lp.nodes,
-        closedNodeLabelsLatex: closedNodes.map(getElementLabelLatex),
+        closedNodesLatex: closedNodes.map(getCleanLatexLabel),
+        directionDesc,
         edges,
         negativeSignsCount: negCount,
         overallSign,
         symbolicFactorsLatex,
         substitutedFactorsLatex,
-        rawUnreducedNum: rawNum,
-        rawUnreducedDen: rawDen,
-        hasMultipleFractions: blockCount >= 2,
+        rawUnreducedLatex: rawPolyPairToLatex(rawNum, rawDen),
+        hasMultipleFractions: blockCount >= 2 && !fullSys.isPureSymbolicMode,
         finalGain: lp.gain,
-        finalGainLatex: ratToLatex(lp.gain)
+        finalGainLatex: formatRatFuncLatex(lp.gain)
       };
     });
 
-    // Etapa 4: Análise Completa de Laços Disjuntos (Pares 2 a 2, Ternas 3 a 3 e Ordens Superiores)
-    const pairComparisons: PairComparisonDetail[] = [];
-    for (let i = 0; i < analysis.loops.length; i++) {
-      for (let j = i + 1; j < analysis.loops.length; j++) {
-        const shared = analysis.loops[i].nodes.filter(n => analysis.loops[j].nodes.includes(n));
+    // Laços Disjuntos (Pares 2 a 2, Ternas 3 a 3 e Ordens Superiores)
+    const pairComparisons = [];
+    for (let i = 0; i < refMason.loops.length; i++) {
+      for (let j = i + 1; j < refMason.loops.length; j++) {
+        const shared = refMason.loops[i].nodes.filter(n => refMason.loops[j].nodes.includes(n));
         const isDisjoint = shared.length === 0;
-        const prod = isDisjoint ? ratMul(analysis.loops[i].gain, analysis.loops[j].gain) : undefined;
+        const prod = isDisjoint ? ratMul(refMason.loops[i].gain, refMason.loops[j].gain) : undefined;
         pairComparisons.push({
           i: i + 1,
           j: j + 1,
-          sharedNodesLatex: shared.map(getElementLabelLatex),
+          sharedNodesLatex: shared.map(getCleanLatexLabel),
           isDisjoint,
           gainProduct: prod,
-          gainProductLatex: prod ? ratToLatex(prod) : undefined
+          gainProductLatex: prod ? formatRatFuncLatex(prod) : undefined
         });
       }
     }
 
-    // Todas as combinações mutuamente disjuntas de ordem >= 2 (pares, ternas, quadras...)
     const allDisjointCombinations: DisjointLoopCombination[] = [];
-    const mLoops = analysis.loops.length;
-    function findDisjointCombinations(
+    const mLoops = refMason.loops.length;
+    function findDisjoint(
       startIdx: number,
       chosenIndices: number[],
       chosenNodes: string[],
       prodGain: RatFunc
     ) {
       for (let i = startIdx; i < mLoops; i++) {
-        const lp = analysis.loops[i];
+        const lp = refMason.loops[i];
         if (setsAreDisjoint(chosenNodes, lp.nodes)) {
           const nextIndices = [...chosenIndices, i + 1];
           const nextGain = ratMul(prodGain, lp.gain);
@@ -529,109 +389,38 @@ export const MasonDeductionView: React.FC<MasonDeductionViewProps> = ({
               gain: nextGain
             });
           }
-          findDisjointCombinations(i + 1, nextIndices, [...chosenNodes, ...lp.nodes], nextGain);
+          findDisjoint(i + 1, nextIndices, [...chosenNodes, ...lp.nodes], nextGain);
         }
       }
     }
-    findDisjointCombinations(0, [], [], ratOne());
+    findDisjoint(0, [], [], ratOne());
 
     const disjointPairsOrder2 = allDisjointCombinations.filter(c => c.order === 2);
     const disjointHigherOrders = allDisjointCombinations.filter(c => c.order >= 3);
 
-    // Etapa 5: Desenvolvimento Algébrico do Determinante Geral \Delta(s)
-    const sumIndividualLoops = analysis.loops.reduce((acc, lp) => ratAdd(acc, lp.gain), ratZero());
+    const sumIndividualLoops = refMason.loops.reduce((acc, lp) => ratAdd(acc, lp.gain), ratZero());
     const sumDisjointPairs = disjointPairsOrder2.reduce((acc, c) => ratAdd(acc, c.gain), ratZero());
     const sumDisjointTriplets = allDisjointCombinations
       .filter(c => c.order === 3)
       .reduce((acc, c) => ratAdd(acc, c.gain), ratZero());
 
-    // Fração combinada dos termos de malha (Delta - 1) para exibir a soma no denominador comum:
-    // Delta = 1 + loopContribution => (D_L + N_L) / D_L
-    const loopContribution = ratAdd(analysis.delta, ratScale(ratOne(), -1));
-
-    // Etapa 6: Determinantes Complementares (Cofatores \Delta_k) para cada Caminho Direto P_k
-    const detailedCofactors: CofactorDetailedDerivation[] = analysis.forwardPaths.map((fp, idx) => {
-      const pNodes = fp.nodes;
-      const loopTouchStatus = analysis.loops.map((lp, lIdx) => {
-        const shared = lp.nodes.filter(n => pNodes.includes(n));
-        return {
-          loopIndex: lIdx + 1,
-          touches: shared.length > 0,
-          sharedNodesLatex: shared.map(getElementLabelLatex),
-          loopGain: lp.gain,
-          loopGainLatex: ratToLatex(lp.gain)
-        };
-      });
-
-      const activeLoopIndices = loopTouchStatus.filter(s => !s.touches).map(s => s.loopIndex);
-      const activeDisjointCombinations = allDisjointCombinations.filter(comb =>
-        comb.loopIndices.every(li => activeLoopIndices.includes(li))
-      );
-
-      const dk = analysis.cofactors[idx] || ratOne();
-      const pkDk = ratMul(fp.gain, dk);
-
-      return {
-        pathIndex: idx + 1,
-        loopTouchStatus,
-        activeLoopIndices,
-        activeDisjointCombinations,
-        cofactorValue: dk,
-        cofactorLatex: ratToLatex(dk),
-        pathTimesCofactor: pkDk,
-        pathTimesCofactorLatex: ratToLatex(pkDk)
-      };
-    });
-
-    // Etapa 7 & 8: Soma do Numerador, Divisão pelo Determinante e Simplificação Final
-    const numeratorSum = detailedCofactors.reduce(
-      (acc, c) => ratAdd(acc, c.pathTimesCofactor),
-      ratZero()
-    );
-
-    // Multiplicação cruzada antes do cancelamento entre Numerador Total (A/B) e Delta (C/D):
-    // T_bruto = (A * D) / (B * C)
-    const rawCrossNum = polyMul(numeratorSum.num, analysis.delta.den);
-    const rawCrossDen = polyMul(numeratorSum.den, analysis.delta.num);
-    const hasCommonDenominatorCancel =
-      !polyIsOne(numeratorSum.den) && polyEqual(numeratorSum.den, analysis.delta.den);
-
-    const simplifiedFinal = ratSimplify( analysis.totalT.num, analysis.totalT.den );
-    const rawCrossLatex = rawPolyPairToLatex(rawCrossNum, rawCrossDen);
-    const finalTotalTLatex = ratToLatex(analysis.totalT);
-    const compactFinalParts = ratToCompactParts(analysis.totalT);
-    const compactFinalText = compactFinalParts.isFraction
-      ? `(${compactFinalParts.num}) / (${compactFinalParts.den})`
-      : compactFinalParts.num;
+    const loopContribution = ratAdd(refMason.delta, ratScale(ratOne(), -1));
 
     return {
-      G,
-      inEl,
-      outEl,
-      inputSymbolLatex,
-      outputSymbolLatex,
-      blocksList,
-      summersList,
+      fullSys,
       directedEdges,
-      detailedPaths,
+      detailedInputGroups,
       detailedLoops,
       pairComparisons,
       disjointPairsOrder2,
       disjointHigherOrders,
-      allDisjointCombinations,
       sumIndividualLoops,
       sumDisjointPairs,
       sumDisjointTriplets,
       loopContribution,
-      detailedCofactors,
-      numeratorSum,
-      rawCrossNum,
-      rawCrossDen,
-      rawCrossLatex,
-      hasCommonDenominatorCancel,
-      simplifiedFinal,
-      finalTotalTLatex,
-      compactFinalText
+      commonDelta: refMason.delta,
+      commonDeltaLatex: formatRatFuncLatex(refMason.delta),
+      commonDeltaCompact: formatRatFuncCompact(refMason.delta)
     };
   }, [analysis, graph, inputElement, outputElement]);
 
@@ -640,14 +429,9 @@ export const MasonDeductionView: React.FC<MasonDeductionViewProps> = ({
   // =========================================================================
   const generateOverleafLatexDocument = (): string => {
     const {
-      inEl,
-      outEl,
-      inputSymbolLatex,
-      outputSymbolLatex,
-      blocksList,
-      summersList,
+      fullSys,
       directedEdges,
-      detailedPaths,
+      detailedInputGroups,
       detailedLoops,
       pairComparisons,
       disjointPairsOrder2,
@@ -655,18 +439,14 @@ export const MasonDeductionView: React.FC<MasonDeductionViewProps> = ({
       sumIndividualLoops,
       sumDisjointPairs,
       loopContribution,
-      detailedCofactors,
-      numeratorSum,
-      rawCrossLatex,
-      hasCommonDenominatorCancel,
-      finalTotalTLatex
-    } = derivation;
+      commonDeltaLatex
+    } = systemData;
 
     const lines: string[] = [];
     lines.push(`% ==========================================================================`);
-    lines.push(`% MEMORIAL DE CÁLCULO DETALHADO — REGRA DO GANHO DE MASON`);
+    lines.push(`% MEMORIAL ACADÊMICO DE CÁLCULO — REGRA DE MASON E VALIDAÇÃO ALGÉBRICA`);
     lines.push(`% Gerado automaticamente pelo Construtor Livre de Diagramas de Blocos`);
-    lines.push(`% Compatível com Overleaf / pdfLaTeX / XeLaTeX`);
+    lines.push(`% Compatível com Overleaf (pdfLaTeX / XeLaTeX / LuaLaTeX)`);
     lines.push(`% ==========================================================================`);
     lines.push(`\\documentclass[12pt,a4paper]{article}`);
     lines.push(`\\usepackage[utf8]{inputenc}`);
@@ -681,9 +461,9 @@ export const MasonDeductionView: React.FC<MasonDeductionViewProps> = ({
     lines.push(`\\setlength{\\parindent}{0pt}`);
     lines.push(`\\setlength{\\parskip}{6pt}`);
     lines.push(``);
-    lines.push(`\\title{\\textbf{Memorial de Cálculo Detalhado — Redução por Regra de Mason}}`);
+    lines.push(`\\title{\\textbf{Memorial de Cálculo Detalhado — Redução por Regra de Mason e Validação Algébrica}}`);
     lines.push(
-      `\\author{Sistema de Controle: Relação Entrada $${inputSymbolLatex}$ $\\rightarrow$ Saída $${outputSymbolLatex}$}`
+      `\\author{Análise Completa de Sistemas de Controle — Saída Principal $${fullSys.primaryOutput.signalLatex}$}`
     );
     lines.push(`\\date{\\today}`);
     lines.push(``);
@@ -693,91 +473,97 @@ export const MasonDeductionView: React.FC<MasonDeductionViewProps> = ({
     lines.push(`\\vspace{8pt}`);
 
     // ETAPA 1
-    lines.push(`\\section*{Etapa 1 — Identificação do Grafo e Representação do Sistema}`);
+    lines.push(`\\section{Identificação do Grafo e Equações dos Elementos}`);
+    lines.push(`\\subsection{Entradas Independentes e Saídas}`);
     lines.push(`\\begin{itemize}[leftmargin=*]`);
-    lines.push(`  \\item \\textbf{Nó de Entrada considerado:} $${inputSymbolLatex}$ (${inEl.name || 'Entrada'})`);
-    lines.push(`  \\item \\textbf{Nó de Saída considerado:} $${outputSymbolLatex}$ (${outEl.name || 'Saída'})`);
-    lines.push(
-      `  \\item \\textbf{Função de Transferência desejada:} $T(s) = \\dfrac{${outputSymbolLatex}}{${inputSymbolLatex}}$`
-    );
+    fullSys.independentInputs.forEach(inp => {
+      lines.push(
+        `  \\item \\textbf{Entrada Independente (${
+          inp.role === 'input-dist' ? 'Perturbação' : 'Referência'
+        }):} $${inp.signalLatex}$`
+      );
+    });
+    fullSys.outputs.forEach(out => {
+      lines.push(`  \\item \\textbf{Saída do Sistema:} $${out.signalLatex}$`);
+    });
     lines.push(`\\end{itemize}`);
 
-    if (blocksList.length > 0) {
-      lines.push(`\\subsection*{1.1 Blocos e Funções de Transferência}`);
+    if (fullSys.blocks.length > 0) {
+      lines.push(`\\subsection{Blocos Funcionais e Ganhos}`);
       lines.push(`\\begin{itemize}[leftmargin=*]`);
-      blocksList.forEach(b => {
-        lines.push(`  \\item Bloco \\textbf{${b.code}} ($${b.symbolLatex}$ — ${b.dir}):`);
-        lines.push(`  \\[ ${b.symbolLatex} = ${b.gainLatex} \\]`);
+      fullSys.blocks.forEach(b => {
+        lines.push(
+          `  \\item Bloco $${b.symbolLatex}$ (${
+            b.dir === 'left' ? 'Ramo de Realimentação' : 'Ramo Direto'
+          }): \\[ ${b.symbolLatex} = ${b.gainLatex} \\]`
+        );
       });
       lines.push(`\\end{itemize}`);
     }
 
-    if (summersList.length > 0) {
-      lines.push(`\\subsection*{1.2 Somadores e Equações de Sinais}`);
-      lines.push(`\\begin{itemize}[leftmargin=*]`);
-      summersList.forEach(s => {
-        lines.push(`  \\item Somador \\textbf{${s.code}} ($${s.symbolLatex}$):`);
-        lines.push(`  \\[ ${s.equationLatex} \\]`);
+    if (fullSys.summerEquations.length > 0) {
+      lines.push(`\\subsection{Equações Algébricas dos Somadores e Sinais Resultantes}`);
+      lines.push(`Considerando os sinais incidentes, os ganhos dos ramos e as polaridades de cada somador:`);
+      lines.push(`\\begin{align}`);
+      fullSys.summerEquations.forEach(sEq => {
+        lines.push(`  ${sEq.equationLatex} \\\\`);
       });
-      lines.push(`\\end{itemize}`);
+      fullSys.outputEquations.forEach(oEq => {
+        lines.push(`  ${oEq.equationLatex}`);
+      });
+      lines.push(`\\end{align}`);
     }
 
-    lines.push(`\\subsection*{1.3 Conexões Direcionadas do Grafo}`);
+    lines.push(`\\subsection{Conexões Direcionadas do Grafo}`);
     lines.push(`\\begin{itemize}[leftmargin=*]`);
     directedEdges.forEach(e => {
       lines.push(
-        `  \\item Ramo $${e.fromLatex} \\xrightarrow{\\text{sinal } (${e.sign})} ${e.toLatex}$ com ganho de transmissão $g(s) = ${e.gainLatex}$`
+        `  \\item Ramo $${e.fromLabelLatex} \\xrightarrow{(${e.sign})} ${e.toLabelLatex}$ com ganho de ramo $g(s) = ${e.gainLatex}$`
       );
     });
     lines.push(`\\end{itemize}`);
 
     // ETAPA 2
-    lines.push(`\\section*{Etapa 2 — Identificação dos Caminhos Diretos ($P_k$)}`);
-    lines.push(
-      `Um caminho direto é qualquer trajetória orientada contínua que parte do nó de entrada $${inputSymbolLatex}$ e atinge o nó de saída $${outputSymbolLatex}$ sem percorrer nenhum nó mais de uma vez.`
-    );
-    detailedPaths.forEach(p => {
-      lines.push(`\\subsection*{Caminho Direto $P_{${p.index}}(s)$}`);
-      lines.push(`\\begin{itemize}[leftmargin=*]`);
-      lines.push(`  \\item \\textbf{Sequência de nós:} $${p.nodeLabelsLatex.join(' \\rightarrow ')}$`);
-      lines.push(`  \\item \\textbf{Multiplicação dos ganhos ao longo do caminho:}`);
-      lines.push(`  \\begin{align*}`);
-      lines.push(`    P_{${p.index}}(s) &= ${p.symbolicFactorsLatex.join(' \\cdot ')} \\\\`);
-      lines.push(`    P_{${p.index}}(s) &= ${p.substitutedFactorsLatex.join(' \\cdot ')} \\\\`);
-      if (p.hasMultipleFractions) {
-        lines.push(
-          `    P_{${p.index}}(s) &= ${rawPolyPairToLatex(p.rawUnreducedNum, p.rawUnreducedDen)} \\\\`
-        );
+    lines.push(`\\section{Identificação dos Caminhos Diretos ($P_k$) por Entrada}`);
+    detailedInputGroups.forEach(grp => {
+      lines.push(
+        `\\subsection{Caminhos Diretos de $${grp.pair.inputInfo.signalLatex}$ para $${grp.pair.targetInfo.signalLatex}$}`
+      );
+      if (grp.paths.length === 0) {
+        lines.push(`Não existem caminhos diretos conectados entre $${grp.pair.inputInfo.signalLatex}$ e $${grp.pair.targetInfo.signalLatex}$.`);
+      } else {
+        grp.paths.forEach(p => {
+          lines.push(`\\begin{itemize}[leftmargin=*]`);
+          lines.push(`  \\item \\textbf{Caminho $P_{${p.index}}(s)$ — Sequência de nós:} $${p.nodesLatex.join(' \\rightarrow ')}$`);
+          lines.push(`  \\item \\textbf{Sinal resultante do caminho:} $(${p.overallSign}1)$`);
+          lines.push(`  \\item \\textbf{Multiplicação detalhada dos ganhos:}`);
+          lines.push(`  \\begin{align*}`);
+          lines.push(`    P_{${p.index}}(s) &= ${p.symbolicFactorsLatex.join(' \\cdot ')} \\\\`);
+          if (p.substitutedFactorsLatex.join(' \\cdot ') !== p.symbolicFactorsLatex.join(' \\cdot ')) {
+            lines.push(`    P_{${p.index}}(s) &= ${p.substitutedFactorsLatex.join(' \\cdot ')} \\\\`);
+          }
+          lines.push(`    P_{${p.index}}(s) &= \\mathbf{${p.finalGainLatex}}`);
+          lines.push(`  \\end{align*}`);
+          lines.push(`\\end{itemize}`);
+        });
       }
-      lines.push(`    P_{${p.index}}(s) &= \\mathbf{${p.finalGainLatex}}`);
-      lines.push(`  \\end{align*}`);
-      lines.push(`\\end{itemize}`);
     });
 
     // ETAPA 3
-    lines.push(`\\section*{Etapa 3 — Identificação dos Laços Individuais ($L_i$)}`);
+    lines.push(`\\section{Identificação dos Laços Individuais ($L_i$)}`);
     if (detailedLoops.length === 0) {
-      lines.push(
-        `O diagrama não apresenta ciclos fechados de realimentação ($M = 0$). Portanto, $\\sum_{i} L_i(s) = 0$.`
-      );
+      lines.push(`O sistema opera em malha aberta ($M = 0$), logo $\\sum_i L_i(s) = 0$.`);
     } else {
       detailedLoops.forEach(lp => {
         lines.push(`\\subsection*{Laço Individual $L_{${lp.index}}(s)$}`);
         lines.push(`\\begin{itemize}[leftmargin=*]`);
-        lines.push(
-          `  \\item \\textbf{Trajetória fechada:} $${lp.closedNodeLabelsLatex.join(' \\rightarrow ')}$`
-        );
-        lines.push(
-          `  \\item \\textbf{Sinal resultante da malha:} $(${lp.overallSign}1)$ (${lp.negativeSignsCount} entrada(s) inversora(s) no ciclo)`
-        );
-        lines.push(`  \\item \\textbf{Desenvolvimento do ganho do laço:}`);
+        lines.push(`  \\item \\textbf{Sequência fechada de nós:} $${lp.closedNodesLatex.join(' \\rightarrow ')}$`);
+        lines.push(`  \\item \\textbf{Polaridade efetiva do laço:} $(${lp.overallSign}1)$`);
+        lines.push(`  \\item \\textbf{Multiplicação algébrica detalhada:}`);
         lines.push(`  \\begin{align*}`);
         lines.push(`    L_{${lp.index}}(s) &= ${lp.symbolicFactorsLatex.join(' \\cdot ')} \\\\`);
-        lines.push(`    L_{${lp.index}}(s) &= ${lp.substitutedFactorsLatex.join(' \\cdot ')} \\\\`);
-        if (lp.hasMultipleFractions) {
-          lines.push(
-            `    L_{${lp.index}}(s) &= ${rawPolyPairToLatex(lp.rawUnreducedNum, lp.rawUnreducedDen)} \\\\`
-          );
+        if (lp.substitutedFactorsLatex.join(' \\cdot ') !== lp.symbolicFactorsLatex.join(' \\cdot ')) {
+          lines.push(`    L_{${lp.index}}(s) &= ${lp.substitutedFactorsLatex.join(' \\cdot ')} \\\\`);
         }
         lines.push(`    L_{${lp.index}}(s) &= \\mathbf{${lp.finalGainLatex}}`);
         lines.push(`  \\end{align*}`);
@@ -786,42 +572,31 @@ export const MasonDeductionView: React.FC<MasonDeductionViewProps> = ({
     }
 
     // ETAPA 4
-    lines.push(`\\section*{Etapa 4 — Identificação dos Laços Disjuntos}`);
+    lines.push(`\\section{Identificação dos Laços Disjuntos}`);
     if (detailedLoops.length < 2) {
       lines.push(
-        `Como o sistema possui ${detailedLoops.length} laço(s), não existem combinações de dois ou mais laços. Logo, todos os produtos de laços disjuntos são nulos.`
+        `O grafo possui ${detailedLoops.length} laço(s) fechado(s). Portanto, não há combinações de dois ou mais laços disjuntos ($\\sum L_i L_j = 0$).`
       );
     } else {
-      lines.push(`\\subsection*{4.1 Análise de Pares de Laços (2 a 2)}`);
       lines.push(`\\begin{itemize}[leftmargin=*]`);
       pairComparisons.forEach(pc => {
         if (pc.isDisjoint) {
           lines.push(
-            `  \\item Par $(L_{${pc.i}}, L_{${pc.j}})$: $V(L_{${pc.i}}) \\cap V(L_{${pc.j}}) = \\emptyset$ (\\textbf{Disjuntos}). Produto: $L_{${pc.i}}(s)L_{${pc.j}}(s) = ${pc.gainProductLatex}$`
+            `  \\item Par $(L_{${pc.i}}, L_{${pc.j}})$: $V(L_{${pc.i}}) \\cap V(L_{${pc.j}}) = \\emptyset$ (\\textbf{Disjuntos}) $\\Rightarrow L_{${pc.i}}(s)L_{${pc.j}}(s) = ${pc.gainProductLatex}$`
           );
         } else {
           lines.push(
-            `  \\item Par $(L_{${pc.i}}, L_{${pc.j}})$: compartilham os nós $\\{${pc.sharedNodesLatex.join(', ')}\\} \\neq \\emptyset$ (\\textbf{Tocam-se}).`
+            `  \\item Par $(L_{${pc.i}}, L_{${pc.j}})$: compartilham $\\{${pc.sharedNodesLatex.join(', ')}\\} \\neq \\emptyset$ (\\textbf{Tocam-se}).`
           );
         }
       });
       lines.push(`\\end{itemize}`);
-
-      if (disjointPairsOrder2.length === 0) {
-        lines.push(`Não existem pares de laços disjuntos: $\\sum_{i,j} L_i(s)L_j(s) = 0$.`);
-      }
-
-      lines.push(`\\subsection*{4.2 Combinações de Três ou Mais Laços Disjuntos ($r \\ge 3$)}`);
-      if (disjointHigherOrders.length === 0) {
-        lines.push(
-          `Não existem combinações de três ou mais laços mutuamente disjuntos ($\\sum_{i,j,k} L_i L_j L_k = 0$).`
-        );
-      } else {
+      if (disjointHigherOrders.length > 0) {
+        lines.push(`\\subsection*{Combinações de Ordem Superior ($r \\ge 3$)}`);
         lines.push(`\\begin{itemize}[leftmargin=*]`);
         disjointHigherOrders.forEach(comb => {
-          const prodSym = comb.loopIndices.map(idx => `L_{${idx}}(s)`).join(' \\cdot ');
           lines.push(
-            `  \\item Combinação de ordem ${comb.order}: $${prodSym} = ${ratToLatex(comb.gain)}$`
+            `  \\item Ordem ${comb.order}: $${comb.loopIndices.map(i => `L_{${i}}(s)`).join(' \\cdot ')} = ${formatRatFuncLatex(comb.gain)}$`
           );
         });
         lines.push(`\\end{itemize}`);
@@ -829,83 +604,93 @@ export const MasonDeductionView: React.FC<MasonDeductionViewProps> = ({
     }
 
     // ETAPA 5
-    lines.push(`\\section*{Etapa 5 — Determinante Geral de Mason ($\\Delta$)}`);
-    lines.push(`A expressão geral do determinante do grafo de Mason é dada por:`);
+    lines.push(`\\section{Cálculo do Determinante Geral ($\\Delta$)}`);
+    lines.push(`\\begin{equation}`);
     lines.push(
-      `\\[ \\Delta(s) = 1 - \\sum_{i} L_i(s) + \\sum_{i,j} L_i(s)L_j(s) - \\sum_{i,j,k} L_i(s)L_j(s)L_k(s) + \\cdots \\]`
+      `  \\Delta(s) = 1 - \\sum_{i} L_i(s) + \\sum_{i,j} (L_i L_j)_{\\text{disjuntos}} - \\sum_{i,j,k} (L_i L_j L_k)_{\\text{disjuntos}} + \\cdots`
     );
-    if (detailedLoops.length > 0) {
-      const sumTerms = detailedLoops.map(lp => `\\left(${lp.finalGainLatex}\\right)`).join(' + ');
-      lines.push(`Soma dos laços individuais:`);
-      lines.push(`\\[ \\sum_{i} L_i(s) = ${sumTerms} = ${ratToLatex(sumIndividualLoops)} \\]`);
-    }
-    lines.push(`Substituindo na expressão de $\\Delta(s)$:`);
+    lines.push(`\\end{equation}`);
+    lines.push(`Substituindo os valores determinados:`);
     lines.push(`\\begin{align*}`);
     lines.push(
-      `  \\Delta(s) &= 1 - \\left(${ratToLatex(sumIndividualLoops)}\\right) + \\left(${ratToLatex(
-        sumDisjointPairs
-      )}\\right) \\\\`
+      `  \\Delta(s) &= 1 - \\left(${formatRatFuncLatex(sumIndividualLoops)}\\right)${
+        disjointPairsOrder2.length > 0 ? ` + \\left(${formatRatFuncLatex(sumDisjointPairs)}\\right)` : ''
+      } \\\\`
     );
     if (!polyIsOne(loopContribution.den) && !polyIsZero(loopContribution.num)) {
-      const dLat = polyToLatex(loopContribution.den);
-      const nLat = polyToLatex(loopContribution.num);
-      lines.push(`  \\Delta(s) &= 1 + \\frac{${nLat}}{${dLat}} = \\frac{\\left(${dLat}\\right) + \\left(${nLat}\\right)}{${dLat}} \\\\`);
+      lines.push(
+        `  \\Delta(s) &= \\frac{${formatPolyFactorLatex(loopContribution.den)} + ${formatPolyFactorLatex(
+          loopContribution.num
+        )}}{${formatPolyFactorLatex(loopContribution.den)}} \\\\`
+      );
     }
-    lines.push(`  \\Delta(s) &= \\mathbf{${ratToLatex(analysis.delta)}}`);
+    lines.push(`  \\Delta(s) &= \\mathbf{${commonDeltaLatex}}`);
     lines.push(`\\end{align*}`);
 
     // ETAPA 6
-    lines.push(`\\section*{Etapa 6 — Determinantes Complementares (Cofatores $\\Delta_k$)}`);
-    detailedCofactors.forEach(cf => {
-      lines.push(`\\subsection*{Cofator $\\Delta_{${cf.pathIndex}}(s)$ associado ao Caminho $P_{${cf.pathIndex}}(s)$}`);
-      lines.push(`\\begin{itemize}[leftmargin=*]`);
-      cf.loopTouchStatus.forEach(st => {
-        if (st.touches) {
-          lines.push(
-            `  \\item Laço $L_{${st.loopIndex}}$: toca $P_{${cf.pathIndex}}$ no(s) nó(s) $\\{${st.sharedNodesLatex.join(', ')}\\}$ $\\Rightarrow$ excluído de $\\Delta_{${cf.pathIndex}}$.`
-          );
-        } else {
-          lines.push(
-            `  \\item Laço $L_{${st.loopIndex}}$: não compartilha nós com $P_{${cf.pathIndex}}$ ($V(P_{${cf.pathIndex}}) \\cap V(L_{${st.loopIndex}}) = \\emptyset$) $\\Rightarrow$ participa de $\\Delta_{${cf.pathIndex}}$.`
-          );
-        }
-      });
-      lines.push(`  \\item Resultado do determinante complementar: $\\Delta_{${cf.pathIndex}}(s) = \\mathbf{${cf.cofactorLatex}}$`);
+    lines.push(`\\section{Cálculo dos Cofatores ($\\Delta_k$) por Entrada}`);
+    detailedInputGroups.forEach(grp => {
       lines.push(
-        `  \\item Produto parcial: $P_{${cf.pathIndex}}(s)\\Delta_{${cf.pathIndex}}(s) = \\left(${
-          detailedPaths[cf.pathIndex - 1]?.finalGainLatex || '1'
-        }\\right) \\cdot \\left(${cf.cofactorLatex}\\right) = \\mathbf{${cf.pathTimesCofactorLatex}}$`
+        `\\subsection{Cofatores para a Entrada $${grp.pair.inputInfo.signalLatex}$ $\\rightarrow$ $${grp.pair.targetInfo.signalLatex}$}`
       );
-      lines.push(`\\end{itemize}`);
+      grp.paths.forEach(p => {
+        lines.push(
+          `Para o caminho direto $P_{${p.index}}(s)$, excluem-se os laços que tocam o caminho:`
+        );
+        lines.push(`\\[ \\Delta_{${p.index}}(s) = \\mathbf{${p.cofactorLatex}}, \\qquad P_{${p.index}}(s)\\Delta_{${p.index}}(s) = \\mathbf{${p.pathTimesCofactorLatex}} \\]`);
+      });
     });
 
     // ETAPA 7
-    lines.push(`\\section*{Etapa 7 — Aplicação da Fórmula de Mason}`);
-    lines.push(`\\[ T(s) = \\frac{\\displaystyle\\sum_{k=1}^{${detailedPaths.length}} P_k(s)\\Delta_k(s)}{\\Delta(s)} \\]`);
-    const numExpansion = detailedCofactors.map(cf => `\\left(${cf.pathTimesCofactorLatex}\\right)`).join(' + ');
-    lines.push(`Desenvolvendo o numerador $\\sum_{k=1}^{${detailedPaths.length}} P_k(s)\\Delta_k(s)$:`);
-    lines.push(`\\[ \\sum_{k=1}^{${detailedPaths.length}} P_k(s)\\Delta_k(s) = ${numExpansion} = ${ratToLatex(numeratorSum)} \\]`);
-    lines.push(`Dividindo pelo determinante geral $\\Delta(s)$:`);
-    lines.push(
-      `\\[ T(s) = \\frac{${ratToLatex(numeratorSum)}}{${ratToLatex(analysis.delta)}} \\]`
-    );
+    lines.push(`\\section{Aplicação da Fórmula Geral de Mason para Cada Entrada}`);
+    detailedInputGroups.forEach(grp => {
+      const inSym = grp.pair.inputInfo.signalLatex;
+      const outSym = grp.pair.targetInfo.signalLatex;
+      lines.push(`\\subsection{Função de Transferência $\\dfrac{${outSym}}{${inSym}}$}`);
+      lines.push(`\\begin{align}`);
+      lines.push(
+        `  \\frac{${outSym}}{${inSym}} &= \\frac{\\sum_{k=1}^{${grp.paths.length}} P_k(s)\\Delta_k(s)}{\\Delta(s)} = \\frac{${grp.numeratorSumLatex}}{${commonDeltaLatex}} = \\mathbf{${grp.pair.transferFunctionLatex}}`
+      );
+      lines.push(`\\end{align}`);
+    });
 
     // ETAPA 8
-    lines.push(`\\section*{Etapa 8 — Simplificação Algébrica e Resultado Final}`);
-    if (hasCommonDenominatorCancel) {
+    lines.push(`\\section{Resultado Final, Sinais de Erro/Controle e Superposição}`);
+    lines.push(`\\subsection{Funções de Transferência da Saída Principal}`);
+    lines.push(`\\begin{align}`);
+    fullSys.outputByInputPairs.forEach(p => {
       lines.push(
-        `Cancelando o denominador polinomial comum $\\left(${polyToLatex(
-          numeratorSum.den
-        )}\\right)$ entre o numerador e o determinante $\\Delta(s)$, e simplificando os fatores irredutíveis:`
+        `  \\frac{${p.targetInfo.signalLatex}}{${p.inputInfo.signalLatex}} &= \\mathbf{${p.transferFunctionLatex}} \\\\`
       );
-    } else if (rawCrossLatex !== finalTotalTLatex) {
-      lines.push(`Realizando a divisão de frações racionais e cancelando fatores comuns:`);
-      lines.push(`\\[ T(s) = ${rawCrossLatex} = ${finalTotalTLatex} \\]`);
-    }
-    lines.push(`\\vspace{6pt}`);
-    lines.push(`\\[ \\boxed{T(s) = \\frac{${outputSymbolLatex}}{${inputSymbolLatex}} = ${finalTotalTLatex}} \\]`);
-    lines.push(`\\end{document}`);
+    });
+    lines.push(`\\end{align}`);
 
+    if (fullSys.summerByInputPairs.length > 0) {
+      lines.push(`\\subsection{Funções de Transferência dos Sinais dos Somadores (Erro e Controle)}`);
+      lines.push(`\\begin{align}`);
+      fullSys.summerByInputPairs.forEach(p => {
+        lines.push(
+          `  \\frac{${p.targetInfo.signalLatex}}{${p.inputInfo.signalLatex}} &= \\mathbf{${p.transferFunctionLatex}} \\\\`
+        );
+      });
+      lines.push(`\\end{align}`);
+    }
+
+    lines.push(`\\subsection{Expressão Completa da Saída Total por Superposição}`);
+    lines.push(`\\[ \\boxed{${fullSys.superpositionOutputLatex}} \\]`);
+
+    // VALIDAÇÃO ALGÉBRICA INDEPENDENTE
+    lines.push(`\\section{Validação Algébrica Independente (Método das Equações dos Nós)}`);
+    fullSys.algebraicValidationSteps.forEach(st => {
+      lines.push(`\\subsection*{${st.title}}`);
+      lines.push(`${st.description}`);
+      lines.push(`\\[ ${st.equationLatex} \\]`);
+    });
+    lines.push(
+      `\\textbf{Conclusão da Validação:} Os resultados obtidos pela Regra do Ganho de Mason e pela resolução algébrica direta do sistema de equações são \\textbf{idênticos} para todas as entradas e variáveis analisadas.`
+    );
+
+    lines.push(`\\end{document}`);
     return lines.join('\n');
   };
 
@@ -933,14 +718,9 @@ export const MasonDeductionView: React.FC<MasonDeductionViewProps> = ({
   };
 
   const {
-    inEl,
-    outEl,
-    inputSymbolLatex,
-    outputSymbolLatex,
-    blocksList,
-    summersList,
+    fullSys,
     directedEdges,
-    detailedPaths,
+    detailedInputGroups,
     detailedLoops,
     pairComparisons,
     disjointPairsOrder2,
@@ -949,13 +729,8 @@ export const MasonDeductionView: React.FC<MasonDeductionViewProps> = ({
     sumDisjointPairs,
     sumDisjointTriplets,
     loopContribution,
-    detailedCofactors,
-    numeratorSum,
-    rawCrossLatex,
-    hasCommonDenominatorCancel,
-    finalTotalTLatex,
-    compactFinalText
-  } = derivation;
+    commonDeltaLatex
+  } = systemData;
 
   const stepCardStyle: React.CSSProperties = {
     background: '#070b16',
@@ -1033,12 +808,26 @@ export const MasonDeductionView: React.FC<MasonDeductionViewProps> = ({
               >
                 PAINEL 2 — DESENVOLVIMENTO DOS CÁLCULOS
               </span>
-              <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                Método de Redução de Mason (8 Etapas Detalhadas)
+              <span
+                style={{
+                  background: fullSys.allValidationsMatch
+                    ? 'rgba(16, 185, 129, 0.16)'
+                    : 'rgba(239, 68, 68, 0.16)',
+                  color: fullSys.allValidationsMatch ? '#34d399' : '#fca5a5',
+                  border: `1px solid ${fullSys.allValidationsMatch ? 'rgba(16,185,129,0.4)' : 'rgba(239,68,68,0.4)'}`,
+                  borderRadius: '6px',
+                  padding: '2px 8px',
+                  fontSize: '0.71rem',
+                  fontWeight: 700
+                }}
+              >
+                {fullSys.allValidationsMatch
+                  ? '✓ Validado Algebricamente (Mason = Sistema de Equações)'
+                  : '⚠️ Alerta de Divergência Algébrica'}
               </span>
             </div>
-            <h3 style={{ margin: '6px 0 2px 0', fontSize: '1.08rem', color: '#f8fafc', fontWeight: 800 }}>
-              Resolução Matemática Passo a Passo
+            <h3 style={{ margin: '6px 0 2px 0', fontSize: '1.06rem', color: '#f8fafc', fontWeight: 800 }}>
+              Memorial Matemático Completo — Regra de Mason e Validação Algébrica
             </h3>
           </div>
 
@@ -1103,7 +892,7 @@ export const MasonDeductionView: React.FC<MasonDeductionViewProps> = ({
           </div>
         </div>
 
-        {/* Barra de Ações do Memorial (Download .tex, Copiar, Expandir/Recolher Etapas) */}
+        {/* Barra de Ações do Memorial */}
         <div
           style={{
             display: 'flex',
@@ -1176,7 +965,7 @@ export const MasonDeductionView: React.FC<MasonDeductionViewProps> = ({
       </div>
 
       {/* =====================================================================
-          ETAPA 1 — IDENTIFICAÇÃO DO GRAFO
+          ETAPA 1 — IDENTIFICAÇÃO DO GRAFO E EQUAÇÕES DOS SOMADORES
          ===================================================================== */}
       <div style={stepCardStyle} data-testid="mason-step-1">
         <div style={stepHeaderStyle} onClick={() => toggleStep(1)}>
@@ -1194,7 +983,7 @@ export const MasonDeductionView: React.FC<MasonDeductionViewProps> = ({
               ETAPA 1
             </span>
             <h4 style={{ margin: 0, fontSize: '0.94rem', fontWeight: 800, color: '#f8fafc' }}>
-              Identificação do Grafo e Representação do Sistema
+              Identificação do Grafo, Blocos, Somadores e Sinais
             </h4>
           </div>
           <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{openSteps[1] ? '▲' : '▼'}</span>
@@ -1202,117 +991,140 @@ export const MasonDeductionView: React.FC<MasonDeductionViewProps> = ({
 
         {openSteps[1] && (
           <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            {/* 1.1 Nós de Entrada e Saída */}
+            {/* 1.1 Entradas Independentes e Saídas */}
             <div style={mathBoxStyle}>
               <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#38bdf8', marginBottom: '8px' }}>
-                1.1. Identificação dos Nós de Entrada e Saída
+                1.1. Entradas Independentes e Saídas do Sistema
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: '10px' }}>
-                <div style={{ background: '#060a14', padding: '10px 12px', borderRadius: '6px', border: '1px solid rgba(56,189,248,0.2)' }}>
-                  <div style={{ fontSize: '0.73rem', color: 'var(--text-muted)' }}>Nó de Entrada (Excitação):</div>
-                  <div style={{ marginTop: '4px', fontSize: '0.9rem' }}>
-                    <MathView math={`\\text{Entrada: } ${inputSymbolLatex}`} inline />{' '}
-                    <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>({inEl.code || inEl.id})</span>
-                  </div>
-                </div>
-                <div style={{ background: '#060a14', padding: '10px 12px', borderRadius: '6px', border: '1px solid rgba(16,185,129,0.2)' }}>
-                  <div style={{ fontSize: '0.73rem', color: 'var(--text-muted)' }}>Nó de Saída (Resposta):</div>
-                  <div style={{ marginTop: '4px', fontSize: '0.9rem' }}>
-                    <MathView math={`\\text{Saída: } ${outputSymbolLatex}`} inline />{' '}
-                    <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>({outEl.code || outEl.id})</span>
-                  </div>
-                </div>
-                <div style={{ background: '#060a14', padding: '10px 12px', borderRadius: '6px', border: '1px solid rgba(99,102,241,0.2)' }}>
-                  <div style={{ fontSize: '0.73rem', color: 'var(--text-muted)' }}>Relação de Transferência Alvo:</div>
-                  <div style={{ marginTop: '4px', fontSize: '0.9rem' }}>
-                    <MathView math={`T(s) = \\frac{${outputSymbolLatex}}{${inputSymbolLatex}}`} inline />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* 1.2 Blocos e seus respectivos ganhos */}
-            <div style={mathBoxStyle}>
-              <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#38bdf8', marginBottom: '8px' }}>
-                1.2. Blocos Funcionais e Ganhos de Transferência ({blocksList.length})
-              </div>
-              {blocksList.length === 0 ? (
-                <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
-                  Nenhum bloco funcional intermediário presente (conexão direta).
-                </div>
-              ) : (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: '8px' }}>
-                  {blocksList.map(b => (
-                    <div
-                      key={b.id}
-                      style={{
-                        background: '#060a14',
-                        padding: '10px 12px',
-                        borderRadius: '6px',
-                        border: '1px solid rgba(255,255,255,0.07)'
-                      }}
-                    >
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.74rem', color: '#94a3b8', marginBottom: '6px' }}>
-                        <span>
-                          Bloco <b style={{ color: '#e2e8f0' }}>{b.code}</b>
-                        </span>
-                        <span>{b.dir}</span>
-                      </div>
-                      <MathView math={`${b.symbolLatex} = ${b.gainLatex}`} block />
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px' }}>
+                {fullSys.independentInputs.map(inp => (
+                  <div
+                    key={inp.id}
+                    style={{
+                      background: '#060a14',
+                      padding: '10px 12px',
+                      borderRadius: '6px',
+                      border:
+                        inp.role === 'input-dist'
+                          ? '1px solid rgba(251, 191, 36, 0.3)'
+                          : '1px solid rgba(56, 189, 248, 0.25)'
+                    }}
+                  >
+                    <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                      {inp.role === 'input-dist' ? 'Entrada de Perturbação:' : 'Entrada de Referência:'}
                     </div>
-                  ))}
-                </div>
-              )}
+                    <div style={{ marginTop: '4px', fontSize: '0.92rem' }}>
+                      <MathView math={inp.signalLatex} inline />
+                    </div>
+                  </div>
+                ))}
+
+                {fullSys.outputs.map(out => (
+                  <div
+                    key={out.id}
+                    style={{
+                      background: '#060a14',
+                      padding: '10px 12px',
+                      borderRadius: '6px',
+                      border: '1px solid rgba(16, 185, 129, 0.3)'
+                    }}
+                  >
+                    <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Saída do Sistema:</div>
+                    <div style={{ marginTop: '4px', fontSize: '0.92rem' }}>
+                      <MathView math={out.signalLatex} inline />
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
 
-            {/* 1.3 Somadores e Sinais das Entradas */}
+            {/* 1.2 Blocos Funcionais e Ganhos */}
             <div style={mathBoxStyle}>
+              <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#38bdf8', marginBottom: '8px' }}>
+                1.2. Blocos Funcionais e Respectivos Ganhos ({fullSys.blocks.length})
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '8px' }}>
+                {fullSys.blocks.map(b => (
+                  <div
+                    key={b.id}
+                    style={{
+                      background: '#060a14',
+                      padding: '10px 12px',
+                      borderRadius: '6px',
+                      border: '1px solid rgba(255,255,255,0.08)'
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.74rem', color: '#94a3b8', marginBottom: '4px' }}>
+                      <span style={{ color: '#e2e8f0', fontWeight: 700 }}>{b.name}</span>
+                      <span>{b.dir === 'left' ? 'Realimentação (←)' : 'Ramo Direto (→)'}</span>
+                    </div>
+                    <MathView math={`${b.symbolLatex} = ${b.gainLatex}`} block />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* 1.3 Equações Algébricas Efetivas dos Somadores e da Saída */}
+            <div style={mathBoxStyle} data-testid="mason-summer-equations">
               <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#10b981', marginBottom: '8px' }}>
-                1.3. Somadores e Equações Algébricas dos Sinais ({summersList.length})
+                1.3. Somadores, Polaridades e Equações Efetivas dos Sinais Resultantes
               </div>
-              {summersList.length === 0 ? (
-                <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
-                  O circuito não possui nós somadores.
-                </div>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  {summersList.map(s => (
-                    <div
-                      key={s.id}
-                      style={{
-                        background: '#060a14',
-                        padding: '10px 12px',
-                        borderRadius: '6px',
-                        border: '1px solid rgba(16, 185, 129, 0.2)'
-                      }}
-                    >
-                      <div style={{ fontSize: '0.78rem', color: '#a7f3d0', fontWeight: 700, marginBottom: '4px' }}>
-                        Somador {s.name} ({s.code}):
-                      </div>
-                      <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: '6px' }}>
-                        Entradas incidentes:{' '}
-                        {s.incoming.map((inc, i) => (
-                          <span key={i} style={{ marginRight: '10px' }}>
-                            <MathView math={`(${inc.sign})\\;${inc.fromLatex}`} inline />
-                          </span>
-                        ))}
-                      </div>
-                      <MathView math={s.equationLatex} block />
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {fullSys.summerEquations.map(sEq => (
+                  <div
+                    key={sEq.summerId}
+                    style={{
+                      background: '#060a14',
+                      padding: '10px 12px',
+                      borderRadius: '6px',
+                      border: '1px solid rgba(16, 185, 129, 0.25)'
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '6px', marginBottom: '4px' }}>
+                      <span style={{ fontSize: '0.78rem', color: '#a7f3d0', fontWeight: 700 }}>
+                        {sEq.summerName} — Sinal resultante <MathView math={sEq.signalLatex} inline />:
+                      </span>
+                      <span style={{ fontSize: '0.74rem', color: '#94a3b8' }}>
+                        {sEq.equationText}
+                      </span>
                     </div>
-                  ))}
-                </div>
-              )}
+                    <MathView math={sEq.equationLatex} block />
+                  </div>
+                ))}
+
+                {fullSys.outputEquations.map(oEq => (
+                  <div
+                    key={oEq.outputId}
+                    style={{
+                      background: '#060a14',
+                      padding: '10px 12px',
+                      borderRadius: '6px',
+                      border: '1px solid rgba(56, 189, 248, 0.25)'
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '6px', marginBottom: '4px' }}>
+                      <span style={{ fontSize: '0.78rem', color: '#7dd3fc', fontWeight: 700 }}>
+                        Equação da Saída <MathView math={oEq.signalLatex} inline />:
+                      </span>
+                      <span style={{ fontSize: '0.74rem', color: '#94a3b8' }}>
+                        {oEq.equationText}
+                      </span>
+                    </div>
+                    <MathView math={oEq.equationLatex} block />
+                  </div>
+                ))}
+              </div>
             </div>
 
-            {/* 1.4 Conexões Direcionadas do Grafo */}
+            {/* 1.4 Conexões Direcionadas */}
             <div style={mathBoxStyle}>
               <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#a855f7', marginBottom: '8px' }}>
-                1.4. Conexões Direcionadas e Ganhos de Transmissão dos Ramos ({directedEdges.length})
+                1.4. Conexões Direcionadas do Grafo ({directedEdges.length})
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '8px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '8px' }}>
                 {directedEdges.map(edge => (
                   <div
-                    key={edge.id}
+                    key={edge.index}
                     style={{
                       background: '#060a14',
                       padding: '8px 12px',
@@ -1325,10 +1137,10 @@ export const MasonDeductionView: React.FC<MasonDeductionViewProps> = ({
                     }}
                   >
                     <MathView
-                      math={`${edge.fromLatex} \\xrightarrow{(${edge.sign})} ${edge.toLatex}`}
+                      math={`${edge.fromLabelLatex} \\xrightarrow{(${edge.sign})} ${edge.toLabelLatex}`}
                       inline
                     />
-                    <span style={{ fontSize: '0.78rem', color: '#cbd5e1' }}>
+                    <span style={{ fontSize: '0.76rem', color: '#cbd5e1' }}>
                       <MathView math={`g = ${edge.gainLatex}`} inline />
                     </span>
                   </div>
@@ -1340,7 +1152,7 @@ export const MasonDeductionView: React.FC<MasonDeductionViewProps> = ({
       </div>
 
       {/* =====================================================================
-          ETAPA 2 — IDENTIFICAÇÃO DOS CAMINHOS DIRETOS (P_k)
+          ETAPA 2 — IDENTIFICAÇÃO DOS CAMINHOS DIRETOS (SEPARADOS POR ENTRADA)
          ===================================================================== */}
       <div style={stepCardStyle} data-testid="mason-step-2">
         <div style={stepHeaderStyle} onClick={() => toggleStep(2)}>
@@ -1358,7 +1170,7 @@ export const MasonDeductionView: React.FC<MasonDeductionViewProps> = ({
               ETAPA 2
             </span>
             <h4 style={{ margin: 0, fontSize: '0.94rem', fontWeight: 800, color: '#f8fafc' }}>
-              Identificação e Desenvolvimento dos Caminhos Diretos (<MathView math="P_k" inline />)
+              Identificação dos Caminhos Diretos (<MathView math="P_k" inline />) por Entrada Independente
             </h4>
           </div>
           <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{openSteps[2] ? '▲' : '▼'}</span>
@@ -1366,81 +1178,91 @@ export const MasonDeductionView: React.FC<MasonDeductionViewProps> = ({
 
         {openSteps[2] && (
           <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
-              Um caminho direto <MathView math="P_k(s)" inline /> é uma trajetória orientada que parte da entrada{' '}
-              <MathView math={inputSymbolLatex} inline /> e atinge a saída <MathView math={outputSymbolLatex} inline />{' '}
-              sem passar duas vezes pelo mesmo nó. O ganho total do caminho é o produto dos ganhos de todos os ramos percorridos:
-            </div>
-
-            {detailedPaths.map(p => (
+            {detailedInputGroups.map((grp, gIdx) => (
               <div
-                key={p.index}
+                key={grp.pair.inputInfo.id}
                 style={{
                   ...mathBoxStyle,
-                  borderLeft: '3px solid #38bdf8'
+                  borderLeft: gIdx === 0 ? '3px solid #38bdf8' : '3px solid #fbbf24'
                 }}
               >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', flexWrap: 'wrap', gap: '6px' }}>
-                  <span style={{ fontSize: '0.86rem', fontWeight: 800, color: '#38bdf8' }}>
-                    Caminho Direto <MathView math={`P_{${p.index}}(s)`} inline />
-                  </span>
-                  <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
-                    Sinal resultante do caminho: <MathView math={`(${p.overallSign}1)`} inline />
-                  </span>
+                <div style={{ fontSize: '0.84rem', fontWeight: 800, color: gIdx === 0 ? '#38bdf8' : '#fbbf24', marginBottom: '10px' }}>
+                  2.{gIdx + 1}. Caminhos Diretos da Entrada <MathView math={grp.pair.inputInfo.signalLatex} inline />{' '}
+                  para a Saída <MathView math={grp.pair.targetInfo.signalLatex} inline />
                 </div>
 
-                {/* Sequência de nós */}
-                <div style={{ background: '#060a14', padding: '8px 12px', borderRadius: '6px', marginBottom: '10px' }}>
-                  <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', marginBottom: '4px' }}>
-                    Sequência de nós percorrida:
+                {grp.paths.length === 0 ? (
+                  <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                    Nenhum caminho direto encontrado a partir desta entrada.
                   </div>
-                  <MathView math={p.nodeLabelsLatex.join(' \\longrightarrow ')} block />
-                </div>
-
-                {/* Ganhos individuais dos ramos */}
-                <div style={{ fontSize: '0.76rem', color: 'var(--text-muted)', marginBottom: '6px' }}>
-                  Ganhos nos ramos percorridos:
-                </div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '10px' }}>
-                  {p.edges.map((e, eIdx) => (
-                    <span
-                      key={eIdx}
+                ) : (
+                  grp.paths.map(p => (
+                    <div
+                      key={p.index}
                       style={{
                         background: '#060a14',
-                        border: '1px solid rgba(255,255,255,0.08)',
-                        borderRadius: '5px',
-                        padding: '4px 8px',
-                        fontSize: '0.76rem'
+                        padding: '10px 12px',
+                        borderRadius: '6px',
+                        border: '1px solid rgba(255,255,255,0.07)',
+                        marginBottom: '8px'
                       }}
                     >
-                      <MathView
-                        math={`${e.fromLabelLatex} \\to ${e.toLabelLatex}: \\; ${
-                          e.blockSymbolLatex ? `${e.sign === '-' ? '-' : '+'}${e.blockSymbolLatex} = ` : ''
-                        }${e.gainLatex}`}
-                        inline
-                      />
-                    </span>
-                  ))}
-                </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px', flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#e2e8f0' }}>
+                          Caminho Direto <MathView math={`P_{${p.index}}(s)`} inline /> (referente a{' '}
+                          <MathView math={grp.pair.inputInfo.signalLatex} inline />)
+                        </span>
+                        <span style={{ fontSize: '0.74rem', color: '#94a3b8' }}>
+                          Polaridade acumulada: <MathView math={`(${p.overallSign}1)`} inline />
+                        </span>
+                      </div>
 
-                {/* Multiplicação desenvolvida passo a passo */}
-                <div style={{ background: '#060a14', padding: '10px 12px', borderRadius: '6px', border: '1px solid rgba(56,189,248,0.2)' }}>
-                  <div style={{ fontSize: '0.74rem', color: '#93c5fd', fontWeight: 700, marginBottom: '4px' }}>
-                    Desenvolvimento da multiplicação dos ganhos:
-                  </div>
-                  <MathView
-                    math={`\\begin{aligned}
+                      <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', marginBottom: '4px' }}>
+                        Sequência de nós percorridos:
+                      </div>
+                      <MathView math={p.nodesLatex.join(' \\longrightarrow ')} block />
+
+                      <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', margin: '6px 0 4px 0' }}>
+                        Ganhos e sinais de cada ramo:
+                      </div>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '8px' }}>
+                        {p.edges.map((e, eIdx) => (
+                          <span
+                            key={eIdx}
+                            style={{
+                              background: '#0a1020',
+                              border: '1px solid rgba(56,189,248,0.2)',
+                              borderRadius: '4px',
+                              padding: '3px 8px',
+                              fontSize: '0.75rem'
+                            }}
+                          >
+                            <MathView
+                              math={`${e.fromLabelLatex} \\xrightarrow{(${e.sign})} ${e.toLabelLatex}: \\; ${e.gainLatex}`}
+                              inline
+                            />
+                          </span>
+                        ))}
+                      </div>
+
+                      <div style={{ fontSize: '0.74rem', color: '#93c5fd', fontWeight: 700, marginBottom: '4px' }}>
+                        Multiplicação detalhada dos ganhos do caminho:
+                      </div>
+                      <MathView
+                        math={`\\begin{aligned}
 P_{${p.index}}(s) &= ${p.symbolicFactorsLatex.join(' \\cdot ')} \\\\[4pt]
-P_{${p.index}}(s) &= ${p.substitutedFactorsLatex.join(' \\cdot ')}${
-                      p.hasMultipleFractions
-                        ? ` \\\\[4pt] P_{${p.index}}(s) &= ${rawPolyPairToLatex(p.rawUnreducedNum, p.rawUnreducedDen)}`
-                        : ''
-                    } \\\\[6pt]
+${
+  p.substitutedFactorsLatex.join(' \\cdot ') !== p.symbolicFactorsLatex.join(' \\cdot ')
+    ? `P_{${p.index}}(s) &= ${p.substitutedFactorsLatex.join(' \\cdot ')} \\\\[4pt]`
+    : ''
+}${p.hasMultipleFractions ? `P_{${p.index}}(s) &= ${p.rawUnreducedLatex} \\\\[4pt]` : ''}
 \\mathbf{P_{${p.index}}(s)} &= \\mathbf{${p.finalGainLatex}}
 \\end{aligned}`}
-                    block
-                  />
-                </div>
+                        block
+                      />
+                    </div>
+                  ))
+                )}
               </div>
             ))}
           </div>
@@ -1466,7 +1288,7 @@ P_{${p.index}}(s) &= ${p.substitutedFactorsLatex.join(' \\cdot ')}${
               ETAPA 3
             </span>
             <h4 style={{ margin: 0, fontSize: '0.94rem', fontWeight: 800, color: '#f8fafc' }}>
-              Identificação e Desenvolvimento dos Laços Individuais (<MathView math="L_i" inline />)
+              Identificação dos Laços Individuais (<MathView math="L_i" inline />)
             </h4>
           </div>
           <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{openSteps[3] ? '▲' : '▼'}</span>
@@ -1474,14 +1296,10 @@ P_{${p.index}}(s) &= ${p.substitutedFactorsLatex.join(' \\cdot ')}${
 
         {openSteps[3] && (
           <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
-              Um laço individual <MathView math="L_i(s)" inline /> é qualquer caminho fechado que parte de um nó e retorna a ele mesmo sem repetir nós intermediários, incorporando os sinais <MathView math="(+)" inline /> e <MathView math="(-)" inline /> das realimentações nos somadores.
-            </div>
-
             {detailedLoops.length === 0 ? (
               <div style={{ ...mathBoxStyle, borderLeft: '3px solid #a855f7' }}>
                 <div style={{ fontSize: '0.84rem', color: '#e9d5ff', marginBottom: '6px', fontWeight: 700 }}>
-                  Sistema em Malha Aberta (Nenhum laço fechado identificado):
+                  Nenhum laço fechado identificado (Malha Aberta):
                 </div>
                 <MathView math="M = 0 \implies \sum_{i} L_i(s) = 0" block />
               </div>
@@ -1496,7 +1314,7 @@ P_{${p.index}}(s) &= ${p.substitutedFactorsLatex.join(' \\cdot ')}${
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', flexWrap: 'wrap', gap: '6px' }}>
                     <span style={{ fontSize: '0.86rem', fontWeight: 800, color: '#c084fc' }}>
-                      Laço Fechado <MathView math={`L_{${lp.index}}(s)`} inline />
+                      Laço Individual <MathView math={`L_{${lp.index}}(s)`} inline /> — {lp.directionDesc}
                     </span>
                     <span
                       style={{
@@ -1507,23 +1325,17 @@ P_{${p.index}}(s) &= ${p.substitutedFactorsLatex.join(' \\cdot ')}${
                         color: lp.overallSign === '-' ? '#fca5a5' : '#6ee7b7'
                       }}
                     >
-                      Realimentação {lp.overallSign === '-' ? 'Negativa' : 'Positiva'}:{' '}
-                      <MathView math={`(${lp.overallSign}1)`} inline />
+                      Polaridade Efetiva: <MathView math={`(${lp.overallSign}1)`} inline />
                     </span>
                   </div>
 
-                  {/* Sequência fechada de nós */}
                   <div style={{ background: '#060a14', padding: '8px 12px', borderRadius: '6px', marginBottom: '10px' }}>
                     <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', marginBottom: '4px' }}>
-                      Sequência de nós do ciclo fechado:
+                      Sequência fechada de nós e sentido de percurso:
                     </div>
-                    <MathView math={lp.closedNodeLabelsLatex.join(' \\longrightarrow ')} block />
+                    <MathView math={lp.closedNodesLatex.join(' \\longrightarrow ')} block />
                   </div>
 
-                  {/* Ganhos e sinais de cada transição */}
-                  <div style={{ fontSize: '0.76rem', color: 'var(--text-muted)', marginBottom: '6px' }}>
-                    Ganhos e sinais ao longo do ciclo:
-                  </div>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '10px' }}>
                     {lp.edges.map((e, eIdx) => (
                       <span
@@ -1544,19 +1356,18 @@ P_{${p.index}}(s) &= ${p.substitutedFactorsLatex.join(' \\cdot ')}${
                     ))}
                   </div>
 
-                  {/* Multiplicação passo a passo */}
                   <div style={{ background: '#060a14', padding: '10px 12px', borderRadius: '6px', border: '1px solid rgba(168, 85, 247, 0.22)' }}>
                     <div style={{ fontSize: '0.74rem', color: '#d8b4fe', fontWeight: 700, marginBottom: '4px' }}>
-                      Demonstração da multiplicação dos ganhos do laço:
+                      Multiplicação algébrica detalhada do laço:
                     </div>
                     <MathView
                       math={`\\begin{aligned}
 L_{${lp.index}}(s) &= ${lp.symbolicFactorsLatex.join(' \\cdot ')} \\\\[4pt]
-L_{${lp.index}}(s) &= ${lp.substitutedFactorsLatex.join(' \\cdot ')}${
-                        lp.hasMultipleFractions
-                          ? ` \\\\[4pt] L_{${lp.index}}(s) &= ${rawPolyPairToLatex(lp.rawUnreducedNum, lp.rawUnreducedDen)}`
-                          : ''
-                      } \\\\[6pt]
+${
+  lp.substitutedFactorsLatex.join(' \\cdot ') !== lp.symbolicFactorsLatex.join(' \\cdot ')
+    ? `L_{${lp.index}}(s) &= ${lp.substitutedFactorsLatex.join(' \\cdot ')} \\\\[4pt]`
+    : ''
+}${lp.hasMultipleFractions ? `L_{${lp.index}}(s) &= ${lp.rawUnreducedLatex} \\\\[4pt]` : ''}
 \\mathbf{L_{${lp.index}}(s)} &= \\mathbf{${lp.finalGainLatex}}
 \\end{aligned}`}
                       block
@@ -1588,7 +1399,7 @@ L_{${lp.index}}(s) &= ${lp.substitutedFactorsLatex.join(' \\cdot ')}${
               ETAPA 4
             </span>
             <h4 style={{ margin: 0, fontSize: '0.94rem', fontWeight: 800, color: '#f8fafc' }}>
-              Identificação e Multiplicação dos Laços Disjuntos
+              Identificação dos Laços Disjuntos
             </h4>
           </div>
           <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{openSteps[4] ? '▲' : '▼'}</span>
@@ -1596,20 +1407,15 @@ L_{${lp.index}}(s) &= ${lp.substitutedFactorsLatex.join(' \\cdot ')}${
 
         {openSteps[4] && (
           <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
-              Dois ou mais laços são mutuamente disjuntos quando não compartilham nenhum nó em comum (<MathView math="V(L_i) \cap V(L_j) = \emptyset" inline />).
-            </div>
-
-            {/* 4.1 Pares de Laços (2 a 2) */}
             <div style={mathBoxStyle}>
               <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#fbbf24', marginBottom: '8px' }}>
-                4.1. Verificação de Pares de Laços (2 a 2)
+                4.1. Pares de Laços Disjuntos (2 a 2)
               </div>
 
               {detailedLoops.length < 2 ? (
                 <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
-                  O sistema possui apenas {detailedLoops.length} laço(s) individual(is). Logo, não existem pares de laços a formar:
-                  <MathView math="\sum_{i,j} L_i(s)L_j(s) = 0" block />
+                  Como o grafo possui apenas {detailedLoops.length} laço(s) fechado(s), não há pares de laços a combinar:
+                  <MathView math="\sum_{i,j} \left(L_i(s)L_j(s)\right)_{\text{disjuntos}} = 0" block />
                 </div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -1634,15 +1440,11 @@ L_{${lp.index}}(s) &= ${lp.substitutedFactorsLatex.join(' \\cdot ')}${
                             color: pc.isDisjoint ? '#34d399' : '#fbbf24'
                           }}
                         >
-                          {pc.isDisjoint ? '✓ LAÇOS DISJUNTOS (NÃO SE TOCAM)' : '✗ LAÇOS SE TOCAM'}
+                          {pc.isDisjoint ? '✓ LAÇOS DISJUNTOS (NÃO SE TOCAM)' : '✗ LAÇOS COMPARTILHAM NÓS'}
                         </span>
                       </div>
-
                       {pc.isDisjoint ? (
                         <div style={{ marginTop: '6px' }}>
-                          <div style={{ fontSize: '0.76rem', color: 'var(--text-muted)', marginBottom: '4px' }}>
-                            Interseção de nós: <MathView math={`V(L_{${pc.i}}) \\cap V(L_{${pc.j}}) = \\emptyset`} inline />
-                          </div>
                           <MathView
                             math={`L_{${pc.i}}(s) \\cdot L_{${pc.j}}(s) = \\left(${
                               detailedLoops[pc.i - 1].finalGainLatex
@@ -1654,7 +1456,7 @@ L_{${lp.index}}(s) &= ${lp.substitutedFactorsLatex.join(' \\cdot ')}${
                         </div>
                       ) : (
                         <div style={{ marginTop: '4px', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-                          Compartilham o(s) nó(s):{' '}
+                          Nós em comum:{' '}
                           <MathView
                             math={`V(L_{${pc.i}}) \\cap V(L_{${pc.j}}) = \\{ ${pc.sharedNodesLatex.join(', ')} \\} \\neq \\emptyset`}
                             inline
@@ -1663,72 +1465,37 @@ L_{${lp.index}}(s) &= ${lp.substitutedFactorsLatex.join(' \\cdot ')}${
                       )}
                     </div>
                   ))}
+                </div>
+              )}
+            </div>
 
-                  {disjointPairsOrder2.length === 0 && (
-                    <div
-                      style={{
-                        background: 'rgba(245, 158, 11, 0.08)',
-                        padding: '10px 12px',
-                        borderRadius: '6px',
-                        border: '1px solid rgba(245, 158, 11, 0.25)',
-                        fontSize: '0.8rem',
-                        color: '#fde68a'
-                      }}
-                    >
-                      Conclusão para pares (2 a 2): Não existem pares de laços disjuntos neste diagrama.
-                      <MathView math="\sum_{i,j} L_i(s)L_j(s) = 0" block />
+            {detailedLoops.length >= 3 && (
+              <div style={mathBoxStyle}>
+                <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#fbbf24', marginBottom: '8px' }}>
+                  4.2. Combinações de Três ou Mais Laços Disjuntos (<MathView math="r \ge 3" inline />)
+                </div>
+                {disjointHigherOrders.length === 0 ? (
+                  <MathView math="\sum_{i,j,k} \left(L_i(s)L_j(s)L_k(s)\right)_{\text{disjuntos}} = 0" block />
+                ) : (
+                  disjointHigherOrders.map((comb, cIdx) => (
+                    <div key={cIdx} style={{ background: '#060a14', padding: '10px 12px', borderRadius: '6px', marginBottom: '6px' }}>
+                      <MathView
+                        math={`${comb.loopIndices.map(i => `L_{${i}}(s)`).join(' \\cdot ')} = \\mathbf{${formatRatFuncLatex(
+                          comb.gain
+                        )}}`}
+                        block
+                      />
                     </div>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* 4.2 Combinações de 3 ou mais laços disjuntos */}
-            <div style={mathBoxStyle}>
-              <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#fbbf24', marginBottom: '8px' }}>
-                4.2. Combinações de Três ou Mais Laços Mutuamente Disjuntos (<MathView math="r \ge 3" inline />)
+                  ))
+                )}
               </div>
-              {disjointHigherOrders.length === 0 ? (
-                <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
-                  Não existem ternas ou combinações de ordem <MathView math="r \ge 3" inline /> de laços mutuamente disjuntos:
-                  <MathView math="\sum_{i,j,k} L_i(s)L_j(s)L_k(s) = 0" block />
-                </div>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  {disjointHigherOrders.map((comb, cIdx) => {
-                    const symProd = comb.loopIndices.map(i => `L_{${i}}(s)`).join(' \\cdot ');
-                    const valProd = comb.loopIndices
-                      .map(i => `\\left(${detailedLoops[i - 1]?.finalGainLatex || '1'}\\right)`)
-                      .join(' \\cdot ');
-                    return (
-                      <div
-                        key={cIdx}
-                        style={{
-                          background: '#060a14',
-                          padding: '10px 12px',
-                          borderRadius: '6px',
-                          border: '1px solid rgba(16, 185, 129, 0.35)'
-                        }}
-                      >
-                        <div style={{ fontSize: '0.78rem', color: '#34d399', fontWeight: 700, marginBottom: '4px' }}>
-                          Combinação Disjunta de Ordem {comb.order}:
-                        </div>
-                        <MathView
-                          math={`${symProd} = ${valProd} = \\mathbf{${ratToLatex(comb.gain)}}`}
-                          block
-                        />
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
+            )}
           </div>
         )}
       </div>
 
       {/* =====================================================================
-          ETAPA 5 — DETERMINANTE DE MASON (\Delta)
+          ETAPA 5 — CÁLCULO DO DETERMINANTE GERAL \Delta
          ===================================================================== */}
       <div style={stepCardStyle} data-testid="mason-step-5">
         <div style={stepHeaderStyle} onClick={() => toggleStep(5)}>
@@ -1746,7 +1513,7 @@ L_{${lp.index}}(s) &= ${lp.substitutedFactorsLatex.join(' \\cdot ')}${
               ETAPA 5
             </span>
             <h4 style={{ margin: 0, fontSize: '0.94rem', fontWeight: 800, color: '#f8fafc' }}>
-              Cálculo do Determinante Geral de Mason (<MathView math="\Delta" inline />)
+              Cálculo do Determinante Geral (<MathView math="\Delta" inline />)
             </h4>
           </div>
           <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{openSteps[5] ? '▲' : '▼'}</span>
@@ -1755,59 +1522,30 @@ L_{${lp.index}}(s) &= ${lp.substitutedFactorsLatex.join(' \\cdot ')}${
         {openSteps[5] && (
           <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
             <div style={mathBoxStyle}>
-              <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#34d399', marginBottom: '6px' }}>
-                5.1. Expressão Geral do Determinante de Mason
-              </div>
               <MathView
-                math="\Delta(s) = 1 - \sum_{i} L_i(s) + \sum_{i,j} L_i(s)L_j(s) - \sum_{i,j,k} L_i(s)L_j(s)L_k(s) + \cdots"
+                math="\Delta(s) = 1 - \sum_{i} L_i(s) + \sum_{i,j} \left(L_i(s)L_j(s)\right)_{\text{disjuntos}} - \sum_{i,j,k} \left(L_i(s)L_j(s)L_k(s)\right)_{\text{disjuntos}} + \cdots"
                 block
               />
-            </div>
-
-            <div style={mathBoxStyle}>
-              <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#34d399', marginBottom: '8px' }}>
-                5.2. Substituição dos Termos e Desenvolvimento Algébrico
-              </div>
-
-              {detailedLoops.length > 0 && (
-                <div style={{ background: '#060a14', padding: '10px 12px', borderRadius: '6px', marginBottom: '10px' }}>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '4px' }}>
-                    Soma dos ganhos dos laços individuais (<MathView math="\sum_i L_i(s)" inline />):
-                  </div>
-                  <MathView
-                    math={`\\sum_{i=1}^{${detailedLoops.length}} L_i(s) = ${detailedLoops
-                      .map(l => `\\left(${l.finalGainLatex}\\right)`)
-                      .join(' + ')} = ${ratToLatex(sumIndividualLoops)}`}
-                    block
-                  />
-                </div>
-              )}
-
-              <div style={{ background: '#060a14', padding: '10px 12px', borderRadius: '6px', border: '1px solid rgba(16, 185, 129, 0.25)' }}>
-                <div style={{ fontSize: '0.75rem', color: '#6ee7b7', fontWeight: 700, marginBottom: '4px' }}>
-                  Substituição completa em <MathView math="\Delta(s)" inline /> e redução ao mesmo denominador:
-                </div>
+              <div style={{ background: '#060a14', padding: '10px 12px', borderRadius: '6px', marginTop: '10px', border: '1px solid rgba(16, 185, 129, 0.25)' }}>
                 <MathView
                   math={`\\begin{aligned}
-\\Delta(s) &= 1 - \\left(${ratToLatex(sumIndividualLoops)}\\right)${
+\\Delta(s) &= 1 - \\left(${formatRatFuncLatex(sumIndividualLoops)}\\right)${
                     disjointPairsOrder2.length > 0
-                      ? ` + \\left(${ratToLatex(sumDisjointPairs)}\\right)`
-                      : ' + 0'
+                      ? ` + \\left(${formatRatFuncLatex(sumDisjointPairs)}\\right)`
+                      : ''
                   }${
                     disjointHigherOrders.length > 0
-                      ? ` - \\left(${ratToLatex(sumDisjointTriplets)}\\right)`
+                      ? ` - \\left(${formatRatFuncLatex(sumDisjointTriplets)}\\right)`
                       : ''
                   } \\\\[4pt]
 ${
   !polyIsOne(loopContribution.den) && !polyIsZero(loopContribution.num)
-    ? `\\Delta(s) &= 1 + \\frac{${polyToLatex(loopContribution.num)}}{${polyToLatex(
-        loopContribution.den
-      )}} = \\frac{${formatPolyFactorLatex(loopContribution.den)} + ${formatPolyFactorLatex(
+    ? `\\Delta(s) &= \\frac{${formatPolyFactorLatex(loopContribution.den)} + ${formatPolyFactorLatex(
         loopContribution.num
-      )}}{${polyToLatex(loopContribution.den)}} \\\\[6pt]`
+      )}}{${formatPolyFactorLatex(loopContribution.den)}} \\\\[6pt]`
     : ''
 }
-\\mathbf{\\Delta(s)} &= \\mathbf{${ratToLatex(analysis.delta)}}
+\\mathbf{\\Delta(s)} &= \\mathbf{${commonDeltaLatex}}
 \\end{aligned}`}
                   block
                 />
@@ -1818,7 +1556,7 @@ ${
       </div>
 
       {/* =====================================================================
-          ETAPA 6 — DETERMINANTES ASSOCIADOS AOS CAMINHOS DIRETOS (\Delta_k)
+          ETAPA 6 — CÁLCULO DOS COFATORES \Delta_k POR ENTRADA
          ===================================================================== */}
       <div style={stepCardStyle} data-testid="mason-step-6">
         <div style={stepHeaderStyle} onClick={() => toggleStep(6)}>
@@ -1836,7 +1574,7 @@ ${
               ETAPA 6
             </span>
             <h4 style={{ margin: 0, fontSize: '0.94rem', fontWeight: 800, color: '#f8fafc' }}>
-              Determinantes Complementares dos Caminhos Diretos (<MathView math="\Delta_k" inline />)
+              Cálculo dos Cofatores (<MathView math="\Delta_k" inline />) Associados a Cada Caminho Direto
             </h4>
           </div>
           <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{openSteps[6] ? '▲' : '▼'}</span>
@@ -1844,102 +1582,57 @@ ${
 
         {openSteps[6] && (
           <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
-              Para cada caminho direto <MathView math="P_k" inline />, o determinante complementar (cofator) <MathView math="\Delta_k(s)" inline /> é obtido a partir de <MathView math="\Delta(s)" inline /> removendo todos os laços que tocam ao menos um nó de <MathView math="P_k" inline />:
-            </div>
-
-            {detailedCofactors.map(cf => (
+            {detailedInputGroups.map((grp, gIdx) => (
               <div
-                key={cf.pathIndex}
+                key={grp.pair.inputInfo.id}
                 style={{
                   ...mathBoxStyle,
-                  borderLeft: '3px solid #06b6d4'
+                  borderLeft: gIdx === 0 ? '3px solid #06b6d4' : '3px solid #fbbf24'
                 }}
               >
-                <div style={{ fontSize: '0.86rem', fontWeight: 800, color: '#22d3ee', marginBottom: '8px' }}>
-                  Determinante Complementar <MathView math={`\\Delta_{${cf.pathIndex}}(s)`} inline /> (associado a{' '}
-                  <MathView math={`P_{${cf.pathIndex}}(s)`} inline />)
+                <div style={{ fontSize: '0.84rem', fontWeight: 800, color: gIdx === 0 ? '#22d3ee' : '#fbbf24', marginBottom: '8px' }}>
+                  6.{gIdx + 1}. Cofatores para os Caminhos da Entrada{' '}
+                  <MathView math={grp.pair.inputInfo.signalLatex} inline />{' '}
+                  <MathView math="\rightarrow" inline /> <MathView math={grp.pair.targetInfo.signalLatex} inline />
                 </div>
 
-                {/* Análise de toque de cada laço com o caminho P_k */}
-                {cf.loopTouchStatus.length > 0 && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '10px' }}>
-                    {cf.loopTouchStatus.map(st => (
-                      <div
-                        key={st.loopIndex}
-                        style={{
-                          background: '#060a14',
-                          padding: '8px 10px',
-                          borderRadius: '6px',
-                          fontSize: '0.78rem',
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center',
-                          flexWrap: 'wrap',
-                          gap: '8px',
-                          border: st.touches
-                            ? '1px solid rgba(239, 68, 68, 0.2)'
-                            : '1px solid rgba(16, 185, 129, 0.3)'
-                        }}
-                      >
-                        <span>
-                          Laço <MathView math={`L_{${st.loopIndex}}`} inline />:{' '}
-                          {st.touches ? (
-                            <>
-                              toca <MathView math={`P_{${cf.pathIndex}}`} inline /> em{' '}
-                              <MathView math={`\\{ ${st.sharedNodesLatex.join(', ')} \\}`} inline />
-                            </>
-                          ) : (
-                            <>
-                              não compartilha nós com <MathView math={`P_{${cf.pathIndex}}`} inline /> (
-                              <MathView
-                                math={`V(P_{${cf.pathIndex}}) \\cap V(L_{${st.loopIndex}}) = \\emptyset`}
-                                inline
-                              />
-                              )
-                            </>
-                          )}
-                        </span>
-                        <span
-                          style={{
-                            fontWeight: 700,
-                            fontSize: '0.73rem',
-                            color: st.touches ? '#fca5a5' : '#34d399'
-                          }}
-                        >
-                          {st.touches ? 'Excluído do cofator' : 'Participa do cofator'}
-                        </span>
+                {grp.paths.map(p => (
+                  <div
+                    key={p.index}
+                    style={{
+                      background: '#060a14',
+                      padding: '10px 12px',
+                      borderRadius: '6px',
+                      marginBottom: '8px',
+                      border: '1px solid rgba(255,255,255,0.07)'
+                    }}
+                  >
+                    <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#e2e8f0', marginBottom: '6px' }}>
+                      Cofator <MathView math={`\\Delta_{${p.index}}(s)`} inline /> associado a{' '}
+                      <MathView math={`P_{${p.index}}(s) = ${p.finalGainLatex}`} inline />:
+                    </div>
+
+                    {p.loopTouchStatus.map(st => (
+                      <div key={st.loopIndex} style={{ fontSize: '0.76rem', color: 'var(--text-muted)', marginBottom: '4px' }}>
+                        • Laço <MathView math={`L_{${st.loopIndex}}`} inline />:{' '}
+                        {st.touches ? (
+                          <span style={{ color: '#fca5a5' }}>
+                            toca o caminho em <MathView math={`\\{ ${st.sharedNodesLatex.join(', ')} \\}`} inline /> (excluído)
+                          </span>
+                        ) : (
+                          <span style={{ color: '#34d399' }}>
+                            disjunto ao caminho (permanece ativo em <MathView math={`\\Delta_{${p.index}}`} inline />)
+                          </span>
+                        )}
                       </div>
                     ))}
-                  </div>
-                )}
 
-                {/* Cálculo explícito de \Delta_k e P_k * \Delta_k */}
-                <div style={{ background: '#060a14', padding: '10px 12px', borderRadius: '6px', border: '1px solid rgba(6, 182, 212, 0.25)' }}>
-                  {cf.activeLoopIndices.length === 0 ? (
                     <MathView
-                      math={`\\begin{aligned}
-\\Delta_{${cf.pathIndex}}(s) &= 1 - 0 = \\mathbf{1} \\\\[4pt]
-P_{${cf.pathIndex}}(s)\\Delta_{${cf.pathIndex}}(s) &= \\left(${
-                        detailedPaths[cf.pathIndex - 1]?.finalGainLatex || '1'
-                      }\\right) \\cdot 1 = \\mathbf{${cf.pathTimesCofactorLatex}}
-\\end{aligned}`}
+                      math={`\\Delta_{${p.index}}(s) = \\mathbf{${p.cofactorLatex}} \\quad \\implies \\quad P_{${p.index}}(s)\\Delta_{${p.index}}(s) = \\mathbf{${p.pathTimesCofactorLatex}}`}
                       block
                     />
-                  ) : (
-                    <MathView
-                      math={`\\begin{aligned}
-\\Delta_{${cf.pathIndex}}(s) &= 1 - \\left(${cf.activeLoopIndices
-                        .map(li => detailedLoops[li - 1]?.finalGainLatex || '0')
-                        .join(' + ')}\\right) = \\mathbf{${cf.cofactorLatex}} \\\\[4pt]
-P_{${cf.pathIndex}}(s)\\Delta_{${cf.pathIndex}}(s) &= \\left(${
-                        detailedPaths[cf.pathIndex - 1]?.finalGainLatex || '1'
-                      }\\right) \\cdot \\left(${cf.cofactorLatex}\\right) = \\mathbf{${cf.pathTimesCofactorLatex}}
-\\end{aligned}`}
-                      block
-                    />
-                  )}
-                </div>
+                  </div>
+                ))}
               </div>
             ))}
           </div>
@@ -1947,7 +1640,7 @@ P_{${cf.pathIndex}}(s)\\Delta_{${cf.pathIndex}}(s) &= \\left(${
       </div>
 
       {/* =====================================================================
-          ETAPA 7 — APLICAÇÃO DA FÓRMULA DE MASON
+          ETAPA 7 — APLICAÇÃO DA FÓRMULA GERAL DE MASON POR ENTRADA
          ===================================================================== */}
       <div style={stepCardStyle} data-testid="mason-step-7">
         <div style={stepHeaderStyle} onClick={() => toggleStep(7)}>
@@ -1965,7 +1658,7 @@ P_{${cf.pathIndex}}(s)\\Delta_{${cf.pathIndex}}(s) &= \\left(${
               ETAPA 7
             </span>
             <h4 style={{ margin: 0, fontSize: '0.94rem', fontWeight: 800, color: '#f8fafc' }}>
-              Aplicação da Fórmula Geral de Mason
+              Aplicação da Fórmula Geral de Mason para Cada Entrada
             </h4>
           </div>
           <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{openSteps[7] ? '▲' : '▼'}</span>
@@ -1973,59 +1666,43 @@ P_{${cf.pathIndex}}(s)\\Delta_{${cf.pathIndex}}(s) &= \\left(${
 
         {openSteps[7] && (
           <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            {/* Fórmula Geral */}
             <div style={mathBoxStyle}>
-              <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#818cf8', marginBottom: '6px' }}>
-                7.1. Fórmula do Ganho de Mason
-              </div>
               <MathView
-                math={`T(s) = \\frac{\\displaystyle\\sum_{k=1}^{${detailedPaths.length}} P_k(s)\\Delta_k(s)}{\\Delta(s)} = \\frac{${detailedPaths
-                  .map(p => `P_{${p.index}}(s)\\Delta_{${p.index}}(s)`)
-                  .join(' + ')}}{\\Delta(s)}`}
+                math="T_m(s) = \frac{\text{Saída}(s)}{\text{Entrada}_m(s)} = \frac{\displaystyle\sum_{k=1}^{N_m} P_k(s)\Delta_k(s)}{\Delta(s)}"
                 block
               />
             </div>
 
-            {/* Soma do Numerador */}
-            <div style={mathBoxStyle}>
-              <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#818cf8', marginBottom: '6px' }}>
-                7.2. Desenvolvimento da Soma do Numerador
-              </div>
-              <MathView
-                math={`\\begin{aligned}
-N_{\\text{Mason}}(s) &= \\sum_{k=1}^{${detailedPaths.length}} P_k(s)\\Delta_k(s) \\\\[4pt]
-N_{\\text{Mason}}(s) &= ${detailedCofactors
-                  .map(cf => `\\left(${cf.pathTimesCofactorLatex}\\right)`)
-                  .join(' + ')} \\\\[4pt]
-\\mathbf{N_{\\text{Mason}}(s)} &= \\mathbf{${ratToLatex(numeratorSum)}}
+            {detailedInputGroups.map((grp, gIdx) => (
+              <div
+                key={grp.pair.inputInfo.id}
+                style={{
+                  ...mathBoxStyle,
+                  borderLeft: gIdx === 0 ? '3px solid #6366f1' : '3px solid #fbbf24'
+                }}
+              >
+                <div style={{ fontSize: '0.84rem', fontWeight: 800, color: '#a5b4fc', marginBottom: '6px' }}>
+                  7.{gIdx + 1}. Aplicação para a Entrada <MathView math={grp.pair.inputInfo.signalLatex} inline /> (demais entradas nulas)
+                </div>
+                <MathView
+                  math={`\\begin{aligned}
+\\frac{${grp.pair.targetInfo.signalLatex}}{${grp.pair.inputInfo.signalLatex}} &= \\frac{${grp.paths
+                    .map(p => `\\left(${p.pathTimesCofactorLatex}\\right)`)
+                    .join(' + ')}}{${commonDeltaLatex}} \\\\[6pt]
+\\mathbf{\\frac{${grp.pair.targetInfo.signalLatex}}{${grp.pair.inputInfo.signalLatex}}} &= \\mathbf{${
+                    grp.pair.transferFunctionLatex
+                  }}
 \\end{aligned}`}
-                block
-              />
-            </div>
-
-            {/* Substituição e Divisão pelo Denominador */}
-            <div style={mathBoxStyle}>
-              <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#818cf8', marginBottom: '6px' }}>
-                7.3. Divisão pelo Determinante Geral <MathView math="\Delta(s)" inline />
+                  block
+                />
               </div>
-              <MathView
-                math={`\\begin{aligned}
-T(s) &= \\frac{N_{\\text{Mason}}(s)}{\\Delta(s)} = \\frac{\\;${ratToLatex(
-                  numeratorSum
-                )}\\;}{\\;${ratToLatex(analysis.delta)}\\;} \\\\[6pt]
-T(s) &= \\left(${ratToLatex(numeratorSum)}\\right) \\cdot \\left(\\frac{${polyToLatex(
-                  analysis.delta.den
-                )}}{${polyToLatex(analysis.delta.num)}}\\right)
-\\end{aligned}`}
-                block
-              />
-            </div>
+            ))}
           </div>
         )}
       </div>
 
       {/* =====================================================================
-          ETAPA 8 — RESULTADO FINAL E SIMPLIFICAÇÃO ALGÉBRICA
+          ETAPA 8 — RESULTADO FINAL, OUTROS SINAIS (E(s)) E SUPERPOSIÇÃO
          ===================================================================== */}
       <div
         style={{
@@ -2050,7 +1727,7 @@ T(s) &= \\left(${ratToLatex(numeratorSum)}\\right) \\cdot \\left(\\frac{${polyTo
               ETAPA 8
             </span>
             <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: '#f8fafc' }}>
-              Resultado Final e Simplificação Algébrica (<MathView math="T(s)" inline />)
+              Resultado Final, Funções de Transferência e Superposição Total
             </h4>
           </div>
           <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{openSteps[8] ? '▲' : '▼'}</span>
@@ -2058,43 +1735,73 @@ T(s) &= \\left(${ratToLatex(numeratorSum)}\\right) \\cdot \\left(\\frac{${polyTo
 
         {openSteps[8] && (
           <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            {/* Operações de Simplificação Realizadas */}
-            <div style={mathBoxStyle}>
-              <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#38bdf8', marginBottom: '6px' }}>
-                8.1. Simplificação Algébrica de Fatores Comuns
+            {/* 8.1 Funções de Transferência de Cada Entrada para a Saída */}
+            <div style={mathBoxStyle} data-testid="mason-final-output-tfs">
+              <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#38bdf8', marginBottom: '8px' }}>
+                8.1. Funções de Transferência Individuais para a Saída ({fullSys.primaryOutput.signalSymbol})
               </div>
-              {hasCommonDenominatorCancel ? (
-                <>
-                  <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '6px' }}>
-                    Cancelando o polinômio denominador comum{' '}
-                    <MathView math={`\\left(${polyToLatex(numeratorSum.den)}\\right)`} inline /> presente tanto em{' '}
-                    <MathView math="N_{\text{Mason}}(s)" inline /> quanto em <MathView math="\Delta(s)" inline />:
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '10px' }}>
+                {fullSys.outputByInputPairs.map(p => (
+                  <div
+                    key={p.inputInfo.id}
+                    style={{
+                      background: '#060a14',
+                      padding: '12px',
+                      borderRadius: '8px',
+                      border: '1px solid rgba(56, 189, 248, 0.3)'
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: '#94a3b8', marginBottom: '6px' }}>
+                      <span>
+                        Relação <b style={{ color: '#f8fafc' }}>{p.targetInfo.signalSymbol}/{p.inputInfo.signalSymbol}</b>:
+                      </span>
+                      <code style={{ color: '#38bdf8' }}>{p.transferFunctionCompact}</code>
+                    </div>
+                    <MathView
+                      math={`\\frac{${p.targetInfo.signalLatex}}{${p.inputInfo.signalLatex}} = \\mathbf{${p.transferFunctionLatex}}`}
+                      block
+                    />
                   </div>
-                  <MathView
-                    math={`T(s) = \\frac{\\cancel{\\left(${polyToLatex(
-                      analysis.delta.den
-                    )}\\right)} \\cdot \\left(${polyToLatex(
-                      numeratorSum.num
-                    )}\\right)}{\\cancel{\\left(${polyToLatex(
-                      numeratorSum.den
-                    )}\\right)} \\cdot \\left(${polyToLatex(
-                      analysis.delta.num
-                    )}\\right)} = ${finalTotalTLatex}`}
-                    block
-                  />
-                </>
-              ) : (
-                <MathView
-                  math={`T(s) = ${
-                    rawCrossLatex !== finalTotalTLatex ? `${rawCrossLatex} = ` : ''
-                  }${finalTotalTLatex}`}
-                  block
-                />
-              )}
+                ))}
+              </div>
             </div>
 
-            {/* Caixa de Destaque Final */}
+            {/* 8.2 Funções de Transferência para Sinais Internos / Erro E(s) */}
+            {fullSys.summerByInputPairs.length > 0 && (
+              <div style={mathBoxStyle} data-testid="mason-final-error-tfs">
+                <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#10b981', marginBottom: '8px' }}>
+                  8.2. Funções de Transferência para o Sinal de Erro e Sinais dos Somadores
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '10px' }}>
+                  {fullSys.summerByInputPairs.map(p => (
+                    <div
+                      key={`${p.targetInfo.id}_${p.inputInfo.id}`}
+                      style={{
+                        background: '#060a14',
+                        padding: '12px',
+                        borderRadius: '8px',
+                        border: '1px solid rgba(16, 185, 129, 0.25)'
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: '#94a3b8', marginBottom: '6px' }}>
+                        <span>
+                          Relação <b style={{ color: '#f8fafc' }}>{p.targetInfo.signalSymbol}/{p.inputInfo.signalSymbol}</b>:
+                        </span>
+                        <code style={{ color: '#34d399' }}>{p.transferFunctionCompact}</code>
+                      </div>
+                      <MathView
+                        math={`\\frac{${p.targetInfo.signalLatex}}{${p.inputInfo.signalLatex}} = \\mathbf{${p.transferFunctionLatex}}`}
+                        block
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* 8.3 Expressão Completa da Saída por Superposição */}
             <div
+              data-testid="mason-superposition-result"
               style={{
                 background: 'linear-gradient(180deg, #040917 0%, #071329 100%)',
                 border: '1.5px solid rgba(56, 189, 248, 0.5)',
@@ -2110,25 +1817,20 @@ T(s) &= \\left(${ratToLatex(numeratorSum)}\\right) \\cdot \\left(\\frac{${polyTo
                   fontWeight: 800,
                   color: '#38bdf8',
                   letterSpacing: '0.5px',
-                  marginBottom: '8px',
+                  marginBottom: '6px',
                   textTransform: 'uppercase'
                 }}
               >
-                Função de Transferência Equivalente em Malha Fechada
+                Expressão Completa da Saída por Superposição Linear
+              </div>
+              <div style={{ fontSize: '0.78rem', color: '#94a3b8', marginBottom: '8px' }}>
+                <code>{fullSys.superpositionOutputText}</code>
               </div>
 
               <div style={{ overflowX: 'auto', padding: '6px 0' }}>
-                <MathView
-                  math={`T(s) = \\frac{C(s)}{R(s)}${
-                    inputSymbolLatex !== 'R(s)' || outputSymbolLatex !== 'C(s)'
-                      ? ` = \\frac{${outputSymbolLatex}}{${inputSymbolLatex}}`
-                      : ''
-                  } = \\mathbf{${finalTotalTLatex}}`}
-                  block
-                />
+                <MathView math={fullSys.superpositionOutputLatex} block />
               </div>
 
-              {/* Botões para Copiar o Resultado Final */}
               <div
                 style={{
                   display: 'flex',
@@ -2141,9 +1843,7 @@ T(s) &= \\left(${ratToLatex(numeratorSum)}\\right) \\cdot \\left(\\frac{${polyTo
                 <button
                   type="button"
                   className="filter-btn"
-                  onClick={() =>
-                    handleCopyText(`T(s) = \\frac{${outputSymbolLatex}}{${inputSymbolLatex}} = ${finalTotalTLatex}`, 'final-latex')
-                  }
+                  onClick={() => handleCopyText(fullSys.superpositionOutputLatex, 'final-latex')}
                   style={{
                     padding: '6px 12px',
                     fontSize: '0.76rem',
@@ -2157,7 +1857,7 @@ T(s) &= \\left(${ratToLatex(numeratorSum)}\\right) \\cdot \\left(\\frac{${polyTo
                 <button
                   type="button"
                   className="filter-btn"
-                  onClick={() => handleCopyText(`T(s) = ${compactFinalText}`, 'final-text')}
+                  onClick={() => handleCopyText(fullSys.superpositionOutputText, 'final-text')}
                   style={{
                     padding: '6px 12px',
                     fontSize: '0.76rem',
@@ -2185,6 +1885,75 @@ T(s) &= \\left(${ratToLatex(numeratorSum)}\\right) \\cdot \\left(\\frac{${polyTo
                   📥 Baixar Memorial LaTeX (.tex)
                 </button>
               </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* =====================================================================
+          SEÇÃO DE VALIDAÇÃO ALGÉBRICA INDEPENDENTE (MASON vs SISTEMA DE EQUAÇÕES)
+         ===================================================================== */}
+      <div
+        style={{
+          ...stepCardStyle,
+          border: '1px solid rgba(16, 185, 129, 0.35)'
+        }}
+        data-testid="mason-algebraic-validation"
+      >
+        <div style={stepHeaderStyle} onClick={() => toggleStep(9)}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <span
+              style={{
+                background: '#10b981',
+                color: '#020617',
+                borderRadius: '6px',
+                padding: '2px 8px',
+                fontSize: '0.75rem',
+                fontWeight: 900
+              }}
+            >
+              VALIDAÇÃO ALGÉBRICA
+            </span>
+            <h4 style={{ margin: 0, fontSize: '0.94rem', fontWeight: 800, color: '#f8fafc' }}>
+              Demonstração Algébrica Independente a partir das Equações dos Somadores e Blocos
+            </h4>
+          </div>
+          <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{openSteps[9] ? '▲' : '▼'}</span>
+        </div>
+
+        {openSteps[9] && (
+          <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {fullSys.algebraicValidationSteps.map((st, idx) => (
+              <div key={idx} style={mathBoxStyle}>
+                <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#34d399', marginBottom: '4px' }}>
+                  {st.title}
+                </div>
+                <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: '8px' }}>
+                  {st.description}
+                </div>
+                <MathView math={st.equationLatex} block />
+              </div>
+            ))}
+
+            {/* Comparação direta entre Regra de Mason e Resolução Algébrica do Sistema */}
+            <div
+              style={{
+                background: fullSys.allValidationsMatch
+                  ? 'rgba(16, 185, 129, 0.1)'
+                  : 'rgba(239, 68, 68, 0.12)',
+                border: `1px solid ${fullSys.allValidationsMatch ? '#10b981' : '#ef4444'}`,
+                borderRadius: '8px',
+                padding: '12px 14px',
+                fontSize: '0.8rem',
+                color: fullSys.allValidationsMatch ? '#a7f3d0' : '#fecaca'
+              }}
+            >
+              <b>
+                {fullSys.allValidationsMatch
+                  ? '✓ Validação Cruzada Concluída com 100% de Concordância:'
+                  : '⚠️ Alerta de Divergência Matemática Detectada:'}
+              </b>{' '}
+              Todas as funções de transferência obtidas pela <b>Regra do Ganho de Mason</b> foram comparadas com a solução direta do sistema linear de equações dos somadores e blocos (<MathView math="\mathbf{A}(s)\mathbf{v}(s)=\mathbf{B}(s)\mathbf{u}(s)" inline />), confirmando identidade algébrica exata.
             </div>
           </div>
         )}

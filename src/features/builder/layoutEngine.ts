@@ -400,30 +400,81 @@ export function moveConnectionSegment(
   }
 
   const simplified = simplifyOrthogonalPoints(candidate);
-
-  // Verifica se o segmento movido atravessaria algum outro bloco
-  if (allElements.length > 0) {
-    const obstacles = allElements
-      .filter(el => el.id !== srcId && el.id !== tgtId)
-      .map(el => getElementBoundingBox(el, 4));
-    if (pathIntersectsAnyBox(simplified, obstacles)) {
-      return currentPoints;
-    }
-  }
-
   return simplified;
 }
 
 /**
+ * Move manualmente um vértice de curva/canto (ponto de passagem interno) na grade de 20px,
+ * ajustando os segmentos ortogonais adjacentes e preservando os pontos de conexão nos blocos.
+ */
+export function moveConnectionCorner(
+  currentPoints: Point[],
+  cornerIndex: number,
+  targetPt: Point
+): Point[] {
+  if (currentPoints.length < 3 || cornerIndex <= 0 || cornerIndex >= currentPoints.length - 1) {
+    return currentPoints;
+  }
+
+  const snapped = snapPointToGrid(targetPt, GRID_SIZE);
+  const pts = currentPoints.map(p => ({ ...p }));
+  const prev = pts[cornerIndex - 1];
+  const curr = pts[cornerIndex];
+  const next = pts[cornerIndex + 1];
+
+  const prevIsHoriz = Math.abs(prev.y - curr.y) <= Math.abs(prev.x - curr.x);
+  const nextIsHoriz = Math.abs(curr.y - next.y) <= Math.abs(curr.x - next.x);
+
+  pts[cornerIndex] = { x: snapped.x, y: snapped.y };
+
+  // Ajusta o vértice anterior se não for a porta fixa de origem (índice 0)
+  if (cornerIndex - 1 > 0) {
+    if (prevIsHoriz) {
+      pts[cornerIndex - 1].y = snapped.y;
+    } else {
+      pts[cornerIndex - 1].x = snapped.x;
+    }
+  }
+
+  // Ajusta o vértice seguinte se não for a porta fixa de destino (índice n - 1)
+  if (cornerIndex + 1 < pts.length - 1) {
+    if (nextIsHoriz) {
+      pts[cornerIndex + 1].y = snapped.y;
+    } else {
+      pts[cornerIndex + 1].x = snapped.x;
+    }
+  }
+
+  // Reconecta ortogonalmente caso o vértice seja adjacente à porta de origem ou destino
+  const result: Point[] = [pts[0]];
+  for (let i = 1; i < pts.length; i++) {
+    const a = result[result.length - 1];
+    const b = pts[i];
+    if (Math.abs(a.x - b.x) > 1 && Math.abs(a.y - b.y) > 1) {
+      if (i === 1) {
+        if (prevIsHoriz) result.push({ x: b.x, y: a.y });
+        else result.push({ x: a.x, y: b.y });
+      } else {
+        if (nextIsHoriz) result.push({ x: a.x, y: b.y });
+        else result.push({ x: b.x, y: a.y });
+      }
+    }
+    result.push(b);
+  }
+
+  return simplifyOrthogonalPoints(result);
+}
+
+/**
  * Reconstrói um caminho ajustado manualmente quando os blocos conectados são movimentados,
- * garantindo ortogonalidade e recalculando se houver colisão com obstáculos.
+ * garantindo ortogonalidade e preservando os ajustes manuais feitos pelo usuário.
  */
 function buildManualOrthogonalPath(
   p1: Point,
   p2: Point,
   manualInteriorPoints: Point[],
   endSide: CompassDirection,
-  obstacles: BoundingBox[]
+  _obstacles: BoundingBox[]
 ): Point[] | null {
   if (!manualInteriorPoints || manualInteriorPoints.length === 0) return null;
 
@@ -434,7 +485,6 @@ function buildManualOrthogonalPath(
   if (Math.abs(p1.x - first.x) > 1 && Math.abs(p1.y - first.y) > 1) {
     // Conecta p1 ao primeiro vértice manual mantendo ortogonalidade
     if (interior.length >= 2 && Math.abs(interior[0].y - interior[1].y) < 1) {
-      // O primeiro segmento manual é horizontal na altura first.y
       chain.push({ x: p1.x, y: first.y });
     } else {
       chain.push({ x: first.x, y: p1.y });
@@ -460,11 +510,7 @@ function buildManualOrthogonalPath(
   }
   chain.push(p2);
 
-  const simplified = simplifyOrthogonalPoints(chain);
-  if (pathIntersectsAnyBox(simplified, obstacles)) {
-    return null; // Geometria impossibilitou preservar o trajeto sem colidir: recalcula automaticamente
-  }
-  return simplified;
+  return simplifyOrthogonalPoints(chain);
 }
 
 /**
