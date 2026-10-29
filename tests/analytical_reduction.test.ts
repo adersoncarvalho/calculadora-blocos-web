@@ -263,4 +263,66 @@ describe('Resolução Analítica, Realimentação e Álgebra de Diagramas de Blo
     expect(analysis.superpositionOutputText).toContain('G1G2/(1 + G1G2)');
     expect(analysis.superpositionOutputText).toContain('G2/(1 + G1G2)');
   });
+
+  // =========================================================================
+  // CASO DE TESTE 7: INTEGRIDADE COMPLETA DAS ETAPAS 0 A 10
+  // =========================================================================
+  it('7. Deve garantir que todas as etapas analíticas (0 a 10) possuam dados e equações estruturados', () => {
+    const cascadeGraph: DiagramGraph = {
+      elements: [
+        { id: 'r1', code: 'R1', type: 'input', subType: 'reference', name: 'R(s)' },
+        { id: 'g1', code: 'G1', type: 'block', name: 'G1(s)' },
+        { id: 'g2', code: 'G2', type: 'block', name: 'G2(s)' },
+        { id: 'y1', code: 'C1', type: 'output', name: 'C(s)' }
+      ],
+      connections: [
+        { id: 'c1', from: 'r1', to: 'g1', sign: '+' },
+        { id: 'c2', from: 'g1', to: 'g2', sign: '+' },
+        { id: 'c3', from: 'g2', to: 'y1', sign: '+' }
+      ]
+    };
+
+    const res = analyzeCompleteBlockDiagram(cascadeGraph, 'r1', 'y1');
+
+    // Etapa 0: Validação topológica
+    expect(res.validationReport).toBeDefined();
+    expect(res.validationReport.checks.length).toBe(8);
+
+    // Etapa 1: Nós e Variáveis
+    expect(res.independentInputs.length).toBe(1);
+    expect(res.outputs.length).toBe(1);
+
+    // Etapa 2: Somadores (pode ser 0 para cascata)
+    expect(res.summerEquations).toBeDefined();
+
+    // Etapa 3: Relações dos blocos
+    expect(res.blockRelations.length).toBe(2);
+    expect(res.blockRelations[0].relationLatex).toBeDefined();
+
+    // Etapa 4: Substituição progressiva
+    expect(res.progressiveSubstitutionSteps).toBeDefined();
+
+    // Etapa 5: Redução gráfica
+    expect(res.graphicalReduction).toBeDefined();
+    expect(res.graphicalReduction.steps.length).toBeGreaterThan(0);
+
+    // Etapa 6: Funções de transferência
+    expect(res.outputByInputPairs.length).toBe(1);
+    expect(res.outputByInputPairs[0].transferFunctionLatex).toContain('G_{1}G_{2}');
+
+    // Etapa 7: Superposição
+    expect(res.superpositionOutputLatex).toBeDefined();
+    expect(res.superpositionOutputLatex).toContain('G_{1}G_{2}');
+
+    // Etapa 8: Validação
+    expect(res.algebraicValidationSteps).toBeDefined();
+
+    // Etapa 9: TVF
+    expect(res.steadyStateReport).toBeDefined();
+    expect(res.steadyStateReport.conditionLatex).toBeDefined();
+
+    // Etapa 10: Scilab
+    expect(res.scilabReport).toBeDefined();
+    expect(res.scilabReport.scriptCode).toContain('syslin');
+  });
 });

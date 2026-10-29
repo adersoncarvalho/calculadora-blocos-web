@@ -4474,14 +4474,15 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
               flex: 1,
               minWidth: 0,
               minHeight: 0,
-              height: isVerticalSplit ? undefined : '100%',
+              height: '100%',
               background: 'var(--bg)',
-              overflowY: 'auto',
-              overflowX: 'hidden',
-              padding: '14px 18px',
+              overflow: 'hidden',
+              padding: 0,
               boxSizing: 'border-box',
               position: 'relative',
-              zIndex: 35
+              zIndex: 35,
+              display: 'flex',
+              flexDirection: 'column'
             }}
           >
             {/* Barra superior rápida quando o Painel 1 (Circuito) está temporariamente minimizado */}
@@ -4498,7 +4499,8 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
                   border: '1px solid var(--card-border)',
                   borderRadius: '8px',
                   padding: '8px 12px',
-                  marginBottom: '12px'
+                  margin: '10px 14px 0 14px',
+                  flexShrink: 0
                 }}
               >
                 <span style={{ fontSize: '0.76rem', fontWeight: 700, color: 'var(--text)' }}>

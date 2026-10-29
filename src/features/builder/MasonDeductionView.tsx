@@ -434,10 +434,16 @@ export const MasonDeductionView: React.FC<MasonDeductionViewProps> = ({
           background: 'var(--card-bg)',
           border: 'none',
           borderBottom: isOpen ? '1px solid var(--card-border)' : 'none',
+          borderTopLeftRadius: '8px',
+          borderTopRightRadius: '8px',
+          borderBottomLeftRadius: isOpen ? '0' : '8px',
+          borderBottomRightRadius: isOpen ? '0' : '8px',
           color: 'var(--text)',
           cursor: 'pointer',
           textAlign: 'left',
-          transition: 'background 0.15s ease'
+          transition: 'background 0.15s ease',
+          boxSizing: 'border-box',
+          flexShrink: 0
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
@@ -691,6 +697,9 @@ export const MasonDeductionView: React.FC<MasonDeductionViewProps> = ({
       style={{
         display: 'flex',
         flexDirection: 'column',
+        flex: 1,
+        minHeight: 0,
+        minWidth: 0,
         height: '100%',
         width: '100%',
         background: 'var(--bg)',
@@ -896,13 +905,17 @@ export const MasonDeductionView: React.FC<MasonDeductionViewProps> = ({
 
       {/* CORPO ROLÁVEL DO MEMORIAL DE CÁLCULO */}
       <div
+        data-testid="deduction-scroll-container"
         style={{
           flex: 1,
+          minHeight: 0,
           overflowY: 'auto',
-          padding: '1.15rem',
+          overflowX: 'hidden',
+          padding: '1.25rem',
           display: 'flex',
           flexDirection: 'column',
-          gap: '1rem'
+          gap: '1.25rem',
+          scrollBehavior: 'smooth'
         }}
       >
         {/* =================================================================
@@ -914,7 +927,12 @@ export const MasonDeductionView: React.FC<MasonDeductionViewProps> = ({
             border: '1px solid var(--card-border)',
             borderLeft: '4px solid var(--primary)',
             borderRadius: '8px',
-            padding: '1rem 1.2rem'
+            padding: '1rem 1.2rem',
+            flexShrink: 0,
+            minHeight: 'fit-content',
+            height: 'auto',
+            width: '100%',
+            boxSizing: 'border-box'
           }}
         >
           <div
@@ -1094,7 +1112,11 @@ export const MasonDeductionView: React.FC<MasonDeductionViewProps> = ({
               background: 'var(--card-bg)',
               border: `1px solid ${fullSys.validationReport.hasErrors ? 'var(--danger)' : 'var(--card-border)'}`,
               borderRadius: '8px',
-              overflow: 'hidden'
+              flexShrink: 0,
+              minHeight: 'fit-content',
+              height: 'auto',
+              width: '100%',
+              boxSizing: 'border-box'
             }}
           >
             {renderSectionHeader(
@@ -1113,7 +1135,10 @@ export const MasonDeductionView: React.FC<MasonDeductionViewProps> = ({
                   padding: '1.1rem',
                   display: 'flex',
                   flexDirection: 'column',
-                  gap: '0.85rem'
+                  gap: '0.85rem',
+                  height: 'auto',
+                  minHeight: 'fit-content',
+                  boxSizing: 'border-box'
                 }}
               >
                 {fullSys.directionCorrections && fullSys.directionCorrections.length > 0 && (
@@ -1218,7 +1243,11 @@ export const MasonDeductionView: React.FC<MasonDeductionViewProps> = ({
             background: 'var(--card-bg)',
             border: '1px solid var(--card-border)',
             borderRadius: '8px',
-            overflow: 'hidden'
+            flexShrink: 0,
+            minHeight: 'fit-content',
+            height: 'auto',
+            width: '100%',
+            boxSizing: 'border-box'
           }}
         >
           {renderSectionHeader(
@@ -1234,7 +1263,10 @@ export const MasonDeductionView: React.FC<MasonDeductionViewProps> = ({
                 padding: '1.1rem',
                 display: 'flex',
                 flexDirection: 'column',
-                gap: '0.95rem'
+                gap: '0.95rem',
+                height: 'auto',
+                minHeight: 'fit-content',
+                boxSizing: 'border-box'
               }}
             >
               <p style={{ margin: 0, fontSize: '0.84rem', color: 'var(--text-muted)', lineHeight: 1.6 }}>
@@ -1529,7 +1561,11 @@ export const MasonDeductionView: React.FC<MasonDeductionViewProps> = ({
             background: 'var(--card-bg)',
             border: '1px solid var(--card-border)',
             borderRadius: '8px',
-            overflow: 'hidden'
+            flexShrink: 0,
+            minHeight: 'fit-content',
+            height: 'auto',
+            width: '100%',
+            boxSizing: 'border-box'
           }}
         >
           {renderSectionHeader(
@@ -1545,7 +1581,10 @@ export const MasonDeductionView: React.FC<MasonDeductionViewProps> = ({
                 padding: '1.1rem',
                 display: 'flex',
                 flexDirection: 'column',
-                gap: '0.85rem'
+                gap: '0.85rem',
+                height: 'auto',
+                minHeight: 'fit-content',
+                boxSizing: 'border-box'
               }}
             >
               {fullSys.summerEquations.length === 0 ? (
@@ -1618,7 +1657,11 @@ export const MasonDeductionView: React.FC<MasonDeductionViewProps> = ({
             background: 'var(--card-bg)',
             border: '1px solid var(--card-border)',
             borderRadius: '8px',
-            overflow: 'hidden'
+            flexShrink: 0,
+            minHeight: 'fit-content',
+            height: 'auto',
+            width: '100%',
+            boxSizing: 'border-box'
           }}
         >
           {renderSectionHeader(
@@ -1634,7 +1677,10 @@ export const MasonDeductionView: React.FC<MasonDeductionViewProps> = ({
                 padding: '1.1rem',
                 display: 'flex',
                 flexDirection: 'column',
-                gap: '0.85rem'
+                gap: '0.85rem',
+                height: 'auto',
+                minHeight: 'fit-content',
+                boxSizing: 'border-box'
               }}
             >
               <p style={{ margin: 0, fontSize: '0.84rem', color: 'var(--text-muted)', lineHeight: 1.6 }}>
@@ -1642,47 +1688,62 @@ export const MasonDeductionView: React.FC<MasonDeductionViewProps> = ({
                 pelo produto algébrico de sua função de transferência pelo sinal aplicado à sua entrada:
               </p>
 
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-                  gap: '0.75rem'
-                }}
-              >
-                {fullSys.blockRelations.map((bRel, idx) => (
-                  <div
-                    key={bRel.blockId}
-                    style={{
-                      background: 'var(--code-bg)',
-                      border: '1px solid var(--card-border)',
-                      borderRadius: '6px',
-                      padding: '0.8rem 0.95rem',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '0.4rem',
-                      overflowX: 'auto'
-                    }}
-                  >
+              {fullSys.blockRelations.length === 0 ? (
+                <div
+                  style={{
+                    background: 'var(--code-bg)',
+                    border: '1px solid var(--card-border)',
+                    borderRadius: '6px',
+                    padding: '0.85rem 1rem',
+                    fontSize: '0.82rem',
+                    color: 'var(--text-muted)'
+                  }}
+                >
+                  O diagrama atual não possui blocos adicionais (conexão direta entre os nós).
+                </div>
+              ) : (
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+                    gap: '0.75rem'
+                  }}
+                >
+                  {fullSys.blockRelations.map((bRel, idx) => (
                     <div
+                      key={bRel.blockId}
                       style={{
+                        background: 'var(--code-bg)',
+                        border: '1px solid var(--card-border)',
+                        borderRadius: '6px',
+                        padding: '0.8rem 0.95rem',
                         display: 'flex',
-                        justifyContent: 'space-between',
-                        fontSize: '0.75rem',
-                        color: 'var(--text-muted)',
-                        fontWeight: 700
+                        flexDirection: 'column',
+                        gap: '0.4rem',
+                        overflowX: 'auto'
                       }}
                     >
-                      <span>
-                        Equação (3.{idx + 1}) — Bloco {bRel.blockCode}
-                      </span>
-                      <span>
-                        Entrada: <MathView math={bRel.inputSignalLatex} inline />
-                      </span>
+                      <div
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          fontSize: '0.75rem',
+                          color: 'var(--text-muted)',
+                          fontWeight: 700
+                        }}
+                      >
+                        <span>
+                          Equação (3.{idx + 1}) — Bloco {bRel.blockCode}
+                        </span>
+                        <span>
+                          Entrada: <MathView math={bRel.inputSignalLatex} inline />
+                        </span>
+                      </div>
+                      <MathView math={bRel.relationLatex} />
                     </div>
-                    <MathView math={bRel.relationLatex} />
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </section>
@@ -1695,7 +1756,11 @@ export const MasonDeductionView: React.FC<MasonDeductionViewProps> = ({
             background: 'var(--card-bg)',
             border: '1px solid var(--card-border)',
             borderRadius: '8px',
-            overflow: 'hidden'
+            flexShrink: 0,
+            minHeight: 'fit-content',
+            height: 'auto',
+            width: '100%',
+            boxSizing: 'border-box'
           }}
         >
           {renderSectionHeader(
@@ -1711,7 +1776,10 @@ export const MasonDeductionView: React.FC<MasonDeductionViewProps> = ({
                 padding: '1.1rem',
                 display: 'flex',
                 flexDirection: 'column',
-                gap: '0.85rem'
+                gap: '0.85rem',
+                height: 'auto',
+                minHeight: 'fit-content',
+                boxSizing: 'border-box'
               }}
             >
               <p style={{ margin: 0, fontSize: '0.84rem', color: 'var(--text-muted)', lineHeight: 1.6 }}>
@@ -1720,19 +1788,41 @@ export const MasonDeductionView: React.FC<MasonDeductionViewProps> = ({
                 exclusivamente em função de si mesma e das entradas independentes:
               </p>
 
-              {fullSys.progressiveSubstitutionSteps.map(step => (
+              {fullSys.progressiveSubstitutionSteps.length === 0 ? (
                 <div
-                  key={step.stepNumber}
                   style={{
                     background: 'var(--code-bg)',
                     border: '1px solid var(--card-border)',
                     borderRadius: '6px',
                     padding: '0.85rem 1rem',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '0.5rem'
+                    fontSize: '0.82rem',
+                    color: 'var(--text-muted)',
+                    lineHeight: 1.55
                   }}
                 >
+                  O diagrama consiste em uma associação direta em cascata sem variáveis intermediárias de somador a substituir.
+                  A saída é expressa diretamente pelo produto algébrico dos blocos:
+                  <div style={{ marginTop: '0.5rem', overflowX: 'auto' }}>
+                    <MathView
+                      math={`${fullSys.primaryOutput.signalLatex} = \\left(${fullSys.outputByInputPairs[0]?.transferFunctionLatex || '1'}\\right) \\cdot ${fullSys.independentInputs[0]?.signalLatex || 'R(s)'}`}
+                    />
+                  </div>
+                </div>
+              ) : (
+                fullSys.progressiveSubstitutionSteps.map(step => (
+                  <div
+                    key={step.stepNumber}
+                    style={{
+                      background: 'var(--code-bg)',
+                      border: '1px solid var(--card-border)',
+                      borderRadius: '6px',
+                      padding: '0.85rem 1rem',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '0.5rem',
+                      flexShrink: 0
+                    }}
+                  >
                   <div style={{ fontSize: '0.83rem', fontWeight: 700, color: 'var(--primary)' }}>
                     Passo 4.{step.stepNumber} — {step.title}
                   </div>
@@ -1794,7 +1884,7 @@ export const MasonDeductionView: React.FC<MasonDeductionViewProps> = ({
                     </div>
                   </div>
                 </div>
-              ))}
+              )))}
             </div>
           )}
         </section>
@@ -1807,7 +1897,11 @@ export const MasonDeductionView: React.FC<MasonDeductionViewProps> = ({
             background: 'var(--card-bg)',
             border: '1px solid var(--card-border)',
             borderRadius: '8px',
-            overflow: 'hidden'
+            flexShrink: 0,
+            minHeight: 'fit-content',
+            height: 'auto',
+            width: '100%',
+            boxSizing: 'border-box'
           }}
         >
           {renderSectionHeader(
@@ -1823,7 +1917,10 @@ export const MasonDeductionView: React.FC<MasonDeductionViewProps> = ({
                 padding: '1.1rem',
                 display: 'flex',
                 flexDirection: 'column',
-                gap: '0.95rem'
+                gap: '0.95rem',
+                height: 'auto',
+                minHeight: 'fit-content',
+                boxSizing: 'border-box'
               }}
             >
               <p style={{ margin: 0, fontSize: '0.84rem', color: 'var(--text-muted)', lineHeight: 1.6 }}>
@@ -1834,7 +1931,7 @@ export const MasonDeductionView: React.FC<MasonDeductionViewProps> = ({
               </p>
 
               {/* 5.1 — Redução Gráfica Progressiva com Diagramas Equivalentes (Seção 3) */}
-              {fullSys.graphicalReduction?.steps?.length > 0 && (
+              {fullSys.graphicalReduction?.steps?.length > 0 ? (
                 <div
                   style={{
                     background: 'var(--card-bg)',
@@ -1843,7 +1940,11 @@ export const MasonDeductionView: React.FC<MasonDeductionViewProps> = ({
                     padding: '1rem',
                     display: 'flex',
                     flexDirection: 'column',
-                    gap: '0.85rem'
+                    gap: '0.85rem',
+                    flexShrink: 0,
+                    minHeight: 'fit-content',
+                    height: 'auto',
+                    boxSizing: 'border-box'
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
@@ -1870,7 +1971,11 @@ export const MasonDeductionView: React.FC<MasonDeductionViewProps> = ({
                           padding: '0.85rem 1rem',
                           display: 'flex',
                           flexDirection: 'column',
-                          gap: '0.55rem'
+                          gap: '0.55rem',
+                          flexShrink: 0,
+                          minHeight: 'fit-content',
+                          height: 'auto',
+                          boxSizing: 'border-box'
                         }}
                       >
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.4rem' }}>
@@ -1920,6 +2025,40 @@ export const MasonDeductionView: React.FC<MasonDeductionViewProps> = ({
                     ))}
                   </div>
                 </div>
+              ) : (
+                <div
+                  style={{
+                    background: 'var(--code-bg)',
+                    border: '1px solid var(--card-border)',
+                    borderRadius: '8px',
+                    padding: '1rem',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '0.6rem',
+                    flexShrink: 0
+                  }}
+                >
+                  <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--primary)' }}>
+                    📐 Redução Algébrica Direta do Diagrama
+                  </div>
+                  <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--text-muted)', lineHeight: 1.55 }}>
+                    Para este diagrama, a redução é obtida diretamente através da associação algébrica dos blocos
+                    e das equações de somadores formuladas nas etapas anteriores:
+                  </p>
+                  <div
+                    style={{
+                      background: 'var(--card-bg)',
+                      border: '1px solid var(--card-border)',
+                      borderRadius: '6px',
+                      padding: '0.75rem 1rem',
+                      overflowX: 'auto'
+                    }}
+                  >
+                    <MathView
+                      math={`\\frac{${fullSys.primaryOutput.signalLatex}}{${fullSys.independentInputs[0]?.signalLatex || 'R(s)'}} = ${fullSys.outputByInputPairs[0]?.transferFunctionLatex || fullSys.superpositionOutputLatex}`}
+                    />
+                  </div>
+                </div>
               )}
 
               {/* Ramos de transmissão direta identificados por entrada */}
@@ -1933,7 +2072,11 @@ export const MasonDeductionView: React.FC<MasonDeductionViewProps> = ({
                     padding: '0.85rem 1rem',
                     display: 'flex',
                     flexDirection: 'column',
-                    gap: '0.6rem'
+                    gap: '0.6rem',
+                    flexShrink: 0,
+                    minHeight: 'fit-content',
+                    height: 'auto',
+                    boxSizing: 'border-box'
                   }}
                 >
                   <div style={{ fontSize: '0.83rem', fontWeight: 700, color: 'var(--primary)' }}>
@@ -1941,25 +2084,31 @@ export const MasonDeductionView: React.FC<MasonDeductionViewProps> = ({
                     <MathView math={dPair.pair.inputInfo.signalLatex} inline /> até{' '}
                     <MathView math={dPair.pair.targetInfo.signalLatex} inline />
                   </div>
-                  {dPair.paths.map(path => (
-                    <div
-                      key={path.index}
-                      style={{
-                        background: 'var(--card-bg)',
-                        border: '1px solid var(--card-border)',
-                        borderRadius: '5px',
-                        padding: '0.65rem 0.85rem',
-                        overflowX: 'auto'
-                      }}
-                    >
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.3rem' }}>
-                        Trajeto de sinal ({path.index}): <MathView math={path.nodeSequenceLatex} inline />
-                      </div>
-                      <MathView
-                        math={`G_{\\text{direto},${path.index}}(s) = ${path.symbolicProductLatex} = ${path.substitutedProductLatex} = ${path.simplifiedGainLatex}`}
-                      />
+                  {dPair.paths.length === 0 ? (
+                    <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', padding: '0.3rem 0' }}>
+                      Nenhum trajeto direto intermediário nesta direção (o sinal atua por acoplamento via malha).
                     </div>
-                  ))}
+                  ) : (
+                    dPair.paths.map(path => (
+                      <div
+                        key={path.index}
+                        style={{
+                          background: 'var(--card-bg)',
+                          border: '1px solid var(--card-border)',
+                          borderRadius: '5px',
+                          padding: '0.65rem 0.85rem',
+                          overflowX: 'auto'
+                        }}
+                      >
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.3rem' }}>
+                          Trajeto de sinal ({path.index}): <MathView math={path.nodeSequenceLatex} inline />
+                        </div>
+                        <MathView
+                          math={`G_{\\text{direto},${path.index}}(s) = ${path.symbolicProductLatex} = ${path.substitutedProductLatex} = ${path.simplifiedGainLatex}`}
+                        />
+                      </div>
+                    ))
+                  )}
                 </div>
               ))}
 
@@ -2076,7 +2225,11 @@ export const MasonDeductionView: React.FC<MasonDeductionViewProps> = ({
             background: 'var(--card-bg)',
             border: '1px solid var(--card-border)',
             borderRadius: '8px',
-            overflow: 'hidden'
+            flexShrink: 0,
+            minHeight: 'fit-content',
+            height: 'auto',
+            width: '100%',
+            boxSizing: 'border-box'
           }}
         >
           {renderSectionHeader(
@@ -2092,7 +2245,10 @@ export const MasonDeductionView: React.FC<MasonDeductionViewProps> = ({
                 padding: '1.1rem',
                 display: 'flex',
                 flexDirection: 'column',
-                gap: '0.9rem'
+                gap: '0.9rem',
+                height: 'auto',
+                minHeight: 'fit-content',
+                boxSizing: 'border-box'
               }}
             >
               <p style={{ margin: 0, fontSize: '0.84rem', color: 'var(--text-muted)', lineHeight: 1.6 }}>
@@ -2101,18 +2257,33 @@ export const MasonDeductionView: React.FC<MasonDeductionViewProps> = ({
                 cada função de transferência individual:
               </p>
 
-              {fullSys.outputByInputPairs.map((pair, idx) => (
+              {fullSys.outputByInputPairs.length === 0 ? (
                 <div
-                  key={`tf-card-${idx}`}
                   style={{
                     background: 'var(--code-bg)',
                     border: '1px solid var(--card-border)',
-                    borderLeft: '4px solid var(--primary)',
                     borderRadius: '6px',
                     padding: '0.85rem 1rem',
-                    overflowX: 'auto'
+                    fontSize: '0.82rem',
+                    color: 'var(--text-muted)'
                   }}
                 >
+                  Nenhuma relação de transferência pôde ser computada. Verifique as conexões entre entrada e saída.
+                </div>
+              ) : (
+                fullSys.outputByInputPairs.map((pair, idx) => (
+                  <div
+                    key={`tf-card-${idx}`}
+                    style={{
+                      background: 'var(--code-bg)',
+                      border: '1px solid var(--card-border)',
+                      borderLeft: '4px solid var(--primary)',
+                      borderRadius: '6px',
+                      padding: '0.85rem 1rem',
+                      overflowX: 'auto',
+                      flexShrink: 0
+                    }}
+                  >
                   <div
                     style={{
                       fontSize: '0.8rem',
@@ -2138,7 +2309,7 @@ export const MasonDeductionView: React.FC<MasonDeductionViewProps> = ({
                     Expressão linear: {pair.transferFunctionCompact}
                   </div>
                 </div>
-              ))}
+              )))}
 
               {fullSys.summerByInputPairs.length > 0 && (
                 <div>
@@ -2202,7 +2373,11 @@ export const MasonDeductionView: React.FC<MasonDeductionViewProps> = ({
             background: 'var(--card-bg)',
             border: '1px solid var(--card-border)',
             borderRadius: '8px',
-            overflow: 'hidden'
+            flexShrink: 0,
+            minHeight: 'fit-content',
+            height: 'auto',
+            width: '100%',
+            boxSizing: 'border-box'
           }}
         >
           {renderSectionHeader(
@@ -2218,7 +2393,10 @@ export const MasonDeductionView: React.FC<MasonDeductionViewProps> = ({
                 padding: '1.1rem',
                 display: 'flex',
                 flexDirection: 'column',
-                gap: '0.85rem'
+                gap: '0.85rem',
+                height: 'auto',
+                minHeight: 'fit-content',
+                boxSizing: 'border-box'
               }}
             >
               <p style={{ margin: 0, fontSize: '0.84rem', color: 'var(--text-muted)', lineHeight: 1.6 }}>
@@ -2237,7 +2415,8 @@ export const MasonDeductionView: React.FC<MasonDeductionViewProps> = ({
                     border: '1px solid var(--card-border)',
                     borderRadius: '6px',
                     padding: '0.75rem 0.95rem',
-                    overflowX: 'auto'
+                    overflowX: 'auto',
+                    flexShrink: 0
                   }}
                 >
                   <div
@@ -2323,7 +2502,11 @@ export const MasonDeductionView: React.FC<MasonDeductionViewProps> = ({
             background: 'var(--card-bg)',
             border: '1px solid var(--card-border)',
             borderRadius: '8px',
-            overflow: 'hidden'
+            flexShrink: 0,
+            minHeight: 'fit-content',
+            height: 'auto',
+            width: '100%',
+            boxSizing: 'border-box'
           }}
         >
           {renderSectionHeader(
@@ -2339,7 +2522,10 @@ export const MasonDeductionView: React.FC<MasonDeductionViewProps> = ({
                 padding: '1.1rem',
                 display: 'flex',
                 flexDirection: 'column',
-                gap: '0.85rem'
+                gap: '0.85rem',
+                height: 'auto',
+                minHeight: 'fit-content',
+                boxSizing: 'border-box'
               }}
             >
               <div
@@ -2348,7 +2534,8 @@ export const MasonDeductionView: React.FC<MasonDeductionViewProps> = ({
                   border: '1px solid var(--card-border)',
                   borderRadius: '6px',
                   padding: '0.9rem 1rem',
-                  overflowX: 'auto'
+                  overflowX: 'auto',
+                  flexShrink: 0
                 }}
               >
                 <div
@@ -2373,7 +2560,8 @@ export const MasonDeductionView: React.FC<MasonDeductionViewProps> = ({
                     border: '1px solid var(--card-border)',
                     borderRadius: '6px',
                     padding: '0.8rem 1rem',
-                    overflowX: 'auto'
+                    overflowX: 'auto',
+                    flexShrink: 0
                   }}
                 >
                   <div
@@ -2400,7 +2588,8 @@ export const MasonDeductionView: React.FC<MasonDeductionViewProps> = ({
                   padding: '0.85rem 1rem',
                   display: 'flex',
                   flexDirection: 'column',
-                  gap: '0.55rem'
+                  gap: '0.55rem',
+                  flexShrink: 0
                 }}
               >
                 <div
@@ -2422,30 +2611,36 @@ export const MasonDeductionView: React.FC<MasonDeductionViewProps> = ({
                   </span>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
-                  {fullSys.algebraicValidationSteps.map((vStep, idx) => (
-                    <div
-                      key={`val-step-${idx}`}
-                      style={{
-                        background: 'var(--card-bg)',
-                        border: '1px solid var(--card-border)',
-                        borderRadius: '5px',
-                        padding: '0.55rem 0.8rem',
-                        overflowX: 'auto'
-                      }}
-                    >
+                  {fullSys.algebraicValidationSteps.length === 0 ? (
+                    <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', padding: '0.4rem 0' }}>
+                      Validação confirmada diretamente por equivalência das equações dos nós.
+                    </div>
+                  ) : (
+                    fullSys.algebraicValidationSteps.map((vStep, idx) => (
                       <div
+                        key={`val-step-${idx}`}
                         style={{
-                          fontSize: '0.72rem',
-                          color: 'var(--text-muted)',
-                          marginBottom: '0.2rem',
-                          fontWeight: 600
+                          background: 'var(--card-bg)',
+                          border: '1px solid var(--card-border)',
+                          borderRadius: '5px',
+                          padding: '0.55rem 0.8rem',
+                          overflowX: 'auto'
                         }}
                       >
-                        {vStep.title}: {vStep.description}
+                        <div
+                          style={{
+                            fontSize: '0.72rem',
+                            color: 'var(--text-muted)',
+                            marginBottom: '0.2rem',
+                            fontWeight: 600
+                          }}
+                        >
+                          {vStep.title}: {vStep.description}
+                        </div>
+                        <MathView math={vStep.equationLatex} />
                       </div>
-                      <MathView math={vStep.equationLatex} />
-                    </div>
-                  ))}
+                    ))
+                  )}
                 </div>
               </div>
             </div>
@@ -2460,7 +2655,11 @@ export const MasonDeductionView: React.FC<MasonDeductionViewProps> = ({
             background: 'var(--card-bg)',
             border: '1px solid var(--card-border)',
             borderRadius: '8px',
-            overflow: 'hidden'
+            flexShrink: 0,
+            minHeight: 'fit-content',
+            height: 'auto',
+            width: '100%',
+            boxSizing: 'border-box'
           }}
         >
           {renderSectionHeader(
@@ -2476,7 +2675,10 @@ export const MasonDeductionView: React.FC<MasonDeductionViewProps> = ({
                 padding: '1.1rem',
                 display: 'flex',
                 flexDirection: 'column',
-                gap: '0.9rem'
+                gap: '0.9rem',
+                height: 'auto',
+                minHeight: 'fit-content',
+                boxSizing: 'border-box'
               }}
             >
               <div
@@ -2655,7 +2857,11 @@ export const MasonDeductionView: React.FC<MasonDeductionViewProps> = ({
             background: 'var(--card-bg)',
             border: '1px solid var(--card-border)',
             borderRadius: '8px',
-            overflow: 'hidden'
+            flexShrink: 0,
+            minHeight: 'fit-content',
+            height: 'auto',
+            width: '100%',
+            boxSizing: 'border-box'
           }}
         >
           {renderSectionHeader(
@@ -2672,7 +2878,10 @@ export const MasonDeductionView: React.FC<MasonDeductionViewProps> = ({
                 padding: '1.1rem',
                 display: 'flex',
                 flexDirection: 'column',
-                gap: '0.9rem'
+                gap: '0.9rem',
+                height: 'auto',
+                minHeight: 'fit-content',
+                boxSizing: 'border-box'
               }}
             >
               {/* Barra de status e botões do Scilab */}

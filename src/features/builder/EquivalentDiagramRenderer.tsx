@@ -18,6 +18,11 @@ export const EquivalentDiagramRenderer: React.FC<EquivalentDiagramRendererProps>
   stepTitle,
   className = ''
 }) => {
+  const reactId = React.useId();
+  const uid = reactId.replace(/[^a-zA-Z0-9]/g, '');
+  const arrFwdId = `arr-fwd-${uid}`;
+  const arrBwdId = `arr-bwd-${uid}`;
+
   const { nodes, edges, inputId, outputId } = diagram;
 
   // Separação dos nós entre caminho direto (linha superior Y=70) e ramo de retorno (Y=140)
@@ -103,7 +108,9 @@ export const EquivalentDiagramRenderer: React.FC<EquivalentDiagramRendererProps>
         padding: '0.75rem',
         marginTop: '0.6rem',
         marginBottom: '0.6rem',
-        overflowX: 'auto'
+        overflowX: 'auto',
+        width: '100%',
+        boxSizing: 'border-box'
       }}
     >
       {stepTitle && (
@@ -125,16 +132,15 @@ export const EquivalentDiagramRenderer: React.FC<EquivalentDiagramRendererProps>
         viewBox={`0 0 ${svgWidth} ${svgHeight}`}
         style={{
           width: '100%',
-          minWidth: `${Math.min(svgWidth, 480)}px`,
+          minWidth: `${Math.min(svgWidth, 420)}px`,
           height: 'auto',
-          maxHeight: '220px',
           display: 'block'
         }}
       >
         <defs>
           {/* Marcador de seta para frente */}
           <marker
-            id="arr-fwd"
+            id={arrFwdId}
             viewBox="0 0 10 10"
             refX="9"
             refY="5"
@@ -146,7 +152,7 @@ export const EquivalentDiagramRenderer: React.FC<EquivalentDiagramRendererProps>
           </marker>
           {/* Marcador de seta para retorno */}
           <marker
-            id="arr-bwd"
+            id={arrBwdId}
             viewBox="0 0 10 10"
             refX="9"
             refY="5"
@@ -164,7 +170,7 @@ export const EquivalentDiagramRenderer: React.FC<EquivalentDiagramRendererProps>
           const toPos = nodePositions.get(e.to) || { x: svgWidth - 30, y: yFwd };
           const isFeedback = fromPos.x > toPos.x;
           const color = isFeedback ? '#d97706' : 'var(--primary)';
-          const markerId = isFeedback ? 'url(#arr-bwd)' : 'url(#arr-fwd)';
+          const markerId = isFeedback ? `url(#${arrBwdId})` : `url(#${arrFwdId})`;
 
           let pathD = '';
           let midX = (fromPos.x + toPos.x) / 2;
