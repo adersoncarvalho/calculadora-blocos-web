@@ -8,7 +8,7 @@ import {
   computeMasonAnalysis,
   MasonAnalysis
 } from '@/core/reduction/mason';
-import { parseRatExpr } from '@/core/algebra/parser';
+import { parseRatExpr, parseRatNumDen } from '@/core/algebra/parser';
 import { MathView } from '@/components/MathView';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { VisionImportModal } from './VisionImportModal';
@@ -30,7 +30,7 @@ import {
   GRID_SIZE
 } from './layoutEngine';
 import { MasonDeductionView, SplitPanelMode } from './MasonDeductionView';
-import { runMasonForInputTargetPair } from './symbolicMasonEngine';
+import { CLASSROOM_CASE_STUDIES, runMasonForInputTargetPair } from './symbolicMasonEngine';
 
 interface BuilderSectionProps {
   onBack: () => void;
@@ -76,18 +76,34 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
   }, []);
   const [selectedConnId, setSelectedConnId] = useState<string | null>(null);
 
+  // Detecção dinâmica de Tema Claro / Escuro para o SVG e painéis
+  const [isLightTheme, setIsLightTheme] = useState<boolean>(false);
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    const syncTheme = () => {
+      setIsLightTheme(document.body.classList.contains('light-theme'));
+    };
+    syncTheme();
+    const obs = new MutationObserver(syncTheme);
+    obs.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+    return () => obs.disconnect();
+  }, []);
+
+  const jsonFileInputRef = useRef<HTMLInputElement | null>(null);
+
   // Contadores Sequenciais Exclusivos (NUNCA reutilizam identificadores após exclusão)
-  const seqCountersRef = useRef<{ G: number; H: number; R: number; C: number; W: number; S: number }>({
+  const seqCountersRef = useRef<{ G: number; H: number; R: number; C: number; D: number; W: number; S: number }>({
     G: 0,
     H: 0,
     R: 1,
     C: 1,
+    D: 0,
     W: 0,
     S: 0
   });
 
   const allocateExclusiveCode = useCallback(
-    (prefix: 'G' | 'H' | 'R' | 'C' | 'W' | 'S'): string => {
+    (prefix: 'G' | 'H' | 'R' | 'C' | 'D' | 'W' | 'S'): string => {
       // Garante que o contador seja sempre estritamente maior que qualquer código já existente no grafo
       let maxExisting = seqCountersRef.current[prefix];
       const regex = new RegExp(`^${prefix}(\\d+)$`, 'i');
@@ -421,10 +437,10 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
     setSelectedConnId(null);
   };
 
-  // 3. Adicionar Entrada de Perturbação W(s)
+  // 3. Adicionar Entrada de Perturbação / Distúrbio D(s)
   const handleAddDisturbance = () => {
-    const code = allocateExclusiveCode('W');
-    const idxNum = code.replace('W', '');
+    const code = allocateExclusiveCode('D');
+    const idxNum = code.replace('D', '');
     const count = graph.elements.filter(e => e.subType === 'disturbance').length;
     const newId = `dist_${Date.now()}_${idxNum}`;
     const newEl: DiagramElement = {
@@ -432,7 +448,7 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
       code,
       type: 'input',
       subType: 'disturbance',
-      name: idxNum === '1' ? 'W(s)' : `${code}(s)`,
+      name: idxNum === '1' ? 'D(s)' : `${code}(s)`,
       x: snapToGrid(480 + count * 120, GRID_SIZE),
       y: snapToGrid(100, GRID_SIZE)
     };
@@ -443,7 +459,7 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
     setSelectedConnId(null);
   };
 
-  // 4. Adicionar Bloco G(s) ou H(s) GENÉRICO (Valores iniciais unitários: num=1, den=1, expr=1)
+  // 4. Adicionar Bloco G(s) ou H(s) GENÉRICO (Sem função predefinida — campos vazios / simbólicos)
   const handleAddBlock = (isFeedback = false) => {
     const prefix = isFeedback ? 'H' : 'G';
     const code = allocateExclusiveCode(prefix); // Ex: G1, G2, G3... / H1, H2, H3...
@@ -456,10 +472,10 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
       code, // Identificação interna exclusiva: G1, G2... / H1, H2...
       type: 'block',
       name: `${code}(s)`, // Nome exibido inicial: G1(s), G2(s)... / H1(s), H2(s)...
-      expr: '1', // Função de transferência inicial: 1
-      num: '1', // Numerador inicial: 1
-      den: '1', // Denominador inicial: 1
-      rat: parseRatExpr('1'),
+      expr: '', // Sem função predefinida (permite definição manual ou resolução simbólica G1(s))
+      num: '',
+      den: '',
+      rat: undefined,
       x: snapToGrid(300 + (count % 4) * 160, GRID_SIZE),
       y: snapToGrid(isFeedback ? 360 + (count % 2) * 80 : 240, GRID_SIZE),
       dir: isFeedback ? 'left' : 'right'
@@ -504,7 +520,7 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
       const newSelectedIds: string[] = [];
 
       sourceElements.forEach((srcEl, i) => {
-        let prefix: 'G' | 'H' | 'R' | 'C' | 'W' | 'S' = 'G';
+        let prefix: 'G' | 'H' | 'R' | 'C' | 'D' | 'W' | 'S' = 'G';
         if (srcEl.type === 'block') {
           prefix = srcEl.dir === 'left' || String(srcEl.code || '').startsWith('H') ? 'H' : 'G';
         } else if (srcEl.type === 'summer') {
@@ -512,7 +528,7 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
         } else if (srcEl.type === 'output') {
           prefix = 'C';
         } else if (srcEl.subType === 'disturbance') {
-          prefix = 'W';
+          prefix = 'D';
         } else {
           prefix = 'R';
         }
@@ -856,7 +872,7 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
     }
   };
 
-  // Carregar Cenários / Modelos
+  // Carregar Cenários / Modelos e Estudos de Caso da Disciplina (EEL6005)
   const handleLoadTemplate = (tpl: string) => {
     setSelectedTemplate(tpl);
     setAnalysisResult(null);
@@ -867,6 +883,29 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
     setZoom(1);
 
     let newGraph: DiagramGraph;
+
+    const classroomPreset = CLASSROOM_CASE_STUDIES.find(cs => cs.id === tpl);
+    if (classroomPreset) {
+      newGraph = {
+        elements: classroomPreset.graph.elements.map(el => ({
+          ...el,
+          rat:
+            el.type === 'block' && ((el.num || '').trim() || (el.expr || '').trim())
+              ? parseRatNumDen(el.num, el.den, el.expr)
+              : undefined
+        })),
+        connections: classroomPreset.graph.connections.map(c => ({ ...c }))
+      };
+      const firstInput = newGraph.elements.find(e => e.type === 'input' && e.subType !== 'disturbance') ||
+        newGraph.elements.find(e => e.type === 'input');
+      const firstOutput = newGraph.elements.find(e => e.type === 'output');
+      if (firstInput) setActiveInputId(firstInput.id);
+      if (firstOutput) setActiveOutputId(firstOutput.id);
+      setGraph(newGraph);
+      pushHistory(newGraph);
+      showToast(`📘 Estudo de caso carregado: "${classroomPreset.title}"`);
+      return;
+    }
 
     if (tpl === 'vazio_total') {
       newGraph = { elements: [], connections: [] };
@@ -938,6 +977,114 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
 
     setGraph(newGraph);
     pushHistory(newGraph);
+  };
+
+  // Salvar Circuito Localmente, Exportar (.json) e Importar (.json) (Seção 4.9)
+  const handleSaveCircuitToStorage = () => {
+    try {
+      const payload = {
+        version: '2.0',
+        savedAt: new Date().toISOString(),
+        elements: graph.elements.map(({ rat, ...rest }) => rest),
+        connections: graph.connections
+      };
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem('controle_free_builder_saved_circuit_v1', JSON.stringify(payload));
+      }
+      showToast('💾 Circuito salvo com sucesso no navegador!');
+    } catch (err) {
+      console.error(err);
+      showToast('⚠️ Não foi possível salvar o circuito no armazenamento local.');
+    }
+  };
+
+  const handleExportJsonFile = () => {
+    try {
+      const payload = {
+        version: '2.0',
+        exportedAt: new Date().toISOString(),
+        elements: graph.elements.map(({ rat, ...rest }) => rest),
+        connections: graph.connections
+      };
+      const blob = new Blob([JSON.stringify(payload, null, 2)], {
+        type: 'application/json;charset=utf-8'
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `diagrama_blocos_${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast('⬇ Arquivo .json do circuito exportado com sucesso!');
+    } catch (err) {
+      console.error(err);
+      showToast('⚠️ Erro ao exportar o arquivo .json.');
+    }
+  };
+
+  const handleImportJsonFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      try {
+        const raw = String(ev.target?.result || '');
+        const parsed = JSON.parse(raw);
+        if (!parsed || !Array.isArray(parsed.elements) || !Array.isArray(parsed.connections)) {
+          showToast('⚠️ Arquivo .json inválido: estrutura de elementos/conexões não encontrada.');
+          return;
+        }
+        const validTypes = new Set(['input', 'output', 'block', 'summer']);
+        const sanitizedElements: DiagramElement[] = parsed.elements
+          .filter((el: DiagramElement) => el && typeof el.id === 'string' && validTypes.has(el.type))
+          .map((el: DiagramElement) => {
+            const num = typeof el.num === 'string' ? el.num : '';
+            const den = typeof el.den === 'string' ? el.den : '';
+            const expr = typeof el.expr === 'string' ? el.expr : combineTransferFunction(num, den);
+            return {
+              ...el,
+              x: snapToGrid(Number(el.x) || 200, GRID_SIZE),
+              y: snapToGrid(Number(el.y) || 200, GRID_SIZE),
+              num,
+              den,
+              expr,
+              rat:
+                el.type === 'block' && (num.trim() || expr.trim())
+                  ? parseRatNumDen(num, den, expr)
+                  : undefined
+            };
+          });
+        const elementIds = new Set(sanitizedElements.map(el => el.id));
+        const sanitizedConnections: DiagramConnection[] = parsed.connections
+          .filter(
+            (c: DiagramConnection) =>
+              c && typeof c.id === 'string' && elementIds.has(c.from) && (c.isPending || elementIds.has(c.to))
+          )
+          .map((c: DiagramConnection) => ({
+            ...c,
+            sign: c.sign === '-' ? '-' : '+'
+          }));
+
+        const importedGraph: DiagramGraph = {
+          elements: sanitizedElements,
+          connections: sanitizedConnections
+        };
+        setGraph(importedGraph);
+        pushHistory(importedGraph);
+        setSelectedIds([]);
+        setSelectedConnId(null);
+        setAnalysisResult(null);
+        showToast(`⬆ Circuito importado com sucesso (${sanitizedElements.length} elementos)!`);
+      } catch (err) {
+        console.error(err);
+        showToast('⚠️ Falha ao ler o arquivo .json. Verifique se o formato é válido.');
+      } finally {
+        if (jsonFileInputRef.current) {
+          jsonFileInputRef.current.value = '';
+        }
+      }
+    };
+    reader.readAsText(file);
   };
 
   // Alternar Sinal (+ / -) da Conexão ou Somador
@@ -1015,7 +1162,10 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
                 num: newNum,
                 den: newDen,
                 expr: combined,
-                rat: combined ? parseRatExpr(combined) : undefined
+                rat:
+                  newNum.trim() || combined.trim()
+                    ? parseRatNumDen(newNum, newDen, combined)
+                    : undefined
               }
             : e
         )
@@ -1039,7 +1189,7 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
                 num,
                 den,
                 expr: newExpr,
-                rat: newExpr.trim() ? parseRatExpr(newExpr) : undefined
+                rat: newExpr.trim() ? parseRatNumDen(num, den, newExpr) : undefined
               }
             : e
         )
@@ -1065,14 +1215,17 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
     const finalName = propName.trim() || `${selectedElement.code || selectedElement.id}(s)`;
 
     if (selectedElement.type === 'block') {
-      const validation = validateTransferFunction(propExpr, propNum, propDen);
-      if (!validation.valid) {
-        setPropError(validation.error || 'Função de transferência inválida.');
-        showToast(`⚠️ ${validation.error}`);
-        return;
+      const isGenericEmpty = !propExpr.trim() && !propNum.trim() && !propDen.trim();
+      if (!isGenericEmpty) {
+        const validation = validateTransferFunction(propExpr, propNum, propDen);
+        if (!validation.valid) {
+          setPropError(validation.error || 'Função de transferência inválida.');
+          showToast(`⚠️ ${validation.error}`);
+          return;
+        }
       }
       setPropError(null);
-      const finalExpr = propExpr.trim();
+      const finalExpr = isGenericEmpty ? '' : propExpr.trim();
       const updated: DiagramGraph = {
         ...graph,
         elements: graph.elements.map(el =>
@@ -1080,10 +1233,10 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
             ? {
                 ...el,
                 name: finalName,
-                num: propNum.trim(),
-                den: propDen.trim() || '1',
+                num: isGenericEmpty ? '' : propNum.trim(),
+                den: isGenericEmpty ? '' : propDen.trim() || '1',
                 expr: finalExpr,
-                rat: parseRatExpr(finalExpr),
+                rat: isGenericEmpty ? undefined : parseRatNumDen(propNum, propDen, finalExpr),
                 dir: propDir
               }
             : el
@@ -1091,7 +1244,11 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
       };
       setGraph(updated);
       pushHistory(updated);
-      showToast(`✓ Função de transferência de "${finalName}" aplicada!`);
+      showToast(
+        isGenericEmpty
+          ? `✓ Bloco "${finalName}" mantido como simbólico genérico!`
+          : `✓ Função de transferência de "${finalName}" aplicada!`
+      );
       return;
     }
 
@@ -1628,7 +1785,7 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
   };
 
   // =========================================================================
-  // VALIDAÇÃO E EXECUÇÃO DA REDUÇÃO DE MASON
+  // VALIDAÇÃO E EXECUÇÃO DA RESOLUÇÃO ALGÉBRICA DO DIAGRAMA
   // =========================================================================
 
   const handleRunMason = () => {
@@ -1636,23 +1793,27 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
     const outputs = graph.elements.filter(e => e.type === 'output');
 
     if (inputs.length === 0 || outputs.length === 0) {
-      showToast('⚠️ Adicione pelo menos uma Entrada R(s) e uma Saída C(s) para calcular Mason.');
+      showToast('⚠️ Adicione pelo menos uma Entrada R(s) e uma Saída Y(s)/C(s) para resolver o diagrama.');
       return;
     }
 
-    // Valida se todos os blocos G(s) e H(s) têm função de transferência definida!
-    const incompleteBlocks = graph.elements.filter(
-      el => el.type === 'block' && !validateTransferFunction(el.expr, el.num, el.den).valid
-    );
+    // Valida se há algum bloco com erro sintático explícito (ex.: divisão por 0 ou parênteses não fechados).
+    // Blocos totalmente vazios são resolvidos simbolicamente pelo seu identificador (ex.: G1(s), H1(s)).
+    const invalidSyntaxBlocks = graph.elements.filter(el => {
+      if (el.type !== 'block') return false;
+      const hasAnyValue = Boolean((el.expr || '').trim() || (el.num || '').trim() || (el.den || '').trim());
+      if (!hasAnyValue) return false;
+      return !validateTransferFunction(el.expr, el.num, el.den).valid;
+    });
 
-    if (incompleteBlocks.length > 0) {
-      const firstInc = incompleteBlocks[0];
+    if (invalidSyntaxBlocks.length > 0) {
+      const firstInc = invalidSyntaxBlocks[0];
       setSelectedId(firstInc.id);
       setSelectedConnId(null);
       if (isSidebarCollapsed) setIsSidebarCollapsed(false);
-      const names = incompleteBlocks.map(b => b.name || b.code || b.id).join(', ');
+      const names = invalidSyntaxBlocks.map(b => b.name || b.code || b.id).join(', ');
       showToast(
-        `⚠️ Defina a função de transferência do(s) bloco(s) incompleto(s) antes de reduzir: ${names}`,
+        `⚠️ Corrija a expressão da função de transferência do(s) bloco(s): ${names}`,
         5000
       );
       return;
@@ -1663,7 +1824,7 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
     if (pendingConns.length > 0) {
       setSelectedConnId(pendingConns[0].id);
       showToast(
-        '⚠️ Existem conexões interrompidas (incompletas) no circuito. Conclua ou exclua a conexão pendente antes de reduzir.',
+        '⚠️ Existem conexões interrompidas (incompletas) no circuito. Conclua ou exclua a conexão pendente antes de resolver.',
         5000
       );
       return;
@@ -1686,10 +1847,10 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
         outputEl: chosenOutput
       });
       setSplitMode('split');
-      showToast(`⚡ Redução de Mason calculada com sucesso para ${chosenOutput.name} / ${chosenInput.name}!`);
+      showToast(`⚡ Resolução analítica concluída para ${chosenOutput.name} / ${chosenInput.name}!`);
     } catch (err) {
       console.error(err);
-      showToast('⚠️ Erro ao calcular a redução de Mason. Verifique as expressões e conexões.');
+      showToast('⚠️ Erro ao resolver o diagrama. Verifique as expressões e conexões.');
     }
   };
 
@@ -1804,6 +1965,11 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
     }
   ];
 
+  const activeCaseStudy = useMemo(
+    () => CLASSROOM_CASE_STUDIES.find(cs => cs.id === selectedTemplate) || null,
+    [selectedTemplate]
+  );
+
   return (
     <div
       data-testid="builder-fullscreen-root"
@@ -1820,6 +1986,15 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
       }}
       onClick={() => setContextMenu(null)}
     >
+      {/* Input oculto para importação de arquivo .json */}
+      <input
+        ref={jsonFileInputRef}
+        type="file"
+        accept=".json,application/json"
+        style={{ display: 'none' }}
+        onChange={handleImportJsonFile}
+      />
+
       {/* ===================================================================
           LATERAL ESQUERDA: OCUPA 100% DA ALTURA COM ROLAGEM VERTICAL INDEPENDENTE
          =================================================================== */}
@@ -1837,7 +2012,7 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
           borderRight: isSidebarCollapsed ? 'none' : '1px solid var(--card-border)',
           display: 'flex',
           flexDirection: 'column',
-          boxShadow: isSidebarCollapsed ? 'none' : '4px 0 24px rgba(0,0,0,0.35)',
+          boxShadow: isSidebarCollapsed ? 'none' : '4px 0 24px rgba(0,0,0,0.2)',
           zIndex: 20
         }}
       >
@@ -1849,7 +2024,7 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
             display: 'flex',
             flexDirection: 'column',
             gap: '8px',
-            background: 'rgba(0,0,0,0.14)',
+            background: 'var(--code-bg)',
             flexShrink: 0
           }}
         >
@@ -1888,10 +2063,10 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
 
           <div>
             <h1 style={{ margin: 0, fontSize: '1.02rem', color: 'var(--primary)', fontWeight: 800 }}>
-              🛠️ Construtor Livre de Blocos
+              🛠️ Laboratório Livre de Diagramas
             </h1>
             <p style={{ margin: '2px 0 0 0', color: 'var(--text-muted)', fontSize: '0.73rem' }}>
-              Editor gráfico profissional e redução de Mason
+              Álgebra de blocos, equacionamento, superposição, TVF e Scilab
             </p>
           </div>
 
@@ -1911,18 +2086,92 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
                 margin: 0,
                 padding: '5px 8px',
                 borderRadius: '5px',
-                background: 'var(--code-bg)',
+                background: 'var(--card-bg)',
                 color: 'var(--text)',
                 border: '1px solid var(--card-border)',
                 fontSize: '0.76rem'
               }}
             >
-              <option value="em_branco">Padrão (Entrada R e Saída C)</option>
-              <option value="vazio_total">Tela 100% Vazia (Montagem Livre)</option>
-              <option value="malha_simples">Malha Fechada G/(1+GH)</option>
-              <option value="cascata">Associação em Cascata G1 · G2</option>
-              <option value="paralelo">Associação em Paralelo G1 + G2</option>
+              <optgroup label="Montagem Livre e Topologias Básicas">
+                <option value="em_branco">Padrão (Entrada R e Saída C)</option>
+                <option value="vazio_total">Tela 100% Vazia (Montagem Livre)</option>
+                <option value="malha_simples">Malha Fechada G/(1+GH)</option>
+                <option value="cascata">Associação em Cascata G1 · G2</option>
+                <option value="paralelo">Associação em Paralelo G1 + G2</option>
+              </optgroup>
+              <optgroup label="Estudos de Caso e Exercícios (Aulas EEL6005)">
+                {CLASSROOM_CASE_STUDIES.map(cs => (
+                  <option key={cs.id} value={cs.id}>
+                    {cs.title}
+                  </option>
+                ))}
+              </optgroup>
             </select>
+          </div>
+
+          {/* Botões rápidos para Estudos de Caso da Disciplina */}
+          <div>
+            <div
+              style={{
+                fontSize: '0.68rem',
+                fontWeight: 700,
+                color: 'var(--text-muted)',
+                textTransform: 'uppercase',
+                marginBottom: '4px'
+              }}
+            >
+              Estudos de Caso da Disciplina (1-Clique):
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px' }}>
+              {CLASSROOM_CASE_STUDIES.map(cs => {
+                const isCurrent = selectedTemplate === cs.id;
+                const shortLabel =
+                  cs.id === 'motor_dc_ma'
+                    ? 'Motor CC (Malha Aberta)'
+                    : cs.id === 'motor_dc_mf'
+                    ? 'Motor CC (Malha Fechada)'
+                    : cs.id === 'navio_rolamento'
+                    ? 'Rolamento de Navio'
+                    : 'Exemplo Numérico (Scilab)';
+                return (
+                  <button
+                    key={cs.id}
+                    type="button"
+                    data-testid={`case-study-${cs.id}`}
+                    className={`filter-btn ${isCurrent ? 'active' : ''}`}
+                    onClick={() => handleLoadTemplate(cs.id)}
+                    style={{
+                      padding: '4px 6px',
+                      fontSize: '0.7rem',
+                      fontWeight: isCurrent ? 700 : 600,
+                      textAlign: 'left',
+                      borderColor: isCurrent ? 'var(--primary)' : undefined,
+                      color: isCurrent ? 'var(--primary)' : undefined
+                    }}
+                    title={cs.pedagogicalSummary}
+                  >
+                    📘 {shortLabel}
+                  </button>
+                );
+              })}
+            </div>
+            {activeCaseStudy && (
+              <div
+                style={{
+                  marginTop: '6px',
+                  padding: '6px 8px',
+                  borderRadius: '5px',
+                  background: 'var(--card-bg)',
+                  border: '1px solid var(--card-border)',
+                  fontSize: '0.71rem',
+                  color: 'var(--text-muted)',
+                  lineHeight: 1.45
+                }}
+              >
+                <strong style={{ color: 'var(--text)' }}>{activeCaseStudy.subtitle}:</strong>{' '}
+                {activeCaseStudy.pedagogicalSummary}
+              </div>
+            )}
           </div>
         </div>
 
@@ -1992,7 +2241,7 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
                     alignItems: 'center',
                     gap: '6px',
                     textAlign: 'left',
-                    background: isActive ? 'rgba(56, 189, 248, 0.22)' : undefined,
+                    background: isActive ? 'rgba(56, 189, 248, 0.16)' : undefined,
                     borderColor: isActive ? 'var(--primary)' : undefined,
                     color: isActive ? 'var(--primary)' : tool.accentColor
                   }}
@@ -2004,7 +2253,7 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
             })}
           </div>
 
-          {/* Botão Dedicado Duplicar + Desfazer / Refazer / Limpar */}
+          {/* Botão Dedicado Duplicar + Alternar Sinal */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
             <button
               type="button"
@@ -2026,7 +2275,7 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
               type="button"
               className="filter-btn"
               onClick={handleToggleSign}
-              style={{ padding: '6px 8px', fontSize: '0.75rem', color: '#10b981', fontWeight: 700 }}
+              style={{ padding: '6px 8px', fontSize: '0.75rem', color: 'var(--success)', fontWeight: 700 }}
               title="Alternar Sinal (+ / -): inverte o sinal da entrada do somador ou conexão selecionada"
             >
               ± Sinal (+ / −)
@@ -2063,7 +2312,7 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
                 className="filter-btn"
                 onClick={handleAddOutput}
                 style={{ padding: '7px 8px', fontSize: '0.76rem', fontWeight: 700, textAlign: 'left' }}
-                title="Adicionar Saída C(s): insere um terminal de saída independente"
+                title="Adicionar Saída C(s)/Y(s): insere um terminal de saída independente"
               >
                 ＋ Saída C(s)
               </button>
@@ -2072,8 +2321,8 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
                 data-testid="add-block-g"
                 className="filter-btn"
                 onClick={() => handleAddBlock(false)}
-                style={{ padding: '7px 8px', fontSize: '0.76rem', fontWeight: 700, textAlign: 'left', color: '#38bdf8' }}
-                title="Adicionar Bloco G(s): insere bloco direto genérico G1(s), G2(s)... para definição manual da função de transferência"
+                style={{ padding: '7px 8px', fontSize: '0.76rem', fontWeight: 700, textAlign: 'left', color: 'var(--primary)' }}
+                title="Adicionar Bloco G(s): insere bloco direto genérico G1(s), G2(s)... sem função predefinida"
               >
                 ＋ Bloco G(s)
               </button>
@@ -2082,8 +2331,8 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
                 data-testid="add-block-h"
                 className="filter-btn"
                 onClick={() => handleAddBlock(true)}
-                style={{ padding: '7px 8px', fontSize: '0.76rem', fontWeight: 700, textAlign: 'left', color: '#c084fc' }}
-                title="Adicionar Bloco H(s): insere bloco de realimentação genérico H1(s), H2(s)... para definição manual da função de transferência"
+                style={{ padding: '7px 8px', fontSize: '0.76rem', fontWeight: 700, textAlign: 'left', color: 'var(--accent)' }}
+                title="Adicionar Bloco H(s): insere bloco de realimentação genérico H1(s), H2(s)... sem função predefinida"
               >
                 ＋ Bloco H(s)
               </button>
@@ -2092,17 +2341,17 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
                 data-testid="add-disturbance-w"
                 className="filter-btn"
                 onClick={handleAddDisturbance}
-                style={{ padding: '7px 8px', fontSize: '0.76rem', fontWeight: 700, textAlign: 'left', color: '#fbbf24' }}
-                title="Adicionar Perturbação W(s): insere uma entrada de distúrbio externo"
+                style={{ padding: '7px 8px', fontSize: '0.76rem', fontWeight: 700, textAlign: 'left', color: '#d97706' }}
+                title="Adicionar Perturbação D(s): insere uma entrada independente de distúrbio externo"
               >
-                ＋ Perturbação W(s)
+                ＋ Perturbação D(s)
               </button>
               <button
                 type="button"
                 data-testid="add-summer"
                 className="filter-btn"
                 onClick={handleAddSummer}
-                style={{ padding: '7px 8px', fontSize: '0.76rem', fontWeight: 700, textAlign: 'left', color: '#10b981' }}
+                style={{ padding: '7px 8px', fontSize: '0.76rem', fontWeight: 700, textAlign: 'left', color: 'var(--success)' }}
                 title="Adicionar Somador: insere um ponto de soma de sinais com múltiplas entradas (+/-)"
               >
                 ⊕ Somador ∑
@@ -2110,7 +2359,7 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
             </div>
           </div>
 
-          {/* Operações de Histórico, Organização e Exportação */}
+          {/* Operações de Histórico, Organização, Salvar e Exportar/Importar JSON */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
             <button
               type="button"
@@ -2145,7 +2394,7 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
               type="button"
               className="filter-btn"
               onClick={handleClearAll}
-              style={{ padding: '6px 8px', fontSize: '0.74rem', color: '#ef4444' }}
+              style={{ padding: '6px 8px', fontSize: '0.74rem', color: 'var(--danger)' }}
               title="Limpar Diagrama: remove todos os elementos após confirmação"
             >
               🗑️ Limpar Tudo
@@ -2173,12 +2422,46 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
             </button>
           </div>
 
+          {/* Persistência do Circuito: Salvar, Exportar .json e Importar .json (Seção 4.9) */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '5px' }}>
+            <button
+              type="button"
+              data-testid="save-circuit-btn"
+              className="filter-btn"
+              onClick={handleSaveCircuitToStorage}
+              style={{ padding: '5px 6px', fontSize: '0.72rem', fontWeight: 700 }}
+              title="Salvar circuito atual no navegador (localStorage)"
+            >
+              💾 Salvar
+            </button>
+            <button
+              type="button"
+              data-testid="export-json-btn"
+              className="filter-btn"
+              onClick={handleExportJsonFile}
+              style={{ padding: '5px 6px', fontSize: '0.72rem', fontWeight: 700 }}
+              title="Exportar circuito completo como arquivo .json"
+            >
+              ⬇ Exportar .json
+            </button>
+            <button
+              type="button"
+              data-testid="import-json-btn"
+              className="filter-btn"
+              onClick={() => jsonFileInputRef.current?.click()}
+              style={{ padding: '5px 6px', fontSize: '0.72rem', fontWeight: 700 }}
+              title="Importar circuito salvo a partir de um arquivo .json"
+            >
+              ⬆ Importar .json
+            </button>
+          </div>
+
           {/* Alinhamento Inteligente para Múltiplos Elementos Selecionados */}
           {selectedIds.length >= 2 && (
             <div
               style={{
-                background: 'rgba(56, 189, 248, 0.08)',
-                border: '1px solid rgba(56, 189, 248, 0.3)',
+                background: 'var(--code-bg)',
+                border: '1px solid var(--card-border)',
                 borderRadius: '8px',
                 padding: '8px',
                 display: 'flex',
@@ -2234,10 +2517,10 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
             </div>
           )}
 
-          {/* Execução da Redução de Mason */}
+          {/* Execução da Resolução Algébrica do Diagrama */}
           <div
             style={{
-              background: 'rgba(56, 189, 248, 0.06)',
+              background: 'var(--code-bg)',
               border: '1px solid var(--card-border)',
               borderRadius: '8px',
               padding: '8px 10px',
@@ -2250,7 +2533,7 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', fontSize: '0.72rem' }}>
                 <div>
                   <label style={{ display: 'block', color: 'var(--text-muted)', marginBottom: '2px' }}>
-                    Entrada Mason:
+                    Entrada Principal:
                   </label>
                   <select
                     value={activeInputId}
@@ -2260,7 +2543,7 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
                       margin: 0,
                       padding: '3px 6px',
                       borderRadius: '4px',
-                      background: 'var(--code-bg)',
+                      background: 'var(--card-bg)',
                       color: 'var(--text)',
                       border: '1px solid var(--card-border)',
                       fontSize: '0.73rem'
@@ -2275,7 +2558,7 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
                 </div>
                 <div>
                   <label style={{ display: 'block', color: 'var(--text-muted)', marginBottom: '2px' }}>
-                    Saída Mason:
+                    Saída Analisada:
                   </label>
                   <select
                     value={activeOutputId}
@@ -2285,7 +2568,7 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
                       margin: 0,
                       padding: '3px 6px',
                       borderRadius: '4px',
-                      background: 'var(--code-bg)',
+                      background: 'var(--card-bg)',
                       color: 'var(--text)',
                       border: '1px solid var(--card-border)',
                       fontSize: '0.73rem'
@@ -2307,9 +2590,9 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
               className="btn-primary"
               onClick={handleRunMason}
               style={{ width: '100%', padding: '8px 12px', fontSize: '0.82rem', fontWeight: 800 }}
-              title="Executar a redução analítica do diagrama pela Regra do Ganho de Mason"
+              title="Resolver algebricamente o diagrama (equações dos somadores, substituição, superposição, TVF e Scilab)"
             >
-              ⚡ Reduzir Diagrama (Mason)
+              ⚡ Resolver Diagrama (Álgebra de Blocos)
             </button>
           </div>
         </div>
@@ -2574,7 +2857,7 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
               {/* Visualização Matemática em LaTeX */}
               <div
                 style={{
-                  background: 'rgba(0,0,0,0.25)',
+                  background: 'var(--code-bg)',
                   border: '1px solid var(--card-border)',
                   borderRadius: '6px',
                   padding: '8px',
@@ -2588,8 +2871,8 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
                 {propExpr.trim() ? (
                   <MathView math={`${propName || selectedElement.name} = ${propExpr}`} inline />
                 ) : (
-                  <span style={{ fontSize: '0.74rem', color: '#fbbf24', fontStyle: 'italic' }}>
-                    {propName || selectedElement.name} — Função de transferência não definida
+                  <span style={{ fontSize: '0.74rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>
+                    {propName || selectedElement.name} — Bloco simbólico genérico
                   </span>
                 )}
               </div>
@@ -2604,7 +2887,7 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
             </form>
           )}
 
-          {/* 3. Propriedades de R(s), C(s) e Perturbação W(s) */}
+          {/* 3. Propriedades de R(s), C(s) e Perturbação D(s) */}
           {selectedElement && (selectedElement.type === 'input' || selectedElement.type === 'output') && (
             <form
               onSubmit={handleApplyElementProperties}
@@ -2612,7 +2895,7 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
             >
               <div
                 style={{
-                  background: 'rgba(0,0,0,0.2)',
+                  background: 'var(--code-bg)',
                   padding: '8px 10px',
                   borderRadius: '6px',
                   border: '1px solid var(--card-border)',
@@ -2633,12 +2916,12 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
                   <div style={{ fontSize: '0.67rem', color: 'var(--text-muted)', fontWeight: 700 }}>
                     Tipo:
                   </div>
-                  <div style={{ fontSize: '0.76rem', fontWeight: 700, color: '#38bdf8' }}>
+                  <div style={{ fontSize: '0.76rem', fontWeight: 700, color: 'var(--primary)' }}>
                     {selectedElement.subType === 'disturbance'
-                      ? 'Perturbação W(s)'
+                      ? 'Perturbação D(s)'
                       : selectedElement.type === 'input'
                       ? 'Entrada R(s)'
-                      : 'Saída C(s)'}
+                      : 'Saída C(s)/Y(s)'}
                   </div>
                 </div>
               </div>
@@ -2670,10 +2953,10 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
                 />
                 <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginTop: '5px' }}>
                   {(selectedElement.subType === 'disturbance'
-                    ? ['W(s)', 'w(s)', 'D(s)', 'N(s)']
+                    ? ['D(s)', 'Td(s)', 'W(s)']
                     : selectedElement.type === 'input'
-                    ? ['R(s)', 'ref(s)', 'V(s)', 'X(s)']
-                    : ['C(s)', 'y(s)', 'Y(s)', 'E(s)']
+                    ? ['R(s)', 'theta_d(s)', 'ref(s)', 'V(s)']
+                    : ['Y(s)', 'C(s)', 'theta(s)', 'E(s)']
                   ).map(preset => (
                     <button
                       key={preset}
@@ -2706,7 +2989,7 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
             >
               <div
                 style={{
-                  background: 'rgba(0,0,0,0.2)',
+                  background: 'var(--code-bg)',
                   padding: '8px 10px',
                   borderRadius: '6px',
                   border: '1px solid var(--card-border)',
@@ -2719,7 +3002,7 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
                   <div style={{ fontSize: '0.67rem', color: 'var(--text-muted)', fontWeight: 700 }}>
                     Identificação Interna:
                   </div>
-                  <div style={{ fontSize: '0.88rem', fontWeight: 800, color: '#10b981' }}>
+                  <div style={{ fontSize: '0.88rem', fontWeight: 800, color: 'var(--success)' }}>
                     {selectedElement.code || selectedElement.id.toUpperCase()}
                   </div>
                 </div>
@@ -2764,7 +3047,7 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
                     style={{
                       fontSize: '0.73rem',
                       color: 'var(--text-muted)',
-                      background: 'rgba(0,0,0,0.2)',
+                      background: 'var(--code-bg)',
                       padding: '8px',
                       borderRadius: '6px',
                       border: '1px dashed var(--card-border)'
@@ -2784,7 +3067,7 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'space-between',
-                            background: 'rgba(0,0,0,0.25)',
+                            background: 'var(--code-bg)',
                             border: '1px solid var(--card-border)',
                             borderRadius: '6px',
                             padding: '5px 8px'
@@ -2850,7 +3133,7 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               <div
                 style={{
-                  background: 'rgba(0,0,0,0.2)',
+                  background: 'var(--code-bg)',
                   padding: '9px',
                   borderRadius: '6px',
                   border: '1px solid var(--card-border)',
@@ -2868,7 +3151,7 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
                 <div>
                   <b>Destino:</b>{' '}
                   {selectedConnection.isPending ? (
-                    <span style={{ color: '#fbbf24', fontWeight: 700 }}>⏸️ Conexão Pendente</span>
+                    <span style={{ color: '#d97706', fontWeight: 700 }}>⏸️ Conexão Pendente</span>
                   ) : (
                     `${graph.elements.find(e => e.id === selectedConnection.to)?.name || selectedConnection.to} [${
                       selectedConnection.toPort || 'W'
@@ -2893,7 +3176,7 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
                       type="button"
                       className="filter-btn"
                       onClick={() => handleSetConnectionSign(selectedConnection.id, '+')}
-                      style={{ color: '#10b981', fontWeight: 800, fontSize: '0.75rem' }}
+                      style={{ color: 'var(--success)', fontWeight: 800, fontSize: '0.75rem' }}
                     >
                       Sinal (+)
                     </button>
@@ -2901,7 +3184,7 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
                       type="button"
                       className="filter-btn"
                       onClick={() => handleSetConnectionSign(selectedConnection.id, '-')}
-                      style={{ color: '#ef4444', fontWeight: 800, fontSize: '0.75rem' }}
+                      style={{ color: 'var(--danger)', fontWeight: 800, fontSize: '0.75rem' }}
                     >
                       Sinal (−)
                     </button>
@@ -2921,7 +3204,7 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
                 type="button"
                 className="filter-btn"
                 onClick={handleDeleteSelected}
-                style={{ color: '#ef4444', padding: '6px 10px', fontWeight: 700, fontSize: '0.75rem' }}
+                style={{ color: 'var(--danger)', padding: '6px 10px', fontWeight: 700, fontSize: '0.75rem' }}
               >
                 ✂️ Cortar / Excluir Conexão
               </button>
@@ -2945,7 +3228,7 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
           flexDirection: isVerticalSplit ? 'column' : 'row',
           overflow: 'hidden',
           position: 'relative',
-          background: '#040711'
+          background: 'var(--bg)'
         }}
       >
         {/* ===============================================================
@@ -2972,11 +3255,10 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
               : `${splitRatio}%`,
             flexShrink: 0,
             display: analysisResult && splitMode === 'calc-maximized' ? 'none' : 'block',
-            background: '#040711',
+            background: 'var(--bg)',
             position: 'relative',
             overflow: 'hidden',
-            cursor: getCanvasCursor(),
-            boxShadow: 'inset 0 2px 24px rgba(0,0,0,0.92)'
+            cursor: getCanvasCursor()
           }}
           onContextMenu={e => e.preventDefault()}
           onMouseMove={handleSvgMouseMove}
@@ -2994,18 +3276,17 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
                 display: 'flex',
                 alignItems: 'center',
                 gap: '6px',
-                background: 'rgba(15, 23, 42, 0.9)',
-                border: '1px solid rgba(56, 189, 248, 0.35)',
+                background: 'var(--card-bg)',
+                border: '1px solid var(--card-border)',
                 borderRadius: '8px',
-                padding: '5px 10px',
-                backdropFilter: 'blur(6px)'
+                padding: '5px 10px'
               }}
             >
               <span
                 style={{
                   fontSize: '0.72rem',
                   fontWeight: 800,
-                  color: '#38bdf8',
+                  color: 'var(--primary)',
                   letterSpacing: '0.4px'
                 }}
               >
@@ -3028,8 +3309,8 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
                   style={{
                     padding: '3px 8px',
                     fontSize: '0.72rem',
-                    borderColor: '#38bdf8',
-                    color: '#38bdf8'
+                    borderColor: 'var(--primary)',
+                    color: 'var(--primary)'
                   }}
                   title="Restaurar visualização dividida (Circuito + Cálculos)"
                 >
@@ -3062,14 +3343,14 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
                 display: 'flex',
                 alignItems: 'center',
                 gap: '8px',
-                background: 'rgba(15, 23, 42, 0.94)',
-                border: '1px solid #38bdf8',
+                background: 'var(--card-bg)',
+                border: '1px solid var(--primary)',
                 borderRadius: '8px',
                 padding: '6px 12px',
-                boxShadow: '0 6px 20px rgba(0,0,0,0.6)'
+                boxShadow: '0 6px 20px rgba(0,0,0,0.25)'
               }}
             >
-              <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#e2e8f0' }}>
+              <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text)' }}>
                 🧮 Painel 2 (Cálculos) Minimizado
               </span>
               <button
@@ -3079,8 +3360,8 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
                 style={{
                   padding: '4px 9px',
                   fontSize: '0.73rem',
-                  borderColor: '#38bdf8',
-                  color: '#38bdf8',
+                  borderColor: 'var(--primary)',
+                  color: 'var(--primary)',
                   fontWeight: 700
                 }}
               >
@@ -3110,7 +3391,7 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
               padding: '8px 14px',
               fontSize: '0.8rem',
               fontWeight: 800,
-              boxShadow: '0 4px 15px rgba(0,0,0,0.5)'
+              boxShadow: '0 4px 15px rgba(0,0,0,0.25)'
             }}
             title="Expandir painel lateral de ferramentas e propriedades"
           >
@@ -3128,11 +3409,10 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
             display: 'flex',
             alignItems: 'center',
             gap: '6px',
-            background: 'rgba(15, 23, 42, 0.88)',
+            background: 'var(--card-bg)',
             border: '1px solid var(--card-border)',
             borderRadius: '8px',
-            padding: '5px 8px',
-            backdropFilter: 'blur(6px)'
+            padding: '5px 8px'
           }}
         >
           <button
@@ -3144,7 +3424,7 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
           >
             🔍+
           </button>
-          <span style={{ fontSize: '0.76rem', fontWeight: 700, color: '#e2e8f0', minWidth: '42px', textAlign: 'center' }}>
+          <span style={{ fontSize: '0.76rem', fontWeight: 700, color: 'var(--text)', minWidth: '42px', textAlign: 'center' }}>
             {Math.round(zoom * 100)}%
           </span>
           <button
@@ -3178,18 +3458,18 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
             right: '14px',
             zIndex: 25,
             pointerEvents: 'none',
-            background: 'rgba(15, 23, 42, 0.85)',
-            border: '1px solid rgba(56, 189, 248, 0.2)',
+            background: 'var(--card-bg)',
+            border: '1px solid var(--card-border)',
             borderRadius: '6px',
             padding: '4px 10px',
             fontSize: '0.72rem',
-            color: '#94a3b8',
+            color: 'var(--text-muted)',
             display: 'flex',
             gap: '12px'
           }}
         >
           <span>
-            Ferramenta: <b style={{ color: '#38bdf8' }}>{toolDefinitions.find(t => t.id === activeTool)?.label}</b>
+            Ferramenta: <b style={{ color: 'var(--primary)' }}>{toolDefinitions.find(t => t.id === activeTool)?.label}</b>
           </span>
           <span>Grade: {GRID_SIZE}px</span>
           {mousePos && (
@@ -3223,7 +3503,7 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
               markerHeight="6"
               orient="auto-start-reverse"
             >
-              <path d="M 0 1 L 9 5 L 0 9 z" fill="#38bdf8" />
+              <path d="M 0 1 L 9 5 L 0 9 z" fill={isLightTheme ? '#0284c7' : '#38bdf8'} />
             </marker>
             <marker
               id="builder-arr-sel"
@@ -3258,15 +3538,6 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
             >
               <path d="M 0 1 L 9 5 L 0 9 z" fill="#10b981" />
             </marker>
-            <filter id="builder-glow" x="-20%" y="-20%" width="140%" height="140%">
-              <feDropShadow dx="0" dy="0" stdDeviation="3" floodColor="#38bdf8" floodOpacity="0.35" />
-            </filter>
-            <filter id="builder-glow-sel" x="-25%" y="-25%" width="150%" height="150%">
-              <feDropShadow dx="0" dy="0" stdDeviation="5" floodColor="#f59e0b" floodOpacity="0.7" />
-            </filter>
-            <filter id="builder-glow-fb" x="-20%" y="-20%" width="140%" height="140%">
-              <feDropShadow dx="0" dy="0" stdDeviation="3" floodColor="#a855f7" floodOpacity="0.35" />
-            </filter>
 
             <pattern
               id="grid-dots"
@@ -3275,7 +3546,12 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
               patternUnits="userSpaceOnUse"
               patternTransform={`translate(${pan.x}, ${pan.y}) scale(${zoom})`}
             >
-              <circle cx="0" cy="0" r="1.3" fill="rgba(56, 189, 248, 0.18)" />
+              <circle
+                cx="0"
+                cy="0"
+                r="1.25"
+                fill={isLightTheme ? 'rgba(15, 23, 42, 0.16)' : 'rgba(56, 189, 248, 0.18)'}
+              />
             </pattern>
           </defs>
 
@@ -3383,12 +3659,14 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
                       isCutHovered
                         ? '#ef4444'
                         : conn.isPending
-                        ? '#fbbf24'
+                        ? '#d97706'
                         : isSelected || isDraggingThis
                         ? '#f59e0b'
+                        : isLightTheme
+                        ? '#0284c7'
                         : '#38bdf8'
                     }
-                    strokeWidth={isSelected || isDraggingThis || isCutHovered ? '3.2' : '2.2'}
+                    strokeWidth={isSelected || isDraggingThis || isCutHovered ? '3' : '2.1'}
                     strokeDasharray={conn.isPending ? '6 4' : undefined}
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -3481,7 +3759,7 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
                             cx={cornerPt.x}
                             cy={cornerPt.y}
                             r="5.5"
-                            fill={isSelected || isDraggingThis ? '#f59e0b' : '#38bdf8'}
+                            fill={isSelected || isDraggingThis ? '#f59e0b' : '#0284c7'}
                             stroke="#ffffff"
                             strokeWidth="1.5"
                           />
@@ -3523,7 +3801,7 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
                     <text
                       x={signPos.x}
                       y={signPos.y}
-                      fill={conn.sign === '-' ? '#ef4444' : '#10b981'}
+                      fill={conn.sign === '-' ? 'var(--danger)' : 'var(--success)'}
                       fontSize="15"
                       fontWeight="900"
                       textAnchor="middle"
@@ -3664,17 +3942,16 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
                         cx={x}
                         cy={y}
                         r="20"
-                        fill="#0b1322"
-                        stroke={isSelected ? '#f59e0b' : isConnectingSource ? '#10b981' : '#10b981'}
+                        fill={isLightTheme ? '#ffffff' : '#0f172a'}
+                        stroke={isSelected ? '#f59e0b' : isConnectingSource ? '#10b981' : isLightTheme ? '#059669' : '#10b981'}
                         strokeWidth={isSelected || isConnectingSource ? 3 : 2.2}
-                        filter={isSelected ? 'url(#builder-glow-sel)' : undefined}
                       />
                       <line
                         x1={x - 14}
                         y1={y - 14}
                         x2={x + 14}
                         y2={y + 14}
-                        stroke="rgba(16, 185, 129, 0.28)"
+                        stroke="rgba(16, 185, 129, 0.35)"
                         strokeWidth="1.2"
                       />
                       <line
@@ -3682,13 +3959,13 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
                         y1={y + 14}
                         x2={x + 14}
                         y2={y - 14}
-                        stroke="rgba(16, 185, 129, 0.28)"
+                        stroke="rgba(16, 185, 129, 0.35)"
                         strokeWidth="1.2"
                       />
                       <text
                         x={x}
                         y={y - 27}
-                        fill="#10b981"
+                        fill={isLightTheme ? '#047857' : '#10b981'}
                         fontSize="10.5"
                         textAnchor="middle"
                         fontWeight="bold"
@@ -3698,7 +3975,7 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
                       <text
                         x={x}
                         y={y + 5}
-                        fill="#10b981"
+                        fill={isLightTheme ? '#047857' : '#10b981'}
                         fontSize="15"
                         fontWeight="900"
                         textAnchor="middle"
@@ -3708,7 +3985,7 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
                     </>
                   )}
 
-                  {/* B. ENTRADA R(s), SAÍDA C(s) E PERTURBAÇÃO W(s) */}
+                  {/* B. ENTRADA R(s), SAÍDA C(s)/Y(s) E PERTURBAÇÃO D(s) */}
                   {(el.type === 'input' || el.type === 'output') && (() => {
                     const isDisturbance = el.subType === 'disturbance';
                     const isOutput = el.type === 'output';
@@ -3717,9 +3994,13 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
                       : isConnectingSource
                       ? '#10b981'
                       : isDisturbance
-                      ? '#fbbf24'
+                      ? '#d97706'
                       : isOutput
-                      ? '#10b981'
+                      ? isLightTheme
+                        ? '#059669'
+                        : '#10b981'
+                      : isLightTheme
+                      ? '#0284c7'
                       : '#38bdf8';
 
                     return (
@@ -3730,10 +4011,15 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
                           width="80"
                           height="40"
                           rx="20"
-                          fill={isDisturbance ? '#1c1608' : '#0c1729'}
+                          fill={
+                            isLightTheme
+                              ? '#ffffff'
+                              : isDisturbance
+                              ? '#1c1608'
+                              : '#0f172a'
+                          }
                           stroke={strokeColor}
                           strokeWidth={isSelected || isConnectingSource ? 3 : 2}
-                          filter={isSelected ? 'url(#builder-glow-sel)' : 'url(#builder-glow)'}
                         />
                         <text
                           x={x}
@@ -3743,12 +4029,12 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
                           textAnchor="middle"
                           fontWeight="700"
                         >
-                          {el.code || (isDisturbance ? 'W' : isOutput ? 'C' : 'R')} {el.locked ? '🔒' : ''}
+                          {el.code || (isDisturbance ? 'D' : isOutput ? 'C' : 'R')} {el.locked ? '🔒' : ''}
                         </text>
                         <text
                           x={x}
                           y={y + 4}
-                          fill="#f8fafc"
+                          fill={isLightTheme ? '#0f172a' : '#f8fafc'}
                           fontSize="12"
                           fontWeight="800"
                           textAnchor="middle"
@@ -3759,11 +4045,17 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
                     );
                   })()}
 
-                  {/* C. BLOCO G(s) E H(s) (COM INDICADOR DISCRETO QUANDO GENÉRICO / SEM FT DEFINIDA) */}
+                  {/* C. BLOCO G(s) E H(s) (COM SUPORTE A BLOCOS GENÉRICOS / SIMBÓLICOS E TEMA CLARO/ESCURO) */}
                   {el.type === 'block' && (() => {
                     const isFeedback = el.dir === 'left';
                     const hasDefinedExpr = Boolean((el.expr ?? '').trim());
-                    const mainColor = isFeedback ? '#a855f7' : '#38bdf8';
+                    const mainColor = isFeedback
+                      ? isLightTheme
+                        ? '#7c3aed'
+                        : '#a855f7'
+                      : isLightTheme
+                      ? '#0284c7'
+                      : '#38bdf8';
 
                     return (
                       <>
@@ -3773,16 +4065,15 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
                           width="120"
                           height="60"
                           rx="8"
-                          fill={isFeedback ? '#150c26' : '#0c1626'}
+                          fill={
+                            isLightTheme
+                              ? '#ffffff'
+                              : isFeedback
+                              ? '#150c26'
+                              : '#0f172a'
+                          }
                           stroke={isSelected ? '#f59e0b' : isConnectingSource ? '#10b981' : mainColor}
                           strokeWidth={isSelected || isConnectingSource ? 3 : 2}
-                          filter={
-                            isSelected
-                              ? 'url(#builder-glow-sel)'
-                              : isFeedback
-                              ? 'url(#builder-glow-fb)'
-                              : 'url(#builder-glow)'
-                          }
                         />
                         {/* Badge Superior com Identificação Interna e Sentido */}
                         <rect
@@ -3791,14 +4082,22 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
                           width="84"
                           height="16"
                           rx="4"
-                          fill={isFeedback ? '#2e1065' : '#082f49'}
+                          fill={
+                            isLightTheme
+                              ? isFeedback
+                                ? '#f3e8ff'
+                                : '#e0f2fe'
+                              : isFeedback
+                              ? '#2e1065'
+                              : '#082f49'
+                          }
                           stroke={mainColor}
                           strokeWidth="1"
                         />
                         <text
                           x={x}
                           y={y - 29}
-                          fill="#f1f5f9"
+                          fill={isLightTheme ? '#0f172a' : '#f1f5f9'}
                           fontSize="9.5"
                           textAnchor="middle"
                           fontWeight="bold"
@@ -3821,8 +4120,8 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
                             <text
                               x={x}
                               y={y + 14}
-                              fill="#f8fafc"
-                              fontSize="12.5"
+                              fill={isLightTheme ? '#0f172a' : '#f8fafc'}
+                              fontSize="12"
                               fontWeight="bold"
                               textAnchor="middle"
                             >
@@ -3834,7 +4133,7 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
                             <text
                               x={x}
                               y={y + 1}
-                              fill="#f8fafc"
+                              fill={isLightTheme ? '#0f172a' : '#f8fafc'}
                               fontSize="13.5"
                               fontWeight="800"
                               textAnchor="middle"
@@ -3844,13 +4143,12 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
                             <text
                               x={x}
                               y={y + 18}
-                              fill="#fbbf24"
+                              fill={isLightTheme ? '#475569' : '#94a3b8'}
                               fontSize="8.5"
                               fontWeight="600"
                               textAnchor="middle"
-                              opacity="0.85"
                             >
-                              FT não definida
+                              Bloco Simbólico
                             </text>
                           </>
                         )}
@@ -4075,11 +4373,11 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
               flexShrink: 0,
               background: isDraggingSplitter
                 ? 'rgba(56, 189, 248, 0.35)'
-                : 'rgba(15, 23, 42, 0.96)',
-              borderLeft: isVerticalSplit ? 'none' : '1px solid rgba(56, 189, 248, 0.28)',
-              borderRight: isVerticalSplit ? 'none' : '1px solid rgba(56, 189, 248, 0.28)',
-              borderTop: isVerticalSplit ? '1px solid rgba(56, 189, 248, 0.28)' : 'none',
-              borderBottom: isVerticalSplit ? '1px solid rgba(56, 189, 248, 0.28)' : 'none',
+                : 'var(--card-bg)',
+              borderLeft: isVerticalSplit ? 'none' : '1px solid var(--card-border)',
+              borderRight: isVerticalSplit ? 'none' : '1px solid var(--card-border)',
+              borderTop: isVerticalSplit ? '1px solid var(--card-border)' : 'none',
+              borderBottom: isVerticalSplit ? '1px solid var(--card-border)' : 'none',
               cursor: isVerticalSplit ? 'row-resize' : 'col-resize',
               display: 'flex',
               flexDirection: isVerticalSplit ? 'row' : 'column',
@@ -4099,9 +4397,9 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
                 setSplitMode('calc-maximized');
               }}
               style={{
-                background: 'rgba(30, 41, 59, 0.9)',
-                border: '1px solid rgba(56, 189, 248, 0.35)',
-                color: '#38bdf8',
+                background: 'var(--bg)',
+                border: '1px solid var(--card-border)',
+                color: 'var(--primary)',
                 borderRadius: '4px',
                 width: isVerticalSplit ? '22px' : '10px',
                 height: isVerticalSplit ? '10px' : '24px',
@@ -4123,7 +4421,7 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
                 width: isVerticalSplit ? '32px' : '4px',
                 height: isVerticalSplit ? '4px' : '32px',
                 borderRadius: '2px',
-                background: isDraggingSplitter ? '#38bdf8' : 'rgba(148, 163, 184, 0.5)'
+                background: isDraggingSplitter ? 'var(--primary)' : 'rgba(148, 163, 184, 0.5)'
               }}
             />
 
@@ -4136,9 +4434,9 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
                 setSplitMode('circuit-maximized');
               }}
               style={{
-                background: 'rgba(30, 41, 59, 0.9)',
-                border: '1px solid rgba(56, 189, 248, 0.35)',
-                color: '#38bdf8',
+                background: 'var(--bg)',
+                border: '1px solid var(--card-border)',
+                color: 'var(--primary)',
                 borderRadius: '4px',
                 width: isVerticalSplit ? '22px' : '10px',
                 height: isVerticalSplit ? '10px' : '24px',
@@ -4157,7 +4455,7 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
         )}
 
         {/* ===============================================================
-            PAINEL 2 — DESENVOLVIMENTO DOS CÁLCULOS (PASSO A PASSO DE MASON)
+            PAINEL 2 — DESENVOLVIMENTO DOS CÁLCULOS (METODOLOGIA DO PROFESSOR)
            =============================================================== */}
         {analysisResult && splitMode !== 'circuit-maximized' && (
           <section
@@ -4168,7 +4466,7 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
               minWidth: 0,
               minHeight: 0,
               height: isVerticalSplit ? undefined : '100%',
-              background: '#050914',
+              background: 'var(--bg)',
               overflowY: 'auto',
               overflowX: 'hidden',
               padding: '14px 18px',
@@ -4187,14 +4485,14 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
                   justifyContent: 'space-between',
                   flexWrap: 'wrap',
                   gap: '8px',
-                  background: 'rgba(15, 23, 42, 0.92)',
-                  border: '1px solid rgba(56, 189, 248, 0.4)',
+                  background: 'var(--card-bg)',
+                  border: '1px solid var(--card-border)',
                   borderRadius: '8px',
                   padding: '8px 12px',
                   marginBottom: '12px'
                 }}
               >
-                <span style={{ fontSize: '0.76rem', fontWeight: 700, color: '#e2e8f0' }}>
+                <span style={{ fontSize: '0.76rem', fontWeight: 700, color: 'var(--text)' }}>
                   📐 Painel 1 (Circuito) está minimizado temporariamente
                 </span>
                 <div style={{ display: 'flex', gap: '8px' }}>
@@ -4205,8 +4503,8 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
                     style={{
                       padding: '4px 10px',
                       fontSize: '0.74rem',
-                      borderColor: '#38bdf8',
-                      color: '#38bdf8',
+                      borderColor: 'var(--primary)',
+                      color: 'var(--primary)',
                       fontWeight: 700
                     }}
                   >
@@ -4248,17 +4546,17 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
             bottom: '20px',
             right: '20px',
             zIndex: 9999,
-            background: 'rgba(15, 23, 42, 0.95)',
+            background: 'var(--card-bg)',
             border: '1px solid var(--primary)',
             borderRadius: '10px',
             padding: '10px 16px',
-            color: '#f8fafc',
+            color: 'var(--text)',
             fontSize: '0.82rem',
             fontWeight: 600,
             display: 'flex',
             alignItems: 'center',
             gap: '10px',
-            boxShadow: '0 10px 25px rgba(0, 0, 0, 0.6)',
+            boxShadow: '0 10px 25px rgba(0, 0, 0, 0.35)',
             maxWidth: '460px'
           }}
         >

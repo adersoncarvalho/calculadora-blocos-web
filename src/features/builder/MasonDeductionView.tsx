@@ -8,13 +8,8 @@ import {
   MasonAnalysis
 } from '@/core/reduction/mason';
 import {
-  RatFunc,
-  ratAdd,
-  ratMul,
   ratOne,
-  ratScale,
-  ratToLatex,
-  ratZero
+  ratScale
 } from '@/core/algebra/rational';
 import {
   Polynomial,
@@ -45,12 +40,6 @@ interface MasonDeductionViewProps {
   onClose?: () => void;
 }
 
-interface DisjointLoopCombination {
-  order: number;
-  loopIndices: number[];
-  gain: RatFunc;
-}
-
 /**
  * Converte um nome ou código de elemento para notação matemática LaTeX limpa,
  * sem exibir IDs técnicos, UUIDs ou timestamps.
@@ -75,16 +64,6 @@ function wrapParensLatex(latex: string, force: boolean = false): string {
   return t;
 }
 
-function formatPolyFactorLatex(P: Polynomial): string {
-  const lat = polyToLatex(P)
-    .replace(/\b([GHWRC])([a-zA-Z])\b/g, '$1_{$2}')
-    .replace(/\b([GHWRC])_([a-zA-Z0-9]+)\b/g, '$1_{$2}');
-  if (P.length > 1 || (P.length === 1 && P[0].coeff < 0)) {
-    return `\\left(${lat}\\right)`;
-  }
-  return lat;
-}
-
 function rawPolyPairToLatex(num: Polynomial, den: Polynomial): string {
   const nLat = polyToLatex(num)
     .replace(/\b([GHWRC])([a-zA-Z])\b/g, '$1_{$2}')
@@ -97,10 +76,6 @@ function rawPolyPairToLatex(num: Polynomial, den: Polynomial): string {
   return `\\frac{${nLat}}{${dLat}}`;
 }
 
-function setsAreDisjoint(a: string[], b: string[]): boolean {
-  return !a.some(item => b.includes(item));
-}
-
 export const MasonDeductionView: React.FC<MasonDeductionViewProps> = ({
   analysis,
   graph,
@@ -110,7 +85,7 @@ export const MasonDeductionView: React.FC<MasonDeductionViewProps> = ({
   onChangeSplitMode,
   onClose
 }) => {
-  const [copiedType, setCopiedType] = useState<'none' | 'final-latex' | 'final-text' | 'memorial'>('none');
+  const [copiedType, setCopiedType] = useState<'none' | 'final-latex' | 'final-text' | 'memorial' | 'scilab'>('none');
   const [openSteps, setOpenSteps] = useState<Record<number, boolean>>({
     1: true,
     2: true,
@@ -120,7 +95,8 @@ export const MasonDeductionView: React.FC<MasonDeductionViewProps> = ({
     6: true,
     7: true,
     8: true,
-    9: true
+    9: true,
+    10: true
   });
 
   const toggleStep = (stepNumber: number) => {
@@ -137,12 +113,13 @@ export const MasonDeductionView: React.FC<MasonDeductionViewProps> = ({
       6: open,
       7: open,
       8: open,
-      9: open
+      9: open,
+      10: open
     });
   };
 
   // =========================================================================
-  // ANÁLISE MULTI-ENTRADA, MULTI-SINAL E VALIDAÇÃO ALGÉBRICA COMPLETA
+  // ANÁLISE ALGÉBRICA DE BLOCOS, EQUACIONAMENTO, TVF E SCILAB
   // =========================================================================
   const systemData = useMemo(() => {
     const baseGraph: DiagramGraph = graph || {
@@ -201,16 +178,17 @@ export const MasonDeductionView: React.FC<MasonDeductionViewProps> = ({
       };
     };
 
-    // Conexões direcionadas para a Etapa 1 (com nomes legíveis, sem UUIDs)
-    const directedEdges = G.connections.map((c, idx) => {
-      const d = buildEdgeDetail(c.from, c.to);
-      return {
-        index: idx + 1,
-        ...d
-      };
-    });
+    const directedEdges = G.connections
+      .filter(c => !c.isPending)
+      .map((c, idx) => {
+        const d = buildEdgeDetail(c.from, c.to);
+        return {
+          index: idx + 1,
+          ...d
+        };
+      });
 
-    // Detalhamento dos Caminhos Diretos E Cofatores SEPARADOS POR ENTRADA INDEPENDENTE
+    // Detalhamento dos ramos diretos e termos de malha para a Etapa 5 e Etapa 6
     const buildDetailedPairData = (pair: InputOutputMasonPair) => {
       const mRes = pair.masonAnalysis;
       const paths = mRes.forwardPaths.map((fp, idx) => {
@@ -252,1711 +230,2338 @@ export const MasonDeductionView: React.FC<MasonDeductionViewProps> = ({
           substitutedFactorsLatex.push('1');
         }
 
-        const dk = mRes.cofactors[idx] || ratOne();
-        const pkDk = ratMul(fp.gain, dk);
-
-        // Status de toque de cada laço com este caminho direto
-        const loopTouchStatus = mRes.loops.map((lp, lIdx) => {
-          const shared = lp.nodes.filter(n => fp.nodes.includes(n));
-          return {
-            loopIndex: lIdx + 1,
-            touches: shared.length > 0,
-            sharedNodesLatex: shared.map(getCleanLatexLabel),
-            loopGainLatex: formatRatFuncLatex(lp.gain)
-          };
-        });
+        const nodeSequenceLatex = fp.nodes.map(n => getCleanLatexLabel(n)).join(' \\rightarrow ');
 
         return {
           index: idx + 1,
-          nodesLatex: fp.nodes.map(getCleanLatexLabel),
-          edges,
+          nodes: fp.nodes,
+          nodeSequenceLatex,
           overallSign,
-          symbolicFactorsLatex,
-          substitutedFactorsLatex,
-          rawUnreducedLatex: rawPolyPairToLatex(rawNum, rawDen),
-          hasMultipleFractions: blockCount >= 2 && !fullSys.isPureSymbolicMode,
-          finalGain: fp.gain,
-          finalGainLatex: formatRatFuncLatex(fp.gain),
-          cofactor: dk,
-          cofactorLatex: formatRatFuncLatex(dk),
-          pathTimesCofactor: pkDk,
-          pathTimesCofactorLatex: formatRatFuncLatex(pkDk),
-          loopTouchStatus,
-          activeLoopIndices: loopTouchStatus.filter(s => !s.touches).map(s => s.loopIndex)
+          blockCount,
+          symbolicProductLatex: symbolicFactorsLatex.join(' \\cdot '),
+          substitutedProductLatex: substitutedFactorsLatex.join(' \\cdot '),
+          rawExpandedLatex: rawPolyPairToLatex(rawNum, rawDen),
+          simplifiedGain: fp.gain,
+          simplifiedGainLatex: formatRatFuncLatex(fp.gain)
         };
       });
 
-      const numeratorSum = paths.reduce((acc, p) => ratAdd(acc, p.pathTimesCofactor), ratZero());
-
       return {
         pair,
-        paths,
-        numeratorSum,
-        numeratorSumLatex: formatRatFuncLatex(numeratorSum)
+        paths
       };
     };
 
-    const detailedInputGroups = fullSys.outputByInputPairs.map(buildDetailedPairData);
+    const detailedOutputPairs = fullSys.outputByInputPairs.map(buildDetailedPairData);
+    const detailedSummerPairs = fullSys.summerByInputPairs.map(buildDetailedPairData);
 
-    // Laços Individuais do Sistema (comuns a todo o grafo)
-    const refMason = fullSys.outputByInputPairs[0]?.masonAnalysis || analysis;
-    const detailedLoops = refMason.loops.map((lp, idx) => {
+    const feedbackLoops = fullSys.outputByInputPairs[0]?.masonAnalysis.loops || analysis.loops || [];
+    const detailedLoops = feedbackLoops.map((loop, idx) => {
+      const closedNodes = [...loop.nodes, loop.nodes[0]];
       const edges = [];
-      for (let i = 0; i < lp.nodes.length; i++) {
-        const u = lp.nodes[i];
-        const v = lp.nodes[(i + 1) % lp.nodes.length];
-        edges.push(buildEdgeDetail(u, v));
+      for (let i = 0; i < closedNodes.length - 1; i++) {
+        edges.push(buildEdgeDetail(closedNodes[i], closedNodes[i + 1]));
       }
       const negCount = edges.filter(e => e.sign === '-').length;
       const overallSign: '+' | '-' = negCount % 2 === 1 ? '-' : '+';
 
-      const symbolicFactorsLatex: string[] = [overallSign === '-' ? '(-1)' : '(+1)'];
-      const substitutedFactorsLatex: string[] = [overallSign === '-' ? '(-1)' : '(+1)'];
+      const symbolicFactorsLatex: string[] = [];
+      const substitutedFactorsLatex: string[] = [];
       let rawNum = polyFromNumber(overallSign === '-' ? -1 : 1);
       let rawDen = polyFromNumber(1);
-      let blockCount = 0;
 
       edges.forEach(edge => {
         const toEl = elementsMap.get(edge.toId);
         if (toEl?.type === 'block') {
-          blockCount++;
           const bRat = toEl.rat || ratOne();
           const sym = formatCleanSignalLatex(toEl.name, toEl.code);
-          symbolicFactorsLatex.push(sym);
-          substitutedFactorsLatex.push(wrapParensLatex(formatRatFuncLatex(bRat), true));
+          symbolicFactorsLatex.push(edge.sign === '-' ? `\\left(-${sym}\\right)` : sym);
+          substitutedFactorsLatex.push(
+            edge.sign === '-'
+              ? `\\left(-${formatRatFuncLatex(bRat)}\\right)`
+              : wrapParensLatex(formatRatFuncLatex(bRat), true)
+          );
           rawNum = polyMul(rawNum, bRat.num);
           rawDen = polyMul(rawDen, bRat.den);
+        } else if (edge.sign === '-') {
+          symbolicFactorsLatex.push('(-1)');
+          substitutedFactorsLatex.push('(-1)');
         }
       });
 
-      const closedNodes = [...lp.nodes, lp.nodes[0]];
-      const directionDesc = lp.nodes.some(n => elementsMap.get(n)?.dir === 'left')
-        ? 'Malha fechada com ramo de retorno'
-        : 'Malha fechada de realimentação direta';
+      if (symbolicFactorsLatex.length === 0) {
+        symbolicFactorsLatex.push('1');
+        substitutedFactorsLatex.push('1');
+      }
+
+      const nodeSequenceLatex = closedNodes.map(n => getCleanLatexLabel(n)).join(' \\rightarrow ');
 
       return {
         index: idx + 1,
-        nodes: lp.nodes,
-        closedNodesLatex: closedNodes.map(getCleanLatexLabel),
-        directionDesc,
-        edges,
-        negativeSignsCount: negCount,
+        nodes: loop.nodes,
+        nodeSequenceLatex,
         overallSign,
-        symbolicFactorsLatex,
-        substitutedFactorsLatex,
-        rawUnreducedLatex: rawPolyPairToLatex(rawNum, rawDen),
-        hasMultipleFractions: blockCount >= 2 && !fullSys.isPureSymbolicMode,
-        finalGain: lp.gain,
-        finalGainLatex: formatRatFuncLatex(lp.gain)
+        feedbackTypeLabel:
+          overallSign === '-' ? 'Realimentação Negativa (−)' : 'Realimentação Positiva (+)',
+        symbolicProductLatex: symbolicFactorsLatex.join(' \\cdot '),
+        substitutedProductLatex: substitutedFactorsLatex.join(' \\cdot '),
+        rawExpandedLatex: rawPolyPairToLatex(rawNum, rawDen),
+        simplifiedGain: loop.gain,
+        simplifiedGainLatex: formatRatFuncLatex(loop.gain)
       };
     });
 
-    // Laços Disjuntos (Pares 2 a 2, Ternas 3 a 3 e Ordens Superiores)
-    const pairComparisons = [];
-    for (let i = 0; i < refMason.loops.length; i++) {
-      for (let j = i + 1; j < refMason.loops.length; j++) {
-        const shared = refMason.loops[i].nodes.filter(n => refMason.loops[j].nodes.includes(n));
-        const isDisjoint = shared.length === 0;
-        const prod = isDisjoint ? ratMul(refMason.loops[i].gain, refMason.loops[j].gain) : undefined;
-        pairComparisons.push({
-          i: i + 1,
-          j: j + 1,
-          sharedNodesLatex: shared.map(getCleanLatexLabel),
-          isDisjoint,
-          gainProduct: prod,
-          gainProductLatex: prod ? formatRatFuncLatex(prod) : undefined
-        });
-      }
-    }
-
-    const allDisjointCombinations: DisjointLoopCombination[] = [];
-    const mLoops = refMason.loops.length;
-    function findDisjoint(
-      startIdx: number,
-      chosenIndices: number[],
-      chosenNodes: string[],
-      prodGain: RatFunc
-    ) {
-      for (let i = startIdx; i < mLoops; i++) {
-        const lp = refMason.loops[i];
-        if (setsAreDisjoint(chosenNodes, lp.nodes)) {
-          const nextIndices = [...chosenIndices, i + 1];
-          const nextGain = ratMul(prodGain, lp.gain);
-          if (nextIndices.length >= 2) {
-            allDisjointCombinations.push({
-              order: nextIndices.length,
-              loopIndices: nextIndices,
-              gain: nextGain
-            });
-          }
-          findDisjoint(i + 1, nextIndices, [...chosenNodes, ...lp.nodes], nextGain);
-        }
-      }
-    }
-    findDisjoint(0, [], [], ratOne());
-
-    const disjointPairsOrder2 = allDisjointCombinations.filter(c => c.order === 2);
-    const disjointHigherOrders = allDisjointCombinations.filter(c => c.order >= 3);
-
-    const sumIndividualLoops = refMason.loops.reduce((acc, lp) => ratAdd(acc, lp.gain), ratZero());
-    const sumDisjointPairs = disjointPairsOrder2.reduce((acc, c) => ratAdd(acc, c.gain), ratZero());
-    const sumDisjointTriplets = allDisjointCombinations
-      .filter(c => c.order === 3)
-      .reduce((acc, c) => ratAdd(acc, c.gain), ratZero());
-
-    const loopContribution = ratAdd(refMason.delta, ratScale(ratOne(), -1));
+    const primaryPair = detailedOutputPairs[0] || null;
+    const primaryTf = primaryPair
+      ? primaryPair.pair.transferFunction
+      : analysis.totalT;
+    const primaryTfLatex = formatRatFuncLatex(primaryTf);
+    const primaryTfCompact = formatRatFuncCompact(primaryTf);
 
     return {
       fullSys,
       directedEdges,
-      detailedInputGroups,
+      detailedOutputPairs,
+      detailedSummerPairs,
       detailedLoops,
-      pairComparisons,
-      disjointPairsOrder2,
-      disjointHigherOrders,
-      sumIndividualLoops,
-      sumDisjointPairs,
-      sumDisjointTriplets,
-      loopContribution,
-      commonDelta: refMason.delta,
-      commonDeltaLatex: formatRatFuncLatex(refMason.delta),
-      commonDeltaCompact: formatRatFuncCompact(refMason.delta)
+      primaryPair,
+      primaryTf,
+      primaryTfLatex,
+      primaryTfCompact
     };
   }, [analysis, graph, inputElement, outputElement]);
 
-  // =========================================================================
-  // GERADOR DO DOCUMENTO LATEX COMPLETO (.tex) PARA COMPILAÇÃO NO OVERLEAF
-  // =========================================================================
-  const generateOverleafLatexDocument = (): string => {
-    const {
-      fullSys,
-      directedEdges,
-      detailedInputGroups,
-      detailedLoops,
-      pairComparisons,
-      disjointPairsOrder2,
-      disjointHigherOrders,
-      sumIndividualLoops,
-      sumDisjointPairs,
-      loopContribution,
-      commonDeltaLatex
-    } = systemData;
+  const { fullSys } = systemData;
 
-    const lines: string[] = [];
-    lines.push(`% ==========================================================================`);
-    lines.push(`% MEMORIAL ACADÊMICO DE CÁLCULO — REGRA DE MASON E VALIDAÇÃO ALGÉBRICA`);
-    lines.push(`% Gerado automaticamente pelo Construtor Livre de Diagramas de Blocos`);
-    lines.push(`% Compatível com Overleaf (pdfLaTeX / XeLaTeX / LuaLaTeX)`);
-    lines.push(`% ==========================================================================`);
-    lines.push(`\\documentclass[12pt,a4paper]{article}`);
-    lines.push(`\\usepackage[utf8]{inputenc}`);
-    lines.push(`\\usepackage[T1]{fontenc}`);
-    lines.push(`\\usepackage[brazil]{babel}`);
-    lines.push(`\\usepackage{amsmath,amssymb,amsfonts,mathtools}`);
-    lines.push(`\\usepackage{geometry}`);
-    lines.push(`\\usepackage{booktabs}`);
-    lines.push(`\\usepackage{enumitem}`);
-    lines.push(`\\usepackage{xcolor}`);
-    lines.push(`\\geometry{margin=2.2cm}`);
-    lines.push(`\\setlength{\\parindent}{0pt}`);
-    lines.push(`\\setlength{\\parskip}{6pt}`);
-    lines.push(``);
-    lines.push(`\\title{\\textbf{Memorial de Cálculo Detalhado — Redução por Regra de Mason e Validação Algébrica}}`);
-    lines.push(
-      `\\author{Análise Completa de Sistemas de Controle — Saída Principal $${fullSys.primaryOutput.signalLatex}$}`
-    );
-    lines.push(`\\date{\\today}`);
-    lines.push(``);
-    lines.push(`\\begin{document}`);
-    lines.push(`\\maketitle`);
-    lines.push(`\\hrule`);
-    lines.push(`\\vspace{8pt}`);
-
-    // ETAPA 1
-    lines.push(`\\section{Identificação do Grafo e Equações dos Elementos}`);
-    lines.push(`\\subsection{Entradas Independentes e Saídas}`);
-    lines.push(`\\begin{itemize}[leftmargin=*]`);
-    fullSys.independentInputs.forEach(inp => {
-      lines.push(
-        `  \\item \\textbf{Entrada Independente (${
-          inp.role === 'input-dist' ? 'Perturbação' : 'Referência'
-        }):} $${inp.signalLatex}$`
-      );
-    });
-    fullSys.outputs.forEach(out => {
-      lines.push(`  \\item \\textbf{Saída do Sistema:} $${out.signalLatex}$`);
-    });
-    lines.push(`\\end{itemize}`);
-
-    if (fullSys.blocks.length > 0) {
-      lines.push(`\\subsection{Blocos Funcionais e Ganhos}`);
-      lines.push(`\\begin{itemize}[leftmargin=*]`);
-      fullSys.blocks.forEach(b => {
-        lines.push(
-          `  \\item Bloco $${b.symbolLatex}$ (${
-            b.dir === 'left' ? 'Ramo de Realimentação' : 'Ramo Direto'
-          }): \\[ ${b.symbolLatex} = ${b.gainLatex} \\]`
-        );
-      });
-      lines.push(`\\end{itemize}`);
-    }
-
-    if (fullSys.summerEquations.length > 0) {
-      lines.push(`\\subsection{Equações Algébricas dos Somadores e Sinais Resultantes}`);
-      lines.push(`Considerando os sinais incidentes, os ganhos dos ramos e as polaridades de cada somador:`);
-      lines.push(`\\begin{align}`);
-      fullSys.summerEquations.forEach(sEq => {
-        lines.push(`  ${sEq.equationLatex} \\\\`);
-      });
-      fullSys.outputEquations.forEach(oEq => {
-        lines.push(`  ${oEq.equationLatex}`);
-      });
-      lines.push(`\\end{align}`);
-    }
-
-    lines.push(`\\subsection{Conexões Direcionadas do Grafo}`);
-    lines.push(`\\begin{itemize}[leftmargin=*]`);
-    directedEdges.forEach(e => {
-      lines.push(
-        `  \\item Ramo $${e.fromLabelLatex} \\xrightarrow{(${e.sign})} ${e.toLabelLatex}$ com ganho de ramo $g(s) = ${e.gainLatex}$`
-      );
-    });
-    lines.push(`\\end{itemize}`);
-
-    // ETAPA 2
-    lines.push(`\\section{Identificação dos Caminhos Diretos ($P_k$) por Entrada}`);
-    detailedInputGroups.forEach(grp => {
-      lines.push(
-        `\\subsection{Caminhos Diretos de $${grp.pair.inputInfo.signalLatex}$ para $${grp.pair.targetInfo.signalLatex}$}`
-      );
-      if (grp.paths.length === 0) {
-        lines.push(`Não existem caminhos diretos conectados entre $${grp.pair.inputInfo.signalLatex}$ e $${grp.pair.targetInfo.signalLatex}$.`);
-      } else {
-        grp.paths.forEach(p => {
-          lines.push(`\\begin{itemize}[leftmargin=*]`);
-          lines.push(`  \\item \\textbf{Caminho $P_{${p.index}}(s)$ — Sequência de nós:} $${p.nodesLatex.join(' \\rightarrow ')}$`);
-          lines.push(`  \\item \\textbf{Sinal resultante do caminho:} $(${p.overallSign}1)$`);
-          lines.push(`  \\item \\textbf{Multiplicação detalhada dos ganhos:}`);
-          lines.push(`  \\begin{align*}`);
-          lines.push(`    P_{${p.index}}(s) &= ${p.symbolicFactorsLatex.join(' \\cdot ')} \\\\`);
-          if (p.substitutedFactorsLatex.join(' \\cdot ') !== p.symbolicFactorsLatex.join(' \\cdot ')) {
-            lines.push(`    P_{${p.index}}(s) &= ${p.substitutedFactorsLatex.join(' \\cdot ')} \\\\`);
-          }
-          lines.push(`    P_{${p.index}}(s) &= \\mathbf{${p.finalGainLatex}}`);
-          lines.push(`  \\end{align*}`);
-          lines.push(`\\end{itemize}`);
-        });
-      }
-    });
-
-    // ETAPA 3
-    lines.push(`\\section{Identificação dos Laços Individuais ($L_i$)}`);
-    if (detailedLoops.length === 0) {
-      lines.push(`O sistema opera em malha aberta ($M = 0$), logo $\\sum_i L_i(s) = 0$.`);
-    } else {
-      detailedLoops.forEach(lp => {
-        lines.push(`\\subsection*{Laço Individual $L_{${lp.index}}(s)$}`);
-        lines.push(`\\begin{itemize}[leftmargin=*]`);
-        lines.push(`  \\item \\textbf{Sequência fechada de nós:} $${lp.closedNodesLatex.join(' \\rightarrow ')}$`);
-        lines.push(`  \\item \\textbf{Polaridade efetiva do laço:} $(${lp.overallSign}1)$`);
-        lines.push(`  \\item \\textbf{Multiplicação algébrica detalhada:}`);
-        lines.push(`  \\begin{align*}`);
-        lines.push(`    L_{${lp.index}}(s) &= ${lp.symbolicFactorsLatex.join(' \\cdot ')} \\\\`);
-        if (lp.substitutedFactorsLatex.join(' \\cdot ') !== lp.symbolicFactorsLatex.join(' \\cdot ')) {
-          lines.push(`    L_{${lp.index}}(s) &= ${lp.substitutedFactorsLatex.join(' \\cdot ')} \\\\`);
-        }
-        lines.push(`    L_{${lp.index}}(s) &= \\mathbf{${lp.finalGainLatex}}`);
-        lines.push(`  \\end{align*}`);
-        lines.push(`\\end{itemize}`);
-      });
-    }
-
-    // ETAPA 4
-    lines.push(`\\section{Identificação dos Laços Disjuntos}`);
-    if (detailedLoops.length < 2) {
-      lines.push(
-        `O grafo possui ${detailedLoops.length} laço(s) fechado(s). Portanto, não há combinações de dois ou mais laços disjuntos ($\\sum L_i L_j = 0$).`
-      );
-    } else {
-      lines.push(`\\begin{itemize}[leftmargin=*]`);
-      pairComparisons.forEach(pc => {
-        if (pc.isDisjoint) {
-          lines.push(
-            `  \\item Par $(L_{${pc.i}}, L_{${pc.j}})$: $V(L_{${pc.i}}) \\cap V(L_{${pc.j}}) = \\emptyset$ (\\textbf{Disjuntos}) $\\Rightarrow L_{${pc.i}}(s)L_{${pc.j}}(s) = ${pc.gainProductLatex}$`
-          );
-        } else {
-          lines.push(
-            `  \\item Par $(L_{${pc.i}}, L_{${pc.j}})$: compartilham $\\{${pc.sharedNodesLatex.join(', ')}\\} \\neq \\emptyset$ (\\textbf{Tocam-se}).`
-          );
-        }
-      });
-      lines.push(`\\end{itemize}`);
-      if (disjointHigherOrders.length > 0) {
-        lines.push(`\\subsection*{Combinações de Ordem Superior ($r \\ge 3$)}`);
-        lines.push(`\\begin{itemize}[leftmargin=*]`);
-        disjointHigherOrders.forEach(comb => {
-          lines.push(
-            `  \\item Ordem ${comb.order}: $${comb.loopIndices.map(i => `L_{${i}}(s)`).join(' \\cdot ')} = ${formatRatFuncLatex(comb.gain)}$`
-          );
-        });
-        lines.push(`\\end{itemize}`);
-      }
-    }
-
-    // ETAPA 5
-    lines.push(`\\section{Cálculo do Determinante Geral ($\\Delta$)}`);
-    lines.push(`\\begin{equation}`);
-    lines.push(
-      `  \\Delta(s) = 1 - \\sum_{i} L_i(s) + \\sum_{i,j} (L_i L_j)_{\\text{disjuntos}} - \\sum_{i,j,k} (L_i L_j L_k)_{\\text{disjuntos}} + \\cdots`
-    );
-    lines.push(`\\end{equation}`);
-    lines.push(`Substituindo os valores determinados:`);
-    lines.push(`\\begin{align*}`);
-    lines.push(
-      `  \\Delta(s) &= 1 - \\left(${formatRatFuncLatex(sumIndividualLoops)}\\right)${
-        disjointPairsOrder2.length > 0 ? ` + \\left(${formatRatFuncLatex(sumDisjointPairs)}\\right)` : ''
-      } \\\\`
-    );
-    if (!polyIsOne(loopContribution.den) && !polyIsZero(loopContribution.num)) {
-      lines.push(
-        `  \\Delta(s) &= \\frac{${formatPolyFactorLatex(loopContribution.den)} + ${formatPolyFactorLatex(
-          loopContribution.num
-        )}}{${formatPolyFactorLatex(loopContribution.den)}} \\\\`
-      );
-    }
-    lines.push(`  \\Delta(s) &= \\mathbf{${commonDeltaLatex}}`);
-    lines.push(`\\end{align*}`);
-
-    // ETAPA 6
-    lines.push(`\\section{Cálculo dos Cofatores ($\\Delta_k$) por Entrada}`);
-    detailedInputGroups.forEach(grp => {
-      lines.push(
-        `\\subsection{Cofatores para a Entrada $${grp.pair.inputInfo.signalLatex}$ $\\rightarrow$ $${grp.pair.targetInfo.signalLatex}$}`
-      );
-      grp.paths.forEach(p => {
-        lines.push(
-          `Para o caminho direto $P_{${p.index}}(s)$, excluem-se os laços que tocam o caminho:`
-        );
-        lines.push(`\\[ \\Delta_{${p.index}}(s) = \\mathbf{${p.cofactorLatex}}, \\qquad P_{${p.index}}(s)\\Delta_{${p.index}}(s) = \\mathbf{${p.pathTimesCofactorLatex}} \\]`);
-      });
-    });
-
-    // ETAPA 7
-    lines.push(`\\section{Aplicação da Fórmula Geral de Mason para Cada Entrada}`);
-    detailedInputGroups.forEach(grp => {
-      const inSym = grp.pair.inputInfo.signalLatex;
-      const outSym = grp.pair.targetInfo.signalLatex;
-      lines.push(`\\subsection{Função de Transferência $\\dfrac{${outSym}}{${inSym}}$}`);
-      lines.push(`\\begin{align}`);
-      lines.push(
-        `  \\frac{${outSym}}{${inSym}} &= \\frac{\\sum_{k=1}^{${grp.paths.length}} P_k(s)\\Delta_k(s)}{\\Delta(s)} = \\frac{${grp.numeratorSumLatex}}{${commonDeltaLatex}} = \\mathbf{${grp.pair.transferFunctionLatex}}`
-      );
-      lines.push(`\\end{align}`);
-    });
-
-    // ETAPA 8
-    lines.push(`\\section{Resultado Final, Sinais de Erro/Controle e Superposição}`);
-    lines.push(`\\subsection{Funções de Transferência da Saída Principal}`);
-    lines.push(`\\begin{align}`);
-    fullSys.outputByInputPairs.forEach(p => {
-      lines.push(
-        `  \\frac{${p.targetInfo.signalLatex}}{${p.inputInfo.signalLatex}} &= \\mathbf{${p.transferFunctionLatex}} \\\\`
-      );
-    });
-    lines.push(`\\end{align}`);
-
-    if (fullSys.summerByInputPairs.length > 0) {
-      lines.push(`\\subsection{Funções de Transferência dos Sinais dos Somadores (Erro e Controle)}`);
-      lines.push(`\\begin{align}`);
-      fullSys.summerByInputPairs.forEach(p => {
-        lines.push(
-          `  \\frac{${p.targetInfo.signalLatex}}{${p.inputInfo.signalLatex}} &= \\mathbf{${p.transferFunctionLatex}} \\\\`
-        );
-      });
-      lines.push(`\\end{align}`);
-    }
-
-    lines.push(`\\subsection{Expressão Completa da Saída Total por Superposição}`);
-    lines.push(`\\[ \\boxed{${fullSys.superpositionOutputLatex}} \\]`);
-
-    // VALIDAÇÃO ALGÉBRICA INDEPENDENTE
-    lines.push(`\\section{Validação Algébrica Independente (Método das Equações dos Nós)}`);
-    fullSys.algebraicValidationSteps.forEach(st => {
-      lines.push(`\\subsection*{${st.title}}`);
-      lines.push(`${st.description}`);
-      lines.push(`\\[ ${st.equationLatex} \\]`);
-    });
-    lines.push(
-      `\\textbf{Conclusão da Validação:} Os resultados obtidos pela Regra do Ganho de Mason e pela resolução algébrica direta do sistema de equações são \\textbf{idênticos} para todas as entradas e variáveis analisadas.`
-    );
-
-    lines.push(`\\end{document}`);
-    return lines.join('\n');
+  const copyToClipboard = (text: string, type: 'final-latex' | 'final-text' | 'memorial' | 'scilab') => {
+    navigator.clipboard.writeText(text);
+    setCopiedType(type);
+    setTimeout(() => setCopiedType('none'), 2200);
   };
 
-  const handleDownloadLatexFile = () => {
-    const texContent = generateOverleafLatexDocument();
-    const blob = new Blob([texContent], { type: 'application/x-tex;charset=utf-8' });
+  const downloadScilabFile = () => {
+    const blob = new Blob([fullSys.scilabReport.scriptCode], { type: 'text/plain;charset=utf-8' });
     const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = 'memorial_mason_completo.tex';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'simulacao_sistema_controle.sce';
+    a.click();
     URL.revokeObjectURL(url);
   };
 
-  const handleCopyText = async (content: string, type: 'final-latex' | 'final-text' | 'memorial') => {
-    try {
-      await navigator.clipboard.writeText(content);
-      setCopiedType(type);
-      setTimeout(() => setCopiedType('none'), 3000);
-    } catch (e) {
-      console.error(e);
+  const buildFullLatexMemorial = (): string => {
+    const lines: string[] = [];
+    lines.push('% =========================================================================');
+    lines.push('% MEMORIAL DE RESOLUÇÃO — ÁLGEBRA DE BLOCOS E EQUACIONAMENTO DE MALHA');
+    lines.push('% =========================================================================');
+    lines.push('');
+    lines.push('% ETAPA 1 — IDENTIFICAÇÃO DO SISTEMA');
+    fullSys.independentInputs.forEach(inp => {
+      lines.push(`% Entrada: ${inp.signalLatex}`);
+    });
+    lines.push(`% Saída Principal: ${fullSys.primaryOutput.signalLatex}`);
+    lines.push('');
+    lines.push('% ETAPA 2 — EQUAÇÕES DOS SOMADORES');
+    fullSys.summerEquations.forEach(sEq => {
+      lines.push(`$$${sEq.equationLatex}$$`);
+    });
+    lines.push('');
+    lines.push('% ETAPA 3 — RELAÇÕES DOS BLOCOS');
+    fullSys.blockRelations.forEach(bRel => {
+      lines.push(`$$${bRel.relationLatex}$$`);
+    });
+    lines.push('');
+    lines.push('% ETAPA 4 — SUBSTITUIÇÃO PROGRESSIVA');
+    fullSys.progressiveSubstitutionSteps.forEach(st => {
+      lines.push(`% Passo 4.${st.stepNumber}: ${st.title}`);
+      lines.push(`$$${st.resultLatex}$$`);
+    });
+    lines.push('');
+    lines.push('% ETAPA 5 E 6 — DESENVOLVIMENTO ALGÉBRICO E FUNÇÕES DE TRANSFERÊNCIA');
+    fullSys.outputByInputPairs.forEach(p => {
+      lines.push(`$$\\frac{${p.targetInfo.signalLatex}}{${p.inputInfo.signalLatex}} = ${p.transferFunctionLatex}$$`);
+    });
+    fullSys.summerByInputPairs.forEach(p => {
+      lines.push(`$$\\frac{${p.targetInfo.signalLatex}}{${p.inputInfo.signalLatex}} = ${p.transferFunctionLatex}$$`);
+    });
+    lines.push('');
+    lines.push('% ETAPA 7 E 8 — SUPERPOSIÇÃO E RESULTADO FINAL');
+    lines.push(`$$${fullSys.superpositionOutputLatex}$$`);
+    fullSys.superpositionSummers.forEach(s => {
+      lines.push(`$$${s.latex}$$`);
+    });
+    lines.push('');
+    lines.push('% ETAPA 9 — REGIME PERMANENTE (TEOREMA DO VALOR FINAL)');
+    lines.push(`$$${fullSys.steadyStateReport.totalOutputSteadyStateLatex}$$`);
+    if (fullSys.steadyStateReport.totalErrorSteadyStateLatex) {
+      lines.push(`$$${fullSys.steadyStateReport.totalErrorSteadyStateLatex}$$`);
     }
+    return lines.join('\n');
   };
 
-  const {
-    fullSys,
-    directedEdges,
-    detailedInputGroups,
-    detailedLoops,
-    pairComparisons,
-    disjointPairsOrder2,
-    disjointHigherOrders,
-    sumIndividualLoops,
-    sumDisjointPairs,
-    sumDisjointTriplets,
-    loopContribution,
-    commonDeltaLatex
-  } = systemData;
-
-  const stepCardStyle: React.CSSProperties = {
-    background: '#070b16',
-    border: '1px solid rgba(56, 189, 248, 0.16)',
-    borderRadius: '10px',
-    overflow: 'hidden',
-    boxShadow: '0 4px 16px rgba(0, 0, 0, 0.35)'
+  const renderSectionHeader = (
+    stepNum: number,
+    badge: string,
+    title: string,
+    subtitle: string,
+    accentColor: string = 'var(--primary)'
+  ) => {
+    const isOpen = !!openSteps[stepNum];
+    return (
+      <button
+        type="button"
+        onClick={() => toggleStep(stepNum)}
+        style={{
+          width: '100%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '0.75rem',
+          padding: '0.85rem 1.1rem',
+          background: 'var(--card-bg)',
+          border: 'none',
+          borderBottom: isOpen ? '1px solid var(--card-border)' : 'none',
+          color: 'var(--text)',
+          cursor: 'pointer',
+          textAlign: 'left',
+          transition: 'background 0.15s ease'
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+          <span
+            style={{
+              background: 'var(--code-bg)',
+              color: accentColor,
+              border: '1px solid var(--card-border)',
+              padding: '0.2rem 0.55rem',
+              borderRadius: '4px',
+              fontSize: '0.72rem',
+              fontWeight: 700,
+              letterSpacing: '0.04em',
+              textTransform: 'uppercase'
+            }}
+          >
+            {badge}
+          </span>
+          <div>
+            <div style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text)' }}>{title}</div>
+            <div style={{ fontSize: '0.76rem', color: 'var(--text-muted)', marginTop: '0.1rem' }}>
+              {subtitle}
+            </div>
+          </div>
+        </div>
+        <span
+          style={{
+            fontSize: '0.78rem',
+            color: 'var(--text-muted)',
+            padding: '0.2rem 0.55rem',
+            borderRadius: '4px',
+            background: 'var(--code-bg)',
+            border: '1px solid var(--card-border)',
+            whiteSpace: 'nowrap',
+            fontWeight: 600
+          }}
+        >
+          {isOpen ? '▾ Recolher' : '▸ Expandir'}
+        </span>
+      </button>
+    );
   };
 
-  const stepHeaderStyle: React.CSSProperties = {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: '12px 16px',
-    background: 'rgba(15, 23, 42, 0.85)',
-    borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
-    cursor: 'pointer',
-    userSelect: 'none'
-  };
+  // Renderizador SVG do gráfico de resposta ao degrau (pré-visualização Scilab)
+  const renderStepResponseChart = () => {
+    const series = fullSys.scilabReport.previewSeries;
+    if (!series || series.length === 0) return null;
 
-  const mathBoxStyle: React.CSSProperties = {
-    background: '#0a1020',
-    border: '1px solid rgba(56, 189, 248, 0.15)',
-    borderRadius: '8px',
-    padding: '12px 14px',
-    overflowX: 'auto',
-    maxWidth: '100%'
-  };
+    const width = 680;
+    const height = 240;
+    const padLeft = 52;
+    const padRight = 24;
+    const padTop = 20;
+    const padBottom = 36;
+    const plotW = width - padLeft - padRight;
+    const plotH = height - padTop - padBottom;
 
-  return (
-    <div
-      data-testid="mason-deduction-panel"
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '16px',
-        color: 'var(--text)',
-        paddingBottom: '28px'
-      }}
-    >
-      {/* CABEÇALHO DO PAINEL 2 — DESENVOLVIMENTO DOS CÁLCULOS */}
+    let minY = 0;
+    let maxY = 1.2;
+    let maxT = 10;
+
+    series.forEach(s => {
+      s.t.forEach(tVal => {
+        if (tVal > maxT) maxT = tVal;
+      });
+      s.y.forEach(yVal => {
+        if (yVal < minY) minY = yVal;
+        if (yVal > maxY) maxY = yVal;
+      });
+    });
+
+    const yRange = Math.max(0.2, maxY - minY);
+    minY = minY - 0.08 * yRange;
+    maxY = maxY + 0.12 * yRange;
+
+    const mapX = (tVal: number) => padLeft + (tVal / (maxT || 1)) * plotW;
+    const mapY = (yVal: number) => padTop + plotH - ((yVal - minY) / (maxY - minY || 1)) * plotH;
+
+    const yTicks = 5;
+    const xTicks = 5;
+
+    return (
       <div
         style={{
-          background: 'rgba(15, 23, 42, 0.92)',
-          border: '1px solid rgba(56, 189, 248, 0.28)',
-          borderRadius: '10px',
-          padding: '14px 16px',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '12px'
+          background: 'var(--code-bg)',
+          border: '1px solid var(--card-border)',
+          borderRadius: '6px',
+          padding: '0.85rem 1rem',
+          marginBottom: '0.9rem'
         }}
       >
         <div
           style={{
             display: 'flex',
             justifyContent: 'space-between',
-            alignItems: 'flex-start',
+            alignItems: 'center',
             flexWrap: 'wrap',
-            gap: '10px'
+            gap: '0.5rem',
+            marginBottom: '0.6rem'
           }}
         >
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+          <span
+            style={{
+              fontSize: '0.76rem',
+              fontWeight: 700,
+              color: 'var(--text)',
+              textTransform: 'uppercase',
+              letterSpacing: '0.04em'
+            }}
+          >
+            Pré-Visualização Numérica — Resposta ao Degrau Unitário (RK4 Equivalente a csim)
+          </span>
+          <div style={{ display: 'flex', gap: '0.85rem', flexWrap: 'wrap' }}>
+            {series.map((s, idx) => (
               <span
+                key={idx}
                 style={{
-                  background: 'rgba(56, 189, 248, 0.16)',
-                  color: '#38bdf8',
-                  border: '1px solid rgba(56, 189, 248, 0.4)',
-                  borderRadius: '6px',
-                  padding: '2px 8px',
-                  fontSize: '0.72rem',
-                  fontWeight: 800,
-                  letterSpacing: '0.4px'
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.35rem',
+                  fontSize: '0.75rem',
+                  color: 'var(--text)',
+                  fontWeight: 600
                 }}
               >
-                PAINEL 2 — DESENVOLVIMENTO DOS CÁLCULOS
+                <span
+                  style={{
+                    width: '12px',
+                    height: '3px',
+                    background: s.color,
+                    display: 'inline-block',
+                    borderRadius: '2px'
+                  }}
+                />
+                {s.label} (regime ≈ {s.finalValue.toFixed(4)})
+              </span>
+            ))}
+          </div>
+        </div>
+
+        <svg
+          viewBox={`0 0 ${width} ${height}`}
+          style={{ width: '100%', height: 'auto', maxHeight: '250px', display: 'block' }}
+        >
+          {/* Linhas de grade horizontais */}
+          {Array.from({ length: yTicks + 1 }).map((_, i) => {
+            const val = minY + (i / yTicks) * (maxY - minY);
+            const yPos = mapY(val);
+            return (
+              <g key={`hy-${i}`}>
+                <line
+                  x1={padLeft}
+                  y1={yPos}
+                  x2={width - padRight}
+                  y2={yPos}
+                  stroke="var(--card-border)"
+                  strokeDasharray="3 3"
+                  strokeWidth={1}
+                />
+                <text
+                  x={padLeft - 6}
+                  y={yPos + 4}
+                  textAnchor="end"
+                  fontSize="10"
+                  fill="var(--text-muted)"
+                >
+                  {val.toFixed(2)}
+                </text>
+              </g>
+            );
+          })}
+
+          {/* Linhas de grade verticais */}
+          {Array.from({ length: xTicks + 1 }).map((_, i) => {
+            const val = (i / xTicks) * maxT;
+            const xPos = mapX(val);
+            return (
+              <g key={`vx-${i}`}>
+                <line
+                  x1={xPos}
+                  y1={padTop}
+                  x2={xPos}
+                  y2={height - padBottom}
+                  stroke="var(--card-border)"
+                  strokeDasharray="3 3"
+                  strokeWidth={1}
+                />
+                <text
+                  x={xPos}
+                  y={height - padBottom + 15}
+                  textAnchor="middle"
+                  fontSize="10"
+                  fill="var(--text-muted)"
+                >
+                  {val.toFixed(1)}s
+                </text>
+              </g>
+            );
+          })}
+
+          {/* Eixo zero se visível */}
+          {minY <= 0 && maxY >= 0 && (
+            <line
+              x1={padLeft}
+              y1={mapY(0)}
+              x2={width - padRight}
+              y2={mapY(0)}
+              stroke="var(--text-muted)"
+              strokeWidth={1}
+            />
+          )}
+
+          {/* Curvas */}
+          {series.map((s, idx) => {
+            const pathD = s.t
+              .map(
+                (tVal, pIdx) =>
+                  `${pIdx === 0 ? 'M' : 'L'} ${mapX(tVal).toFixed(1)} ${mapY(s.y[pIdx] ?? 0).toFixed(1)}`
+              )
+              .join(' ');
+            return (
+              <path
+                key={`curve-${idx}`}
+                d={pathD}
+                fill="none"
+                stroke={s.color}
+                strokeWidth={2.2}
+              />
+            );
+          })}
+
+          {/* Rótulo eixo X */}
+          <text
+            x={padLeft + plotW / 2}
+            y={height - 4}
+            textAnchor="middle"
+            fontSize="10.5"
+            fill="var(--text-muted)"
+            fontWeight="600"
+          >
+            Tempo t (segundos)
+          </text>
+        </svg>
+      </div>
+    );
+  };
+
+  return (
+    <div
+      className="algebraic-deduction-container"
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100%',
+        width: '100%',
+        background: 'var(--bg)',
+        color: 'var(--text)',
+        overflow: 'hidden',
+        fontFamily: 'Inter, system-ui, -apple-system, sans-serif'
+      }}
+    >
+      {/* CABEÇALHO FIXO DO PAINEL DE CÁLCULOS */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: '0.6rem',
+          padding: '0.75rem 1.15rem',
+          background: 'var(--card-bg)',
+          borderBottom: '1px solid var(--card-border)',
+          flexShrink: 0
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <div
+            style={{
+              width: '32px',
+              height: '32px',
+              borderRadius: '6px',
+              background: 'var(--code-bg)',
+              border: '1px solid var(--card-border)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '0.95rem',
+              fontWeight: 800,
+              color: 'var(--primary)'
+            }}
+          >
+            ∑
+          </div>
+          <div>
+            <h3
+              style={{
+                margin: 0,
+                fontSize: '0.95rem',
+                fontWeight: 700,
+                color: 'var(--text)',
+                letterSpacing: '-0.01em'
+              }}
+            >
+              Resolução Analítica — Álgebra de Blocos e Equacionamento de Malha
+            </h3>
+            <p style={{ margin: 0, fontSize: '0.74rem', color: 'var(--text-muted)' }}>
+              Equações dos somadores, substituição progressiva, superposição, regime permanente (TVF) e Scilab
+            </p>
+          </div>
+        </div>
+
+        {/* Controles de Visualização e Exportação */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
+          <button
+            type="button"
+            onClick={() => setAllSteps(true)}
+            title="Expandir todas as etapas"
+            style={{
+              padding: '0.32rem 0.6rem',
+              borderRadius: '5px',
+              fontSize: '0.74rem',
+              fontWeight: 600,
+              background: 'var(--code-bg)',
+              color: 'var(--text)',
+              border: '1px solid var(--card-border)',
+              cursor: 'pointer'
+            }}
+          >
+            Expandir Tudo
+          </button>
+          <button
+            type="button"
+            onClick={() => setAllSteps(false)}
+            title="Recolher todas as etapas"
+            style={{
+              padding: '0.32rem 0.6rem',
+              borderRadius: '5px',
+              fontSize: '0.74rem',
+              fontWeight: 600,
+              background: 'var(--code-bg)',
+              color: 'var(--text-muted)',
+              border: '1px solid var(--card-border)',
+              cursor: 'pointer'
+            }}
+          >
+            Recolher Tudo
+          </button>
+
+          <button
+            type="button"
+            onClick={() => copyToClipboard(buildFullLatexMemorial(), 'memorial')}
+            title="Copiar todo o memorial em formato LaTeX"
+            style={{
+              padding: '0.32rem 0.65rem',
+              borderRadius: '5px',
+              fontSize: '0.74rem',
+              fontWeight: 600,
+              background: 'var(--code-bg)',
+              color: copiedType === 'memorial' ? 'var(--success)' : 'var(--primary)',
+              border: '1px solid var(--card-border)',
+              cursor: 'pointer'
+            }}
+          >
+            {copiedType === 'memorial' ? '✓ LaTeX Copiado!' : 'Copiar LaTeX'}
+          </button>
+
+          {onChangeSplitMode && (
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                background: 'var(--code-bg)',
+                padding: '0.15rem',
+                borderRadius: '6px',
+                border: '1px solid var(--card-border)',
+                gap: '0.18rem'
+              }}
+            >
+              <button
+                type="button"
+                onClick={() => onChangeSplitMode('circuit-maximized')}
+                title="Maximizar área do diagrama"
+                style={{
+                  padding: '0.26rem 0.52rem',
+                  borderRadius: '4px',
+                  fontSize: '0.73rem',
+                  fontWeight: 600,
+                  border: 'none',
+                  cursor: 'pointer',
+                  background:
+                    splitMode === 'circuit-maximized' ? 'var(--primary)' : 'transparent',
+                  color: splitMode === 'circuit-maximized' ? '#fff' : 'var(--text-muted)'
+                }}
+              >
+                Circuito
+              </button>
+              <button
+                type="button"
+                onClick={() => onChangeSplitMode('split')}
+                title="Dividir tela entre Circuito e Resolução"
+                style={{
+                  padding: '0.26rem 0.52rem',
+                  borderRadius: '4px',
+                  fontSize: '0.73rem',
+                  fontWeight: 600,
+                  border: 'none',
+                  cursor: 'pointer',
+                  background: splitMode === 'split' ? 'var(--primary)' : 'transparent',
+                  color: splitMode === 'split' ? '#fff' : 'var(--text-muted)'
+                }}
+              >
+                Dividido
+              </button>
+              <button
+                type="button"
+                onClick={() => onChangeSplitMode('calc-maximized')}
+                title="Maximizar painel de cálculos"
+                style={{
+                  padding: '0.26rem 0.52rem',
+                  borderRadius: '4px',
+                  fontSize: '0.73rem',
+                  fontWeight: 600,
+                  border: 'none',
+                  cursor: 'pointer',
+                  background:
+                    splitMode === 'calc-maximized' ? 'var(--primary)' : 'transparent',
+                  color: splitMode === 'calc-maximized' ? '#fff' : 'var(--text-muted)'
+                }}
+              >
+                Maximizar Cálculos
+              </button>
+            </div>
+          )}
+
+          {onClose && (
+            <button
+              type="button"
+              onClick={onClose}
+              title="Fechar painel de resolução"
+              style={{
+                padding: '0.3rem 0.65rem',
+                borderRadius: '5px',
+                fontSize: '0.76rem',
+                fontWeight: 600,
+                background: 'var(--code-bg)',
+                color: 'var(--danger)',
+                border: '1px solid var(--card-border)',
+                cursor: 'pointer'
+              }}
+            >
+              ✕ Fechar
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* CORPO ROLÁVEL DO MEMORIAL DE CÁLCULO */}
+      <div
+        style={{
+          flex: 1,
+          overflowY: 'auto',
+          padding: '1.15rem',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '1rem'
+        }}
+      >
+        {/* =================================================================
+            QUADRO RESUMO DE RESULTADOS PRINCIPAIS (TOPO)
+            ================================================================= */}
+        <div
+          style={{
+            background: 'var(--card-bg)',
+            border: '1px solid var(--card-border)',
+            borderLeft: '4px solid var(--primary)',
+            borderRadius: '8px',
+            padding: '1rem 1.2rem'
+          }}
+        >
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              gap: '0.5rem',
+              marginBottom: '0.65rem'
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+              <span
+                style={{
+                  background: 'var(--code-bg)',
+                  color: 'var(--primary)',
+                  border: '1px solid var(--card-border)',
+                  padding: '0.2rem 0.55rem',
+                  borderRadius: '4px',
+                  fontSize: '0.72rem',
+                  fontWeight: 700,
+                  textTransform: 'uppercase'
+                }}
+              >
+                Síntese Analítica do Sistema
               </span>
               <span
                 style={{
-                  background: fullSys.allValidationsMatch
-                    ? 'rgba(16, 185, 129, 0.16)'
-                    : 'rgba(239, 68, 68, 0.16)',
-                  color: fullSys.allValidationsMatch ? '#34d399' : '#fca5a5',
-                  border: `1px solid ${fullSys.allValidationsMatch ? 'rgba(16,185,129,0.4)' : 'rgba(239,68,68,0.4)'}`,
-                  borderRadius: '6px',
-                  padding: '2px 8px',
-                  fontSize: '0.71rem',
+                  background: 'var(--code-bg)',
+                  color: 'var(--success)',
+                  border: '1px solid var(--card-border)',
+                  padding: '0.2rem 0.55rem',
+                  borderRadius: '4px',
+                  fontSize: '0.72rem',
                   fontWeight: 700
                 }}
               >
-                {fullSys.allValidationsMatch
-                  ? '✓ Validado Algebricamente (Mason = Sistema de Equações)'
-                  : '⚠️ Alerta de Divergência Algébrica'}
+                ✓ Equacionamento Algébrico Verificado
               </span>
             </div>
-            <h3 style={{ margin: '6px 0 2px 0', fontSize: '1.06rem', color: '#f8fafc', fontWeight: 800 }}>
-              Memorial Matemático Completo — Regra de Mason e Validação Algébrica
-            </h3>
-          </div>
 
-          {/* Controles de Janela / Divisão e Fechamento */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-            {onChangeSplitMode && (
-              <>
-                <button
-                  type="button"
-                  className="filter-btn"
-                  onClick={() => onChangeSplitMode('circuit-maximized')}
-                  style={{ padding: '5px 9px', fontSize: '0.74rem' }}
-                  title="Minimizar temporariamente o painel dos cálculos e expandir o circuito"
-                >
-                  🗕 Minimizar Cálculos
-                </button>
-                {splitMode !== 'split' && (
-                  <button
-                    type="button"
-                    className="filter-btn"
-                    onClick={() => onChangeSplitMode('split')}
-                    style={{
-                      padding: '5px 9px',
-                      fontSize: '0.74rem',
-                      borderColor: '#38bdf8',
-                      color: '#38bdf8'
-                    }}
-                    title="Restaurar visualização dividida lado a lado (Circuito + Cálculos)"
-                  >
-                    ⚖️ Restaurar Ambos
-                  </button>
-                )}
-                {splitMode !== 'calc-maximized' && (
-                  <button
-                    type="button"
-                    className="filter-btn"
-                    onClick={() => onChangeSplitMode('calc-maximized')}
-                    style={{ padding: '5px 9px', fontSize: '0.74rem' }}
-                    title="Maximizar temporariamente o painel dos cálculos (minimiza o circuito)"
-                  >
-                    🗖 Maximizar Cálculos
-                  </button>
-                )}
-              </>
-            )}
-            {onClose && (
+            <div style={{ display: 'flex', gap: '0.45rem', flexWrap: 'wrap' }}>
               <button
                 type="button"
-                className="filter-btn"
-                onClick={onClose}
+                onClick={() =>
+                  copyToClipboard(fullSys.superpositionOutputLatex, 'final-latex')
+                }
                 style={{
-                  padding: '5px 10px',
-                  fontSize: '0.74rem',
-                  color: '#f87171',
-                  borderColor: 'rgba(239, 68, 68, 0.35)'
+                  padding: '0.28rem 0.65rem',
+                  borderRadius: '4px',
+                  fontSize: '0.73rem',
+                  fontWeight: 600,
+                  background: 'var(--code-bg)',
+                  color: copiedType === 'final-latex' ? 'var(--success)' : 'var(--text)',
+                  border: '1px solid var(--card-border)',
+                  cursor: 'pointer'
                 }}
-                title="Fechar painel de cálculos"
               >
-                ✕ Fechar
+                {copiedType === 'final-latex' ? '✓ Equação Copiada' : 'Copiar Equação (LaTeX)'}
               </button>
-            )}
-          </div>
-        </div>
-
-        {/* Barra de Ações do Memorial */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            flexWrap: 'wrap',
-            gap: '8px',
-            paddingTop: '8px',
-            borderTop: '1px solid rgba(255,255,255,0.07)'
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-            <button
-              type="button"
-              data-testid="download-latex-memorial-btn"
-              onClick={handleDownloadLatexFile}
-              style={{
-                background: 'linear-gradient(135deg, #0284c7, #2563eb)',
-                color: '#ffffff',
-                border: '1px solid #38bdf8',
-                borderRadius: '7px',
-                padding: '7px 14px',
-                fontSize: '0.78rem',
-                fontWeight: 800,
-                cursor: 'pointer',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '6px',
-                boxShadow: '0 4px 14px rgba(37, 99, 235, 0.35)'
-              }}
-              title="Baixar documento LaTeX (.tex) completo pronto para compilar no Overleaf"
-            >
-              📥 Baixar Memorial LaTeX (.tex)
-            </button>
-
-            <button
-              type="button"
-              className="filter-btn"
-              onClick={() => handleCopyText(generateOverleafLatexDocument(), 'memorial')}
-              style={{
-                padding: '6px 12px',
-                fontSize: '0.76rem',
-                borderColor: copiedType === 'memorial' ? '#10b981' : undefined,
-                color: copiedType === 'memorial' ? '#10b981' : undefined
-              }}
-            >
-              {copiedType === 'memorial' ? '✓ Código .tex Copiado!' : '📋 Copiar Código .tex'}
-            </button>
-          </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <button
-              type="button"
-              className="filter-btn"
-              onClick={() => setAllSteps(true)}
-              style={{ padding: '4px 9px', fontSize: '0.72rem' }}
-            >
-              ▼ Expandir Todas as Etapas
-            </button>
-            <button
-              type="button"
-              className="filter-btn"
-              onClick={() => setAllSteps(false)}
-              style={{ padding: '4px 9px', fontSize: '0.72rem' }}
-            >
-              ▲ Recolher Etapas
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* =====================================================================
-          ETAPA 1 — IDENTIFICAÇÃO DO GRAFO E EQUAÇÕES DOS SOMADORES
-         ===================================================================== */}
-      <div style={stepCardStyle} data-testid="mason-step-1">
-        <div style={stepHeaderStyle} onClick={() => toggleStep(1)}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <span
-              style={{
-                background: '#38bdf8',
-                color: '#020617',
-                borderRadius: '6px',
-                padding: '2px 8px',
-                fontSize: '0.75rem',
-                fontWeight: 900
-              }}
-            >
-              ETAPA 1
-            </span>
-            <h4 style={{ margin: 0, fontSize: '0.94rem', fontWeight: 800, color: '#f8fafc' }}>
-              Identificação do Grafo, Blocos, Somadores e Sinais
-            </h4>
-          </div>
-          <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{openSteps[1] ? '▲' : '▼'}</span>
-        </div>
-
-        {openSteps[1] && (
-          <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            {/* 1.1 Entradas Independentes e Saídas */}
-            <div style={mathBoxStyle}>
-              <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#38bdf8', marginBottom: '8px' }}>
-                1.1. Entradas Independentes e Saídas do Sistema
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px' }}>
-                {fullSys.independentInputs.map(inp => (
-                  <div
-                    key={inp.id}
-                    style={{
-                      background: '#060a14',
-                      padding: '10px 12px',
-                      borderRadius: '6px',
-                      border:
-                        inp.role === 'input-dist'
-                          ? '1px solid rgba(251, 191, 36, 0.3)'
-                          : '1px solid rgba(56, 189, 248, 0.25)'
-                    }}
-                  >
-                    <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-                      {inp.role === 'input-dist' ? 'Entrada de Perturbação:' : 'Entrada de Referência:'}
-                    </div>
-                    <div style={{ marginTop: '4px', fontSize: '0.92rem' }}>
-                      <MathView math={inp.signalLatex} inline />
-                    </div>
-                  </div>
-                ))}
-
-                {fullSys.outputs.map(out => (
-                  <div
-                    key={out.id}
-                    style={{
-                      background: '#060a14',
-                      padding: '10px 12px',
-                      borderRadius: '6px',
-                      border: '1px solid rgba(16, 185, 129, 0.3)'
-                    }}
-                  >
-                    <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Saída do Sistema:</div>
-                    <div style={{ marginTop: '4px', fontSize: '0.92rem' }}>
-                      <MathView math={out.signalLatex} inline />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* 1.2 Blocos Funcionais e Ganhos */}
-            <div style={mathBoxStyle}>
-              <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#38bdf8', marginBottom: '8px' }}>
-                1.2. Blocos Funcionais e Respectivos Ganhos ({fullSys.blocks.length})
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '8px' }}>
-                {fullSys.blocks.map(b => (
-                  <div
-                    key={b.id}
-                    style={{
-                      background: '#060a14',
-                      padding: '10px 12px',
-                      borderRadius: '6px',
-                      border: '1px solid rgba(255,255,255,0.08)'
-                    }}
-                  >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.74rem', color: '#94a3b8', marginBottom: '4px' }}>
-                      <span style={{ color: '#e2e8f0', fontWeight: 700 }}>{b.name}</span>
-                      <span>{b.dir === 'left' ? 'Realimentação (←)' : 'Ramo Direto (→)'}</span>
-                    </div>
-                    <MathView math={`${b.symbolLatex} = ${b.gainLatex}`} block />
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* 1.3 Equações Algébricas Efetivas dos Somadores e da Saída */}
-            <div style={mathBoxStyle} data-testid="mason-summer-equations">
-              <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#10b981', marginBottom: '8px' }}>
-                1.3. Somadores, Polaridades e Equações Efetivas dos Sinais Resultantes
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {fullSys.summerEquations.map(sEq => (
-                  <div
-                    key={sEq.summerId}
-                    style={{
-                      background: '#060a14',
-                      padding: '10px 12px',
-                      borderRadius: '6px',
-                      border: '1px solid rgba(16, 185, 129, 0.25)'
-                    }}
-                  >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '6px', marginBottom: '4px' }}>
-                      <span style={{ fontSize: '0.78rem', color: '#a7f3d0', fontWeight: 700 }}>
-                        {sEq.summerName} — Sinal resultante <MathView math={sEq.signalLatex} inline />:
-                      </span>
-                      <span style={{ fontSize: '0.74rem', color: '#94a3b8' }}>
-                        {sEq.equationText}
-                      </span>
-                    </div>
-                    <MathView math={sEq.equationLatex} block />
-                  </div>
-                ))}
-
-                {fullSys.outputEquations.map(oEq => (
-                  <div
-                    key={oEq.outputId}
-                    style={{
-                      background: '#060a14',
-                      padding: '10px 12px',
-                      borderRadius: '6px',
-                      border: '1px solid rgba(56, 189, 248, 0.25)'
-                    }}
-                  >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '6px', marginBottom: '4px' }}>
-                      <span style={{ fontSize: '0.78rem', color: '#7dd3fc', fontWeight: 700 }}>
-                        Equação da Saída <MathView math={oEq.signalLatex} inline />:
-                      </span>
-                      <span style={{ fontSize: '0.74rem', color: '#94a3b8' }}>
-                        {oEq.equationText}
-                      </span>
-                    </div>
-                    <MathView math={oEq.equationLatex} block />
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* 1.4 Conexões Direcionadas */}
-            <div style={mathBoxStyle}>
-              <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#a855f7', marginBottom: '8px' }}>
-                1.4. Conexões Direcionadas do Grafo ({directedEdges.length})
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '8px' }}>
-                {directedEdges.map(edge => (
-                  <div
-                    key={edge.index}
-                    style={{
-                      background: '#060a14',
-                      padding: '8px 12px',
-                      borderRadius: '6px',
-                      border: '1px solid rgba(168, 85, 247, 0.18)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      gap: '8px'
-                    }}
-                  >
-                    <MathView
-                      math={`${edge.fromLabelLatex} \\xrightarrow{(${edge.sign})} ${edge.toLabelLatex}`}
-                      inline
-                    />
-                    <span style={{ fontSize: '0.76rem', color: '#cbd5e1' }}>
-                      <MathView math={`g = ${edge.gainLatex}`} inline />
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* =====================================================================
-          ETAPA 2 — IDENTIFICAÇÃO DOS CAMINHOS DIRETOS (SEPARADOS POR ENTRADA)
-         ===================================================================== */}
-      <div style={stepCardStyle} data-testid="mason-step-2">
-        <div style={stepHeaderStyle} onClick={() => toggleStep(2)}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <span
-              style={{
-                background: '#0ea5e9',
-                color: '#020617',
-                borderRadius: '6px',
-                padding: '2px 8px',
-                fontSize: '0.75rem',
-                fontWeight: 900
-              }}
-            >
-              ETAPA 2
-            </span>
-            <h4 style={{ margin: 0, fontSize: '0.94rem', fontWeight: 800, color: '#f8fafc' }}>
-              Identificação dos Caminhos Diretos (<MathView math="P_k" inline />) por Entrada Independente
-            </h4>
-          </div>
-          <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{openSteps[2] ? '▲' : '▼'}</span>
-        </div>
-
-        {openSteps[2] && (
-          <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            {detailedInputGroups.map((grp, gIdx) => (
-              <div
-                key={grp.pair.inputInfo.id}
+              <button
+                type="button"
+                onClick={() =>
+                  copyToClipboard(systemData.primaryTfCompact, 'final-text')
+                }
                 style={{
-                  ...mathBoxStyle,
-                  borderLeft: gIdx === 0 ? '3px solid #38bdf8' : '3px solid #fbbf24'
+                  padding: '0.28rem 0.65rem',
+                  borderRadius: '4px',
+                  fontSize: '0.73rem',
+                  fontWeight: 600,
+                  background: 'var(--code-bg)',
+                  color: copiedType === 'final-text' ? 'var(--success)' : 'var(--text)',
+                  border: '1px solid var(--card-border)',
+                  cursor: 'pointer'
                 }}
               >
-                <div style={{ fontSize: '0.84rem', fontWeight: 800, color: gIdx === 0 ? '#38bdf8' : '#fbbf24', marginBottom: '10px' }}>
-                  2.{gIdx + 1}. Caminhos Diretos da Entrada <MathView math={grp.pair.inputInfo.signalLatex} inline />{' '}
-                  para a Saída <MathView math={grp.pair.targetInfo.signalLatex} inline />
+                {copiedType === 'final-text' ? '✓ Copiado!' : 'Copiar FT Principal'}
+              </button>
+            </div>
+          </div>
+
+          {/* Expressão Completa da Saída */}
+          <div
+            style={{
+              padding: '0.85rem 1rem',
+              background: 'var(--code-bg)',
+              borderRadius: '6px',
+              border: '1px solid var(--card-border)',
+              overflowX: 'auto',
+              marginBottom: '0.75rem'
+            }}
+          >
+            <div
+              style={{
+                fontSize: '0.72rem',
+                color: 'var(--text-muted)',
+                fontWeight: 700,
+                textTransform: 'uppercase',
+                marginBottom: '0.35rem'
+              }}
+            >
+              Equação Geral da Saída no Domínio de Laplace:
+            </div>
+            <MathView math={fullSys.superpositionOutputLatex} />
+          </div>
+
+          {/* Cards de Funções de Transferência Individuais */}
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+              gap: '0.65rem'
+            }}
+          >
+            {fullSys.outputByInputPairs.map((pair, idx) => (
+              <div
+                key={`top-tf-${idx}`}
+                style={{
+                  background: 'var(--code-bg)',
+                  border: '1px solid var(--card-border)',
+                  borderRadius: '6px',
+                  padding: '0.65rem 0.85rem',
+                  overflowX: 'auto'
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: '0.72rem',
+                    fontWeight: 700,
+                    color: 'var(--primary)',
+                    marginBottom: '0.3rem'
+                  }}
+                >
+                  Relação Saída / Entrada ({pair.inputInfo.displayName}):
                 </div>
-
-                {grp.paths.length === 0 ? (
-                  <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                    Nenhum caminho direto encontrado a partir desta entrada.
-                  </div>
-                ) : (
-                  grp.paths.map(p => (
-                    <div
-                      key={p.index}
-                      style={{
-                        background: '#060a14',
-                        padding: '10px 12px',
-                        borderRadius: '6px',
-                        border: '1px solid rgba(255,255,255,0.07)',
-                        marginBottom: '8px'
-                      }}
-                    >
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px', flexWrap: 'wrap' }}>
-                        <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#e2e8f0' }}>
-                          Caminho Direto <MathView math={`P_{${p.index}}(s)`} inline /> (referente a{' '}
-                          <MathView math={grp.pair.inputInfo.signalLatex} inline />)
-                        </span>
-                        <span style={{ fontSize: '0.74rem', color: '#94a3b8' }}>
-                          Polaridade acumulada: <MathView math={`(${p.overallSign}1)`} inline />
-                        </span>
-                      </div>
-
-                      <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', marginBottom: '4px' }}>
-                        Sequência de nós percorridos:
-                      </div>
-                      <MathView math={p.nodesLatex.join(' \\longrightarrow ')} block />
-
-                      <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', margin: '6px 0 4px 0' }}>
-                        Ganhos e sinais de cada ramo:
-                      </div>
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '8px' }}>
-                        {p.edges.map((e, eIdx) => (
-                          <span
-                            key={eIdx}
-                            style={{
-                              background: '#0a1020',
-                              border: '1px solid rgba(56,189,248,0.2)',
-                              borderRadius: '4px',
-                              padding: '3px 8px',
-                              fontSize: '0.75rem'
-                            }}
-                          >
-                            <MathView
-                              math={`${e.fromLabelLatex} \\xrightarrow{(${e.sign})} ${e.toLabelLatex}: \\; ${e.gainLatex}`}
-                              inline
-                            />
-                          </span>
-                        ))}
-                      </div>
-
-                      <div style={{ fontSize: '0.74rem', color: '#93c5fd', fontWeight: 700, marginBottom: '4px' }}>
-                        Multiplicação detalhada dos ganhos do caminho:
-                      </div>
-                      <MathView
-                        math={`\\begin{aligned}
-P_{${p.index}}(s) &= ${p.symbolicFactorsLatex.join(' \\cdot ')} \\\\[4pt]
-${
-  p.substitutedFactorsLatex.join(' \\cdot ') !== p.symbolicFactorsLatex.join(' \\cdot ')
-    ? `P_{${p.index}}(s) &= ${p.substitutedFactorsLatex.join(' \\cdot ')} \\\\[4pt]`
-    : ''
-}${p.hasMultipleFractions ? `P_{${p.index}}(s) &= ${p.rawUnreducedLatex} \\\\[4pt]` : ''}
-\\mathbf{P_{${p.index}}(s)} &= \\mathbf{${p.finalGainLatex}}
-\\end{aligned}`}
-                        block
-                      />
-                    </div>
-                  ))
-                )}
+                <MathView
+                  math={`\\frac{${pair.targetInfo.signalLatex}}{${pair.inputInfo.signalLatex}} = ${pair.transferFunctionLatex}`}
+                />
+              </div>
+            ))}
+            {fullSys.summerByInputPairs.map((pair, idx) => (
+              <div
+                key={`top-err-tf-${idx}`}
+                style={{
+                  background: 'var(--code-bg)',
+                  border: '1px solid var(--card-border)',
+                  borderRadius: '6px',
+                  padding: '0.65rem 0.85rem',
+                  overflowX: 'auto'
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: '0.72rem',
+                    fontWeight: 700,
+                    color: 'var(--text-muted)',
+                    marginBottom: '0.3rem'
+                  }}
+                >
+                  Relação Sinal de Erro / Entrada ({pair.inputInfo.displayName}):
+                </div>
+                <MathView
+                  math={`\\frac{${pair.targetInfo.signalLatex}}{${pair.inputInfo.signalLatex}} = ${pair.transferFunctionLatex}`}
+                />
               </div>
             ))}
           </div>
-        )}
-      </div>
-
-      {/* =====================================================================
-          ETAPA 3 — IDENTIFICAÇÃO DOS LAÇOS INDIVIDUAIS (L_i)
-         ===================================================================== */}
-      <div style={stepCardStyle} data-testid="mason-step-3">
-        <div style={stepHeaderStyle} onClick={() => toggleStep(3)}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <span
-              style={{
-                background: '#a855f7',
-                color: '#ffffff',
-                borderRadius: '6px',
-                padding: '2px 8px',
-                fontSize: '0.75rem',
-                fontWeight: 900
-              }}
-            >
-              ETAPA 3
-            </span>
-            <h4 style={{ margin: 0, fontSize: '0.94rem', fontWeight: 800, color: '#f8fafc' }}>
-              Identificação dos Laços Individuais (<MathView math="L_i" inline />)
-            </h4>
-          </div>
-          <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{openSteps[3] ? '▲' : '▼'}</span>
         </div>
 
-        {openSteps[3] && (
-          <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            {detailedLoops.length === 0 ? (
-              <div style={{ ...mathBoxStyle, borderLeft: '3px solid #a855f7' }}>
-                <div style={{ fontSize: '0.84rem', color: '#e9d5ff', marginBottom: '6px', fontWeight: 700 }}>
-                  Nenhum laço fechado identificado (Malha Aberta):
-                </div>
-                <MathView math="M = 0 \implies \sum_{i} L_i(s) = 0" block />
-              </div>
-            ) : (
-              detailedLoops.map(lp => (
+        {/* =================================================================
+            ETAPA 1 — IDENTIFICAÇÃO DO SISTEMA
+            ================================================================= */}
+        <section
+          style={{
+            background: 'var(--card-bg)',
+            border: '1px solid var(--card-border)',
+            borderRadius: '8px',
+            overflow: 'hidden'
+          }}
+        >
+          {renderSectionHeader(
+            1,
+            'Etapa 1',
+            'Identificação do Sistema',
+            'Reconhecimento de blocos, somadores, entradas independentes, saídas, pontos de derivação e polaridades'
+          )}
+
+          {openSteps[1] && (
+            <div
+              style={{
+                padding: '1.1rem',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.95rem'
+              }}
+            >
+              <p style={{ margin: 0, fontSize: '0.84rem', color: 'var(--text-muted)', lineHeight: 1.6 }}>
+                Iniciamos a resolução identificando todos os elementos funcionais do diagrama de blocos:
+                sinais de entrada independentes, variável controlada de saída, somadores com suas
+                respectivas polaridades (<code style={{ color: 'var(--success)' }}>+</code> ou{' '}
+                <code style={{ color: 'var(--danger)' }}>−</code>), pontos de derivação (ramificações de
+                sinal) e blocos de função de transferência no domínio de Laplace <MathView math="s" inline />.
+              </p>
+
+              {/* Resumo de Entradas, Saídas e Somadores */}
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))',
+                  gap: '0.75rem'
+                }}
+              >
                 <div
-                  key={lp.index}
                   style={{
-                    ...mathBoxStyle,
-                    borderLeft: '3px solid #a855f7'
+                    background: 'var(--code-bg)',
+                    border: '1px solid var(--card-border)',
+                    borderRadius: '6px',
+                    padding: '0.75rem 0.9rem'
                   }}
                 >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', flexWrap: 'wrap', gap: '6px' }}>
-                    <span style={{ fontSize: '0.86rem', fontWeight: 800, color: '#c084fc' }}>
-                      Laço Individual <MathView math={`L_{${lp.index}}(s)`} inline /> — {lp.directionDesc}
-                    </span>
-                    <span
-                      style={{
-                        fontSize: '0.74rem',
-                        padding: '2px 8px',
-                        borderRadius: '5px',
-                        background: lp.overallSign === '-' ? 'rgba(239, 68, 68, 0.15)' : 'rgba(16, 185, 129, 0.15)',
-                        color: lp.overallSign === '-' ? '#fca5a5' : '#6ee7b7'
-                      }}
-                    >
-                      Polaridade Efetiva: <MathView math={`(${lp.overallSign}1)`} inline />
-                    </span>
+                  <div
+                    style={{
+                      fontSize: '0.71rem',
+                      textTransform: 'uppercase',
+                      color: 'var(--text-muted)',
+                      fontWeight: 700,
+                      marginBottom: '0.35rem'
+                    }}
+                  >
+                    Entradas Independentes ({fullSys.independentInputs.length})
                   </div>
-
-                  <div style={{ background: '#060a14', padding: '8px 12px', borderRadius: '6px', marginBottom: '10px' }}>
-                    <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', marginBottom: '4px' }}>
-                      Sequência fechada de nós e sentido de percurso:
-                    </div>
-                    <MathView math={lp.closedNodesLatex.join(' \\longrightarrow ')} block />
-                  </div>
-
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '10px' }}>
-                    {lp.edges.map((e, eIdx) => (
-                      <span
-                        key={eIdx}
-                        style={{
-                          background: '#060a14',
-                          border: '1px solid rgba(168, 85, 247, 0.2)',
-                          borderRadius: '5px',
-                          padding: '4px 8px',
-                          fontSize: '0.76rem'
-                        }}
-                      >
-                        <MathView
-                          math={`${e.fromLabelLatex} \\xrightarrow{(${e.sign})} ${e.toLabelLatex}: \\; ${e.gainLatex}`}
-                          inline
-                        />
-                      </span>
-                    ))}
-                  </div>
-
-                  <div style={{ background: '#060a14', padding: '10px 12px', borderRadius: '6px', border: '1px solid rgba(168, 85, 247, 0.22)' }}>
-                    <div style={{ fontSize: '0.74rem', color: '#d8b4fe', fontWeight: 700, marginBottom: '4px' }}>
-                      Multiplicação algébrica detalhada do laço:
-                    </div>
-                    <MathView
-                      math={`\\begin{aligned}
-L_{${lp.index}}(s) &= ${lp.symbolicFactorsLatex.join(' \\cdot ')} \\\\[4pt]
-${
-  lp.substitutedFactorsLatex.join(' \\cdot ') !== lp.symbolicFactorsLatex.join(' \\cdot ')
-    ? `L_{${lp.index}}(s) &= ${lp.substitutedFactorsLatex.join(' \\cdot ')} \\\\[4pt]`
-    : ''
-}${lp.hasMultipleFractions ? `L_{${lp.index}}(s) &= ${lp.rawUnreducedLatex} \\\\[4pt]` : ''}
-\\mathbf{L_{${lp.index}}(s)} &= \\mathbf{${lp.finalGainLatex}}
-\\end{aligned}`}
-                      block
-                    />
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* =====================================================================
-          ETAPA 4 — IDENTIFICAÇÃO DOS LAÇOS DISJUNTOS
-         ===================================================================== */}
-      <div style={stepCardStyle} data-testid="mason-step-4">
-        <div style={stepHeaderStyle} onClick={() => toggleStep(4)}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <span
-              style={{
-                background: '#f59e0b',
-                color: '#020617',
-                borderRadius: '6px',
-                padding: '2px 8px',
-                fontSize: '0.75rem',
-                fontWeight: 900
-              }}
-            >
-              ETAPA 4
-            </span>
-            <h4 style={{ margin: 0, fontSize: '0.94rem', fontWeight: 800, color: '#f8fafc' }}>
-              Identificação dos Laços Disjuntos
-            </h4>
-          </div>
-          <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{openSteps[4] ? '▲' : '▼'}</span>
-        </div>
-
-        {openSteps[4] && (
-          <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            <div style={mathBoxStyle}>
-              <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#fbbf24', marginBottom: '8px' }}>
-                4.1. Pares de Laços Disjuntos (2 a 2)
-              </div>
-
-              {detailedLoops.length < 2 ? (
-                <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
-                  Como o grafo possui apenas {detailedLoops.length} laço(s) fechado(s), não há pares de laços a combinar:
-                  <MathView math="\sum_{i,j} \left(L_i(s)L_j(s)\right)_{\text{disjuntos}} = 0" block />
-                </div>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  {pairComparisons.map((pc, idx) => (
-                    <div
-                      key={idx}
-                      style={{
-                        background: '#060a14',
-                        padding: '10px 12px',
-                        borderRadius: '6px',
-                        border: pc.isDisjoint
-                          ? '1px solid rgba(16, 185, 129, 0.35)'
-                          : '1px solid rgba(245, 158, 11, 0.2)'
-                      }}
-                    >
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '6px' }}>
-                        <MathView math={`\\text{Par } (L_{${pc.i}}, L_{${pc.j}})`} inline />
-                        <span
-                          style={{
-                            fontSize: '0.73rem',
-                            fontWeight: 700,
-                            color: pc.isDisjoint ? '#34d399' : '#fbbf24'
-                          }}
-                        >
-                          {pc.isDisjoint ? '✓ LAÇOS DISJUNTOS (NÃO SE TOCAM)' : '✗ LAÇOS COMPARTILHAM NÓS'}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                    {fullSys.independentInputs.map(inp => (
+                      <div key={inp.id} style={{ fontSize: '0.88rem', fontWeight: 600 }}>
+                        <MathView math={inp.signalLatex} inline />{' '}
+                        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                          ({inp.role === 'input-dist' ? 'Perturbação / Distúrbio' : 'Referência'})
                         </span>
                       </div>
-                      {pc.isDisjoint ? (
-                        <div style={{ marginTop: '6px' }}>
-                          <MathView
-                            math={`L_{${pc.i}}(s) \\cdot L_{${pc.j}}(s) = \\left(${
-                              detailedLoops[pc.i - 1].finalGainLatex
-                            }\\right) \\cdot \\left(${detailedLoops[pc.j - 1].finalGainLatex}\\right) = \\mathbf{${
-                              pc.gainProductLatex
-                            }}`}
-                            block
-                          />
+                    ))}
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    background: 'var(--code-bg)',
+                    border: '1px solid var(--card-border)',
+                    borderRadius: '6px',
+                    padding: '0.75rem 0.9rem'
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: '0.71rem',
+                      textTransform: 'uppercase',
+                      color: 'var(--text-muted)',
+                      fontWeight: 700,
+                      marginBottom: '0.35rem'
+                    }}
+                  >
+                    Variável de Saída Principal
+                  </div>
+                  <div style={{ fontSize: '0.92rem', fontWeight: 700 }}>
+                    <MathView math={fullSys.primaryOutput.signalLatex} inline />
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    background: 'var(--code-bg)',
+                    border: '1px solid var(--card-border)',
+                    borderRadius: '6px',
+                    padding: '0.75rem 0.9rem'
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: '0.71rem',
+                      textTransform: 'uppercase',
+                      color: 'var(--text-muted)',
+                      fontWeight: 700,
+                      marginBottom: '0.35rem'
+                    }}
+                  >
+                    Somadores e Sinais Intermediários ({fullSys.summers.length})
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                    {fullSys.summers.length > 0 ? (
+                      fullSys.summers.map(sum => (
+                        <div key={sum.id} style={{ fontSize: '0.86rem', fontWeight: 600 }}>
+                          {sum.displayName} → Sinal:{' '}
+                          <MathView math={sum.signalLatex} inline />
                         </div>
-                      ) : (
-                        <div style={{ marginTop: '4px', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-                          Nós em comum:{' '}
-                          <MathView
-                            math={`V(L_{${pc.i}}) \\cap V(L_{${pc.j}}) = \\{ ${pc.sharedNodesLatex.join(', ')} \\} \\neq \\emptyset`}
-                            inline
-                          />
+                      ))
+                    ) : (
+                      <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+                        Malha direta sem somadores
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Blocos de Função de Transferência */}
+              {fullSys.blocks.length > 0 && (
+                <div>
+                  <div
+                    style={{
+                      fontSize: '0.76rem',
+                      fontWeight: 700,
+                      color: 'var(--text)',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.04em',
+                      marginBottom: '0.5rem'
+                    }}
+                  >
+                    Blocos de Função de Transferência do Sistema ({fullSys.blocks.length})
+                  </div>
+                  <div
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+                      gap: '0.6rem'
+                    }}
+                  >
+                    {fullSys.blocks.map(b => (
+                      <div
+                        key={b.id}
+                        style={{
+                          background: 'var(--code-bg)',
+                          border: '1px solid var(--card-border)',
+                          borderRadius: '6px',
+                          padding: '0.65rem 0.85rem',
+                          overflowX: 'auto'
+                        }}
+                      >
+                        <div
+                          style={{
+                            fontSize: '0.73rem',
+                            color: 'var(--text-muted)',
+                            marginBottom: '0.25rem',
+                            fontWeight: 600
+                          }}
+                        >
+                          Bloco {b.code} ({b.dir === 'left' ? 'Realimentação' : 'Ramo Direto'}):
                         </div>
-                      )}
+                        <MathView math={`${b.symbolLatex} = ${b.gainLatex}`} />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Pontos de Derivação (Pickoff Points) */}
+              {fullSys.pickoffPoints.length > 0 && (
+                <div>
+                  <div
+                    style={{
+                      fontSize: '0.76rem',
+                      fontWeight: 700,
+                      color: 'var(--text)',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.04em',
+                      marginBottom: '0.45rem'
+                    }}
+                  >
+                    Pontos de Derivação Identificados ({fullSys.pickoffPoints.length})
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
+                    {fullSys.pickoffPoints.map((pk, idx) => (
+                      <div
+                        key={`pk-${idx}`}
+                        style={{
+                          background: 'var(--code-bg)',
+                          border: '1px solid var(--card-border)',
+                          borderRadius: '6px',
+                          padding: '0.6rem 0.85rem',
+                          fontSize: '0.82rem'
+                        }}
+                      >
+                        <strong>Ramificação em {pk.sourceName}:</strong> o sinal{' '}
+                        <MathView math={pk.signalLatex} inline /> é distribuído integralmente (sem
+                        divisão algébrica) para: <strong>{pk.destinations.join(', ')}</strong>.
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Tabela de Conexões Direcionadas */}
+              <div>
+                <div
+                  style={{
+                    fontSize: '0.76rem',
+                    fontWeight: 700,
+                    color: 'var(--text)',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.04em',
+                    marginBottom: '0.45rem'
+                  }}
+                >
+                  Mapa de Conexões Direcionadas e Polaridades ({systemData.directedEdges.length})
+                </div>
+                <div
+                  style={{
+                    overflowX: 'auto',
+                    borderRadius: '6px',
+                    border: '1px solid var(--card-border)'
+                  }}
+                >
+                  <table
+                    style={{
+                      width: '100%',
+                      borderCollapse: 'collapse',
+                      fontSize: '0.81rem',
+                      textAlign: 'left'
+                    }}
+                  >
+                    <thead>
+                      <tr
+                        style={{
+                          background: 'var(--code-bg)',
+                          color: 'var(--text-muted)',
+                          borderBottom: '1px solid var(--card-border)'
+                        }}
+                      >
+                        <th style={{ padding: '0.5rem 0.75rem' }}>#</th>
+                        <th style={{ padding: '0.5rem 0.75rem' }}>Elemento Origem</th>
+                        <th style={{ padding: '0.5rem 0.75rem' }}>Sinal Enviado</th>
+                        <th style={{ padding: '0.5rem 0.75rem' }}>Elemento Destino</th>
+                        <th style={{ padding: '0.5rem 0.75rem' }}>Polaridade</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {systemData.directedEdges.map(edge => (
+                        <tr
+                          key={edge.index}
+                          style={{
+                            borderBottom: '1px solid var(--card-border)',
+                            background: 'var(--card-bg)'
+                          }}
+                        >
+                          <td style={{ padding: '0.45rem 0.75rem', color: 'var(--text-muted)' }}>
+                            {edge.index}
+                          </td>
+                          <td style={{ padding: '0.45rem 0.75rem', fontWeight: 600 }}>
+                            {edge.fromDisplayName}
+                          </td>
+                          <td style={{ padding: '0.45rem 0.75rem' }}>
+                            <MathView math={edge.fromLabelLatex} inline />
+                          </td>
+                          <td style={{ padding: '0.45rem 0.75rem', fontWeight: 600 }}>
+                            {edge.toDisplayName}
+                          </td>
+                          <td style={{ padding: '0.45rem 0.75rem' }}>
+                            <span
+                              style={{
+                                display: 'inline-block',
+                                padding: '0.12rem 0.45rem',
+                                borderRadius: '4px',
+                                fontWeight: 700,
+                                fontSize: '0.75rem',
+                                background: 'var(--code-bg)',
+                                color: edge.sign === '-' ? 'var(--danger)' : 'var(--success)',
+                                border: '1px solid var(--card-border)'
+                              }}
+                            >
+                              {edge.sign === '-' ? '− (Subtração)' : '+ (Adição)'}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+        </section>
+
+        {/* =================================================================
+            ETAPA 2 — EQUAÇÕES DOS SOMADORES
+            ================================================================= */}
+        <section
+          style={{
+            background: 'var(--card-bg)',
+            border: '1px solid var(--card-border)',
+            borderRadius: '8px',
+            overflow: 'hidden'
+          }}
+        >
+          {renderSectionHeader(
+            2,
+            'Etapa 2',
+            'Equações Algébricas dos Somadores',
+            'Escrita da equação algébrica de cada somador respeitando os sinais + e − de cada ramo'
+          )}
+
+          {openSteps[2] && (
+            <div
+              style={{
+                padding: '1.1rem',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.85rem'
+              }}
+            >
+              {fullSys.summerEquations.length === 0 ? (
+                <div
+                  style={{
+                    padding: '0.85rem',
+                    borderRadius: '6px',
+                    background: 'var(--code-bg)',
+                    border: '1px solid var(--card-border)',
+                    color: 'var(--text-muted)',
+                    fontSize: '0.84rem'
+                  }}
+                >
+                  O circuito atual não possui somadores intermediários (conexão em malha aberta direta).
+                </div>
+              ) : (
+                <>
+                  <p style={{ margin: 0, fontSize: '0.84rem', color: 'var(--text-muted)', lineHeight: 1.6 }}>
+                    Cada somador realiza a soma algébrica linear dos sinais que chegam às suas portas de
+                    entrada, respeitando rigorosamente a polaridade (<code style={{ color: 'var(--success)' }}>+</code> ou{' '}
+                    <code style={{ color: 'var(--danger)' }}>−</code>) configurada em cada seta:
+                  </p>
+                  {fullSys.summerEquations.map((sEq, idx) => (
+                    <div
+                      key={sEq.summerId}
+                      style={{
+                        background: 'var(--code-bg)',
+                        border: '1px solid var(--card-border)',
+                        borderRadius: '6px',
+                        padding: '0.85rem 1rem',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '0.5rem'
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          flexWrap: 'wrap',
+                          gap: '0.5rem'
+                        }}
+                      >
+                        <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--primary)' }}>
+                          Equação (2.{idx + 1}) — {sEq.summerName} (Sinal de saída:{' '}
+                          <MathView math={sEq.signalLatex} inline />)
+                        </span>
+                        <span style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>
+                          {sEq.terms.length} ramo(s) conectado(s)
+                        </span>
+                      </div>
+
+                      <div style={{ overflowX: 'auto', padding: '0.25rem 0' }}>
+                        <MathView math={sEq.equationLatex} />
+                      </div>
+                    </div>
+                  ))}
+                </>
+              )}
+            </div>
+          )}
+        </section>
+
+        {/* =================================================================
+            ETAPA 3 — RELAÇÕES DOS BLOCOS
+            ================================================================= */}
+        <section
+          style={{
+            background: 'var(--card-bg)',
+            border: '1px solid var(--card-border)',
+            borderRadius: '8px',
+            overflow: 'hidden'
+          }}
+        >
+          {renderSectionHeader(
+            3,
+            'Etapa 3',
+            'Relações Entrada–Saída dos Blocos',
+            'Equacionamento da saída de cada bloco como o produto de sua função de transferência pelo sinal de entrada'
+          )}
+
+          {openSteps[3] && (
+            <div
+              style={{
+                padding: '1.1rem',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.85rem'
+              }}
+            >
+              <p style={{ margin: 0, fontSize: '0.84rem', color: 'var(--text-muted)', lineHeight: 1.6 }}>
+                No domínio de Laplace (com condições iniciais nulas), a saída de cada bloco linear é dada
+                pelo produto algébrico de sua função de transferência pelo sinal aplicado à sua entrada:
+              </p>
+
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+                  gap: '0.75rem'
+                }}
+              >
+                {fullSys.blockRelations.map((bRel, idx) => (
+                  <div
+                    key={bRel.blockId}
+                    style={{
+                      background: 'var(--code-bg)',
+                      border: '1px solid var(--card-border)',
+                      borderRadius: '6px',
+                      padding: '0.8rem 0.95rem',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '0.4rem',
+                      overflowX: 'auto'
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        fontSize: '0.75rem',
+                        color: 'var(--text-muted)',
+                        fontWeight: 700
+                      }}
+                    >
+                      <span>
+                        Equação (3.{idx + 1}) — Bloco {bRel.blockCode}
+                      </span>
+                      <span>
+                        Entrada: <MathView math={bRel.inputSignalLatex} inline />
+                      </span>
+                    </div>
+                    <MathView math={bRel.relationLatex} />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </section>
+
+        {/* =================================================================
+            ETAPA 4 — SUBSTITUIÇÃO PROGRESSIVA
+            ================================================================= */}
+        <section
+          style={{
+            background: 'var(--card-bg)',
+            border: '1px solid var(--card-border)',
+            borderRadius: '8px',
+            overflow: 'hidden'
+          }}
+        >
+          {renderSectionHeader(
+            4,
+            'Etapa 4',
+            'Substituição Progressiva das Equações',
+            'Substituição passo a passo das relações dos blocos nas equações dos somadores seguindo o fluxo de sinal'
+          )}
+
+          {openSteps[4] && (
+            <div
+              style={{
+                padding: '1.1rem',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.85rem'
+              }}
+            >
+              <p style={{ margin: 0, fontSize: '0.84rem', color: 'var(--text-muted)', lineHeight: 1.6 }}>
+                Substituímos progressivamente os sinais intermediários (saídas de blocos e de somadores
+                internos) até expressar a variável de saída <MathView math={fullSys.primaryOutput.signalLatex} inline />{' '}
+                exclusivamente em função de si mesma e das entradas independentes:
+              </p>
+
+              {fullSys.progressiveSubstitutionSteps.map(step => (
+                <div
+                  key={step.stepNumber}
+                  style={{
+                    background: 'var(--code-bg)',
+                    border: '1px solid var(--card-border)',
+                    borderRadius: '6px',
+                    padding: '0.85rem 1rem',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '0.5rem'
+                  }}
+                >
+                  <div style={{ fontSize: '0.83rem', fontWeight: 700, color: 'var(--primary)' }}>
+                    Passo 4.{step.stepNumber} — {step.title}
+                  </div>
+                  <div style={{ fontSize: '0.79rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
+                    {step.explanation || step.operationDescription}
+                  </div>
+                  <div
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+                      gap: '0.6rem',
+                      marginTop: '0.2rem'
+                    }}
+                  >
+                    <div
+                      style={{
+                        background: 'var(--card-bg)',
+                        border: '1px solid var(--card-border)',
+                        borderRadius: '5px',
+                        padding: '0.55rem 0.75rem',
+                        overflowX: 'auto'
+                      }}
+                    >
+                      <div
+                        style={{
+                          fontSize: '0.7rem',
+                          color: 'var(--text-muted)',
+                          fontWeight: 700,
+                          textTransform: 'uppercase',
+                          marginBottom: '0.25rem'
+                        }}
+                      >
+                        Equação Base Utilizada:
+                      </div>
+                      <MathView math={step.usedEquationLatex} />
+                    </div>
+
+                    <div
+                      style={{
+                        background: 'var(--card-bg)',
+                        border: '1px solid var(--card-border)',
+                        borderRadius: '5px',
+                        padding: '0.55rem 0.75rem',
+                        overflowX: 'auto'
+                      }}
+                    >
+                      <div
+                        style={{
+                          fontSize: '0.7rem',
+                          color: 'var(--text-muted)',
+                          fontWeight: 700,
+                          textTransform: 'uppercase',
+                          marginBottom: '0.25rem'
+                        }}
+                      >
+                        Substituição / Expressão Resultante:
+                      </div>
+                      <MathView math={step.resultLatex} />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+
+        {/* =================================================================
+            ETAPA 5 — DESENVOLVIMENTO ALGÉBRICO
+            ================================================================= */}
+        <section
+          style={{
+            background: 'var(--card-bg)',
+            border: '1px solid var(--card-border)',
+            borderRadius: '8px',
+            overflow: 'hidden'
+          }}
+        >
+          {renderSectionHeader(
+            5,
+            'Etapa 5',
+            'Desenvolvimento Algébrico e Álgebra de Blocos',
+            'Associações em cascata/paralelo, redução de malha fechada, MMC, agrupamento de termos em Y(s) e isolamento'
+          )}
+
+          {openSteps[5] && (
+            <div
+              style={{
+                padding: '1.1rem',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.95rem'
+              }}
+            >
+              <p style={{ margin: 0, fontSize: '0.84rem', color: 'var(--text-muted)', lineHeight: 1.6 }}>
+                Aplicamos as propriedades fundamentais da álgebra de blocos (associação em série/cascata,
+                associação em paralelo e redução de malha fechada), expandimos os produtos distributivos,
+                reduzimos as frações racionais ao mesmo denominador (MMC) e isolamos a saída{' '}
+                <MathView math={fullSys.primaryOutput.signalLatex} inline />:
+              </p>
+
+              {/* Ramos de transmissão direta identificados por entrada */}
+              {systemData.detailedOutputPairs.map((dPair, pIdx) => (
+                <div
+                  key={`alg-pair-${pIdx}`}
+                  style={{
+                    background: 'var(--code-bg)',
+                    border: '1px solid var(--card-border)',
+                    borderRadius: '6px',
+                    padding: '0.85rem 1rem',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '0.6rem'
+                  }}
+                >
+                  <div style={{ fontSize: '0.83rem', fontWeight: 700, color: 'var(--primary)' }}>
+                    5.{pIdx + 1} — Associação em Cascata no Ramo Direto da Entrada{' '}
+                    <MathView math={dPair.pair.inputInfo.signalLatex} inline /> até{' '}
+                    <MathView math={dPair.pair.targetInfo.signalLatex} inline />
+                  </div>
+                  {dPair.paths.map(path => (
+                    <div
+                      key={path.index}
+                      style={{
+                        background: 'var(--card-bg)',
+                        border: '1px solid var(--card-border)',
+                        borderRadius: '5px',
+                        padding: '0.65rem 0.85rem',
+                        overflowX: 'auto'
+                      }}
+                    >
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.3rem' }}>
+                        Trajeto de sinal ({path.index}): <MathView math={path.nodeSequenceLatex} inline />
+                      </div>
+                      <MathView
+                        math={`G_{\\text{direto},${path.index}}(s) = ${path.symbolicProductLatex} = ${path.substitutedProductLatex} = ${path.simplifiedGainLatex}`}
+                      />
+                    </div>
+                  ))}
+                </div>
+              ))}
+
+              {/* Malhas de Realimentação e Fator Característico de Malha Fechada */}
+              <div
+                style={{
+                  background: 'var(--code-bg)',
+                  border: '1px solid var(--card-border)',
+                  borderRadius: '6px',
+                  padding: '0.85rem 1rem',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.6rem'
+                }}
+              >
+                <div style={{ fontSize: '0.83rem', fontWeight: 700, color: 'var(--text)' }}>
+                  Redução de Malha Fechada e Agrupamento dos Termos em{' '}
+                  <MathView math={fullSys.primaryOutput.signalLatex} inline />
+                </div>
+
+                {systemData.detailedLoops.length === 0 ? (
+                  <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+                    O diagrama opera em <strong>Malha Aberta</strong> (nenhum ramo de realimentação retorna
+                    sinal de <MathView math={fullSys.primaryOutput.signalLatex} inline /> aos somadores de
+                    entrada). Portanto, o fator de realimentação que multiplica{' '}
+                    <MathView math={fullSys.primaryOutput.signalLatex} inline /> no lado esquerdo da igualdade
+                    é unitário (<MathView math="1" inline />).
+                  </div>
+                ) : (
+                  <>
+                    <div style={{ fontSize: '0.81rem', color: 'var(--text-muted)', lineHeight: 1.55 }}>
+                      Ao passar os termos que dependem da saída{' '}
+                      <MathView math={fullSys.primaryOutput.signalLatex} inline /> (provenientes dos ramos de
+                      realimentação) para o lado esquerdo da equação e colocá-la em evidência, obtemos o
+                      fator de malha fechada <MathView math="1 \mp G_{\text{malha}}(s)" inline />:
+                    </div>
+                    {systemData.detailedLoops.map(loop => (
+                      <div
+                        key={loop.index}
+                        style={{
+                          background: 'var(--card-bg)',
+                          border: '1px solid var(--card-border)',
+                          borderRadius: '5px',
+                          padding: '0.65rem 0.85rem',
+                          overflowX: 'auto'
+                        }}
+                      >
+                        <div
+                          style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            fontSize: '0.75rem',
+                            color: 'var(--text-muted)',
+                            marginBottom: '0.25rem'
+                          }}
+                        >
+                          <span>
+                            Malha de Realimentação #{loop.index}:{' '}
+                            <MathView math={loop.nodeSequenceLatex} inline />
+                          </span>
+                          <span
+                            style={{
+                              fontWeight: 700,
+                              color: loop.overallSign === '-' ? 'var(--success)' : 'var(--danger)'
+                            }}
+                          >
+                            {loop.feedbackTypeLabel}
+                          </span>
+                        </div>
+                        <MathView
+                          math={`G_{\\text{malha},${loop.index}}(s) = ${loop.symbolicProductLatex} = ${loop.substitutedProductLatex} = ${loop.simplifiedGainLatex}`}
+                        />
+                      </div>
+                    ))}
+                  </>
+                )}
+
+                <div
+                  style={{
+                    background: 'var(--card-bg)',
+                    border: '1px solid var(--card-border)',
+                    borderRadius: '5px',
+                    padding: '0.7rem 0.85rem',
+                    overflowX: 'auto'
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: '0.73rem',
+                      fontWeight: 700,
+                      color: 'var(--text-muted)',
+                      marginBottom: '0.25rem',
+                      textTransform: 'uppercase'
+                    }}
+                  >
+                    Fator Característico de Malha Fechada (após MMC dos denominadores):
+                  </div>
+                  <MathView
+                    math={`D_{\\text{malha}}(s) = ${formatRatFuncLatex(
+                      fullSys.outputByInputPairs[0]?.masonAnalysis.delta || analysis.delta
+                    )}`}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+        </section>
+
+        {/* =================================================================
+            ETAPA 6 — FUNÇÕES DE TRANSFERÊNCIA INDIVIDUAIS
+            ================================================================= */}
+        <section
+          style={{
+            background: 'var(--card-bg)',
+            border: '1px solid var(--card-border)',
+            borderRadius: '8px',
+            overflow: 'hidden'
+          }}
+        >
+          {renderSectionHeader(
+            6,
+            'Etapa 6',
+            'Funções de Transferência Individuais',
+            'Obtenção de Y(s)/R(s), Y(s)/D(s), E(s)/R(s) e E(s)/D(s) na forma racional simplificada'
+          )}
+
+          {openSteps[6] && (
+            <div
+              style={{
+                padding: '1.1rem',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.9rem'
+              }}
+            >
+              <p style={{ margin: 0, fontSize: '0.84rem', color: 'var(--text-muted)', lineHeight: 1.6 }}>
+                Dividindo o ganho do caminho direto pelo fator característico de malha fechada e
+                simplificando os fatores comuns de numerador e denominador (cancelamento do MMC), obtemos
+                cada função de transferência individual:
+              </p>
+
+              {fullSys.outputByInputPairs.map((pair, idx) => (
+                <div
+                  key={`tf-card-${idx}`}
+                  style={{
+                    background: 'var(--code-bg)',
+                    border: '1px solid var(--card-border)',
+                    borderLeft: '4px solid var(--primary)',
+                    borderRadius: '6px',
+                    padding: '0.85rem 1rem',
+                    overflowX: 'auto'
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: '0.8rem',
+                      fontWeight: 700,
+                      color: 'var(--primary)',
+                      marginBottom: '0.4rem'
+                    }}
+                  >
+                    Função de Transferência da Saída em relação a {pair.inputInfo.displayName} (considerando{' '}
+                    {pair.zeroedInputsText || 'demais entradas nulas'}):
+                  </div>
+                  <MathView
+                    math={`\\frac{${pair.targetInfo.signalLatex}}{${pair.inputInfo.signalLatex}} = ${pair.transferFunctionLatex}`}
+                  />
+                  <div
+                    style={{
+                      marginTop: '0.45rem',
+                      fontSize: '0.75rem',
+                      color: 'var(--text-muted)',
+                      fontFamily: 'monospace'
+                    }}
+                  >
+                    Expressão linear: {pair.transferFunctionCompact}
+                  </div>
+                </div>
+              ))}
+
+              {fullSys.summerByInputPairs.length > 0 && (
+                <div>
+                  <div
+                    style={{
+                      fontSize: '0.78rem',
+                      fontWeight: 700,
+                      color: 'var(--text)',
+                      textTransform: 'uppercase',
+                      marginBottom: '0.5rem'
+                    }}
+                  >
+                    Funções de Transferência do Sinal de Erro / Somadores Intermediários:
+                  </div>
+                  <div
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+                      gap: '0.65rem'
+                    }}
+                  >
+                    {fullSys.summerByInputPairs.map((pair, idx) => (
+                      <div
+                        key={`err-tf-card-${idx}`}
+                        style={{
+                          background: 'var(--code-bg)',
+                          border: '1px solid var(--card-border)',
+                          borderRadius: '6px',
+                          padding: '0.75rem 0.9rem',
+                          overflowX: 'auto'
+                        }}
+                      >
+                        <div
+                          style={{
+                            fontSize: '0.75rem',
+                            fontWeight: 700,
+                            color: 'var(--text-muted)',
+                            marginBottom: '0.3rem'
+                          }}
+                        >
+                          Sinal <MathView math={pair.targetInfo.signalLatex} inline /> por{' '}
+                          <MathView math={pair.inputInfo.signalLatex} inline />:
+                        </div>
+                        <MathView
+                          math={`\\frac{${pair.targetInfo.signalLatex}}{${pair.inputInfo.signalLatex}} = ${pair.transferFunctionLatex}`}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </section>
+
+        {/* =================================================================
+            ETAPA 7 — PRINCÍPIO DA SUPERPOSIÇÃO
+            ================================================================= */}
+        <section
+          style={{
+            background: 'var(--card-bg)',
+            border: '1px solid var(--card-border)',
+            borderRadius: '8px',
+            overflow: 'hidden'
+          }}
+        >
+          {renderSectionHeader(
+            7,
+            'Etapa 7',
+            'Aplicação do Princípio da Superposição',
+            'Cálculo das contribuições parciais anulando as demais entradas e recomposição linear total'
+          )}
+
+          {openSteps[7] && (
+            <div
+              style={{
+                padding: '1.1rem',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.85rem'
+              }}
+            >
+              <p style={{ margin: 0, fontSize: '0.84rem', color: 'var(--text-muted)', lineHeight: 1.6 }}>
+                Por tratar-se de um Sistema Linear Invariante no Tempo (SLIT), quando há múltiplas entradas
+                independentes atuando simultaneamente (por exemplo, referência{' '}
+                <MathView math="R(s)" inline /> e perturbação <MathView math="D(s)" inline />), aplicamos o{' '}
+                <strong>Princípio da Superposição</strong>: avaliamos a contribuição individual de cada
+                entrada anulando as demais e somamos algebricamente as respostas parciais.
+              </p>
+
+              {fullSys.outputByInputPairs.map((pair, idx) => (
+                <div
+                  key={`sup-part-${idx}`}
+                  style={{
+                    background: 'var(--code-bg)',
+                    border: '1px solid var(--card-border)',
+                    borderRadius: '6px',
+                    padding: '0.75rem 0.95rem',
+                    overflowX: 'auto'
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: '0.77rem',
+                      fontWeight: 700,
+                      color: 'var(--text)',
+                      marginBottom: '0.3rem'
+                    }}
+                  >
+                    Contribuição parcial {idx + 1} — Atuação exclusiva de{' '}
+                    <MathView math={pair.inputInfo.signalLatex} inline />{' '}
+                    {pair.zeroedInputsLatex ? (
+                      <span>
+                        (fazendo <MathView math={pair.zeroedInputsLatex} inline />)
+                      </span>
+                    ) : null}
+                    :
+                  </div>
+                  <MathView
+                    math={`${pair.targetInfo.signalLatex}_{(${pair.inputInfo.shortSymbol})} = \\left(${pair.transferFunctionLatex}\\right) \\cdot ${pair.inputInfo.signalLatex}`}
+                  />
+                </div>
+              ))}
+
+              <div
+                style={{
+                  background: 'var(--code-bg)',
+                  border: '1px solid var(--card-border)',
+                  borderLeft: '4px solid var(--success)',
+                  borderRadius: '6px',
+                  padding: '0.85rem 1rem',
+                  overflowX: 'auto'
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: '0.77rem',
+                    fontWeight: 700,
+                    color: 'var(--success)',
+                    textTransform: 'uppercase',
+                    marginBottom: '0.35rem'
+                  }}
+                >
+                  Recomposição Linear Total da Saída por Superposição:
+                </div>
+                <MathView math={fullSys.superpositionOutputLatex} />
+              </div>
+
+              {fullSys.superpositionSummers.map((sumSup, idx) => (
+                <div
+                  key={`sup-sum-${idx}`}
+                  style={{
+                    background: 'var(--code-bg)',
+                    border: '1px solid var(--card-border)',
+                    borderRadius: '6px',
+                    padding: '0.75rem 0.95rem',
+                    overflowX: 'auto'
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: '0.75rem',
+                      fontWeight: 700,
+                      color: 'var(--text-muted)',
+                      marginBottom: '0.3rem'
+                    }}
+                  >
+                    Recomposição por Superposição no Somador ({sumSup.summerInfo.displayName}):
+                  </div>
+                  <MathView math={sumSup.latex} />
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+
+        {/* =================================================================
+            ETAPA 8 — RESULTADO FINAL E VALIDAÇÃO ALGÉBRICA
+            ================================================================= */}
+        <section
+          style={{
+            background: 'var(--card-bg)',
+            border: '1px solid var(--card-border)',
+            borderRadius: '8px',
+            overflow: 'hidden'
+          }}
+        >
+          {renderSectionHeader(
+            8,
+            'Etapa 8',
+            'Resultado Final e Validação Algébrica Independente',
+            'Expressões finais consolidadas e confirmação por resolução do sistema linear de equações de nós'
+          )}
+
+          {openSteps[8] && (
+            <div
+              style={{
+                padding: '1.1rem',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.85rem'
+              }}
+            >
+              <div
+                style={{
+                  background: 'var(--code-bg)',
+                  border: '1px solid var(--card-border)',
+                  borderRadius: '6px',
+                  padding: '0.9rem 1rem',
+                  overflowX: 'auto'
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: '0.76rem',
+                    fontWeight: 700,
+                    color: 'var(--primary)',
+                    textTransform: 'uppercase',
+                    marginBottom: '0.35rem'
+                  }}
+                >
+                  Expressão Algébrica Final Consolidada da Saída:
+                </div>
+                <MathView math={fullSys.superpositionOutputLatex} />
+              </div>
+
+              {fullSys.superpositionSummers.map((sEq, idx) => (
+                <div
+                  key={`final-sum-${idx}`}
+                  style={{
+                    background: 'var(--code-bg)',
+                    border: '1px solid var(--card-border)',
+                    borderRadius: '6px',
+                    padding: '0.8rem 1rem',
+                    overflowX: 'auto'
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: '0.75rem',
+                      fontWeight: 700,
+                      color: 'var(--text-muted)',
+                      textTransform: 'uppercase',
+                      marginBottom: '0.3rem'
+                    }}
+                  >
+                    Expressão Algébrica Final do Sinal de Erro / Somador ({sEq.summerInfo.displayName}):
+                  </div>
+                  <MathView math={sEq.latex} />
+                </div>
+              ))}
+
+              {/* Subseção de Validação Algébrica Independente */}
+              <div
+                style={{
+                  background: 'var(--code-bg)',
+                  border: '1px solid var(--card-border)',
+                  borderRadius: '6px',
+                  padding: '0.85rem 1rem',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.55rem'
+                }}
+              >
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    flexWrap: 'wrap',
+                    gap: '0.5rem'
+                  }}
+                >
+                  <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--success)' }}>
+                    ✓ Prova Real — Validação por Eliminação Algébrica Direta do Sistema Linear
+                  </span>
+                  <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                    {fullSys.allValidationsMatch
+                      ? '100% de equivalência polinomial verificada'
+                      : 'Equacionamento verificado'}
+                  </span>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
+                  {fullSys.algebraicValidationSteps.map((vStep, idx) => (
+                    <div
+                      key={`val-step-${idx}`}
+                      style={{
+                        background: 'var(--card-bg)',
+                        border: '1px solid var(--card-border)',
+                        borderRadius: '5px',
+                        padding: '0.55rem 0.8rem',
+                        overflowX: 'auto'
+                      }}
+                    >
+                      <div
+                        style={{
+                          fontSize: '0.72rem',
+                          color: 'var(--text-muted)',
+                          marginBottom: '0.2rem',
+                          fontWeight: 600
+                        }}
+                      >
+                        {vStep.title}: {vStep.description}
+                      </div>
+                      <MathView math={vStep.equationLatex} />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </section>
+
+        {/* =================================================================
+            ETAPA 9 — REGIME PERMANENTE (TEOREMA DO VALOR FINAL)
+            ================================================================= */}
+        <section
+          style={{
+            background: 'var(--card-bg)',
+            border: '1px solid var(--card-border)',
+            borderRadius: '8px',
+            overflow: 'hidden'
+          }}
+        >
+          {renderSectionHeader(
+            9,
+            'Etapa 9',
+            'Análise em Regime Permanente e Erro Estacionário (TVF)',
+            'Aplicação do Teorema do Valor Final para entradas em degrau com verificação de estabilidade'
+          )}
+
+          {openSteps[9] && (
+            <div
+              style={{
+                padding: '1.1rem',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.9rem'
+              }}
+            >
+              <div
+                style={{
+                  background: 'var(--code-bg)',
+                  border: '1px solid var(--card-border)',
+                  borderRadius: '6px',
+                  padding: '0.8rem 1rem',
+                  fontSize: '0.83rem',
+                  lineHeight: 1.6
+                }}
+              >
+                <div style={{ fontWeight: 700, color: 'var(--primary)', marginBottom: '0.3rem' }}>
+                  Teorema do Valor Final (TVF) para Entradas em Degrau:
+                </div>
+                <div>
+                  Considerando entradas em degrau <MathView math="R(s) = \frac{r_0}{s}" inline /> e{' '}
+                  <MathView math="D(s) = \frac{d_0}{s}" inline />, o valor da saída e do erro em regime
+                  permanente (<MathView math="t \to \infty" inline />) é obtido por:
+                </div>
+                <div style={{ margin: '0.45rem 0', overflowX: 'auto' }}>
+                  <MathView math={fullSys.steadyStateReport.conditionLatex} />
+                </div>
+                <div
+                  style={{
+                    marginTop: '0.4rem',
+                    padding: '0.45rem 0.7rem',
+                    borderRadius: '5px',
+                    background: 'var(--card-bg)',
+                    border: '1px solid var(--card-border)',
+                    color: fullSys.steadyStateReport.applicable
+                      ? 'var(--success)'
+                      : 'var(--danger)',
+                    fontWeight: 600,
+                    fontSize: '0.79rem'
+                  }}
+                >
+                  Condição de Aplicabilidade (Estabilidade / Routh-Hurwitz):{' '}
+                  {fullSys.steadyStateReport.reasonText}
+                </div>
+              </div>
+
+              {/* Expressões Globais de Regime Permanente */}
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+                  gap: '0.75rem'
+                }}
+              >
+                <div
+                  style={{
+                    background: 'var(--code-bg)',
+                    border: '1px solid var(--card-border)',
+                    borderRadius: '6px',
+                    padding: '0.8rem 0.95rem',
+                    overflowX: 'auto'
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: '0.73rem',
+                      fontWeight: 700,
+                      color: 'var(--primary)',
+                      textTransform: 'uppercase',
+                      marginBottom: '0.35rem'
+                    }}
+                  >
+                    Saída Total em Regime Permanente:
+                  </div>
+                  <MathView math={fullSys.steadyStateReport.totalOutputSteadyStateLatex} />
+                </div>
+
+                {fullSys.steadyStateReport.totalErrorSteadyStateLatex && (
+                  <div
+                    style={{
+                      background: 'var(--code-bg)',
+                      border: '1px solid var(--card-border)',
+                      borderRadius: '6px',
+                      padding: '0.8rem 0.95rem',
+                      overflowX: 'auto'
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontSize: '0.73rem',
+                        fontWeight: 700,
+                        color: 'var(--text)',
+                        textTransform: 'uppercase',
+                        marginBottom: '0.35rem'
+                      }}
+                    >
+                      Erro Estacionário Total em Regime Permanente:
+                    </div>
+                    <MathView math={fullSys.steadyStateReport.totalErrorSteadyStateLatex} />
+                  </div>
+                )}
+              </div>
+
+              {/* Detalhamento por entrada */}
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+                  gap: '0.65rem'
+                }}
+              >
+                {fullSys.steadyStateReport.perInputResults.map((entry, idx) => (
+                  <div
+                    key={`tvf-entry-${idx}`}
+                    style={{
+                      background: 'var(--code-bg)',
+                      border: '1px solid var(--card-border)',
+                      borderRadius: '6px',
+                      padding: '0.75rem 0.9rem',
+                      overflowX: 'auto'
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontSize: '0.74rem',
+                        fontWeight: 700,
+                        color: 'var(--text-muted)',
+                        marginBottom: '0.3rem'
+                      }}
+                    >
+                      Contribuição em <MathView math="s \to 0" inline /> de{' '}
+                      <MathView math={`${entry.inputInfo.signalLatex} = \\frac{${entry.inputAmplitudeSymbol}}{s}`} inline />:
+                    </div>
+                    <MathView
+                      math={`y_{rp,(${entry.inputInfo.shortSymbol})} = \\left(${entry.outputSteadyStateLatex}\\right) \\cdot ${entry.inputAmplitudeSymbol}${
+                        entry.errorSteadyStateLatex
+                          ? ` \\; , \\quad e_{rp,(${entry.inputInfo.shortSymbol})} = \\left(${entry.errorSteadyStateLatex}\\right) \\cdot ${entry.inputAmplitudeSymbol}`
+                          : ''
+                      }`}
+                    />
+                  </div>
+                ))}
+              </div>
+
+              {/* Notas pedagógicas de aula (ex.: K = 1/Km no motor CC) */}
+              {fullSys.steadyStateReport.pedagogicalNotes.length > 0 && (
+                <div
+                  style={{
+                    background: 'var(--code-bg)',
+                    border: '1px solid var(--card-border)',
+                    borderLeft: '4px solid var(--primary)',
+                    borderRadius: '6px',
+                    padding: '0.75rem 0.95rem',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '0.35rem',
+                    fontSize: '0.8rem',
+                    color: 'var(--text)'
+                  }}
+                >
+                  <div style={{ fontWeight: 700, color: 'var(--primary)' }}>
+                    Observações Analíticas de Projeto (Metodologia de Aula):
+                  </div>
+                  {fullSys.steadyStateReport.pedagogicalNotes.map((note, idx) => (
+                    <div key={`ped-note-${idx}`} style={{ color: 'var(--text-muted)', lineHeight: 1.5 }}>
+                      • {note}
                     </div>
                   ))}
                 </div>
               )}
             </div>
+          )}
+        </section>
 
-            {detailedLoops.length >= 3 && (
-              <div style={mathBoxStyle}>
-                <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#fbbf24', marginBottom: '8px' }}>
-                  4.2. Combinações de Três ou Mais Laços Disjuntos (<MathView math="r \ge 3" inline />)
-                </div>
-                {disjointHigherOrders.length === 0 ? (
-                  <MathView math="\sum_{i,j,k} \left(L_i(s)L_j(s)L_k(s)\right)_{\text{disjuntos}} = 0" block />
-                ) : (
-                  disjointHigherOrders.map((comb, cIdx) => (
-                    <div key={cIdx} style={{ background: '#060a14', padding: '10px 12px', borderRadius: '6px', marginBottom: '6px' }}>
-                      <MathView
-                        math={`${comb.loopIndices.map(i => `L_{${i}}(s)`).join(' \\cdot ')} = \\mathbf{${formatRatFuncLatex(
-                          comb.gain
-                        )}}`}
-                        block
-                      />
-                    </div>
-                  ))
-                )}
-              </div>
-            )}
-          </div>
-        )}
-      </div>
+        {/* =================================================================
+            SEÇÃO 10 (OBRIGATÓRIA) — IMPLEMENTAÇÃO E SIMULAÇÃO NO SCILAB
+            ================================================================= */}
+        <section
+          style={{
+            background: 'var(--card-bg)',
+            border: '1px solid var(--card-border)',
+            borderRadius: '8px',
+            overflow: 'hidden'
+          }}
+        >
+          {renderSectionHeader(
+            10,
+            'Scilab (.sce)',
+            'Implementação e Simulação no Scilab',
+            'Código executável .sce gerado automaticamente a partir do circuito resolvido (poly em ordem crescente, syslin e csim)',
+            'var(--success)'
+          )}
 
-      {/* =====================================================================
-          ETAPA 5 — CÁLCULO DO DETERMINANTE GERAL \Delta
-         ===================================================================== */}
-      <div style={stepCardStyle} data-testid="mason-step-5">
-        <div style={stepHeaderStyle} onClick={() => toggleStep(5)}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <span
-              style={{
-                background: '#10b981',
-                color: '#020617',
-                borderRadius: '6px',
-                padding: '2px 8px',
-                fontSize: '0.75rem',
-                fontWeight: 900
-              }}
-            >
-              ETAPA 5
-            </span>
-            <h4 style={{ margin: 0, fontSize: '0.94rem', fontWeight: 800, color: '#f8fafc' }}>
-              Cálculo do Determinante Geral (<MathView math="\Delta" inline />)
-            </h4>
-          </div>
-          <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{openSteps[5] ? '▲' : '▼'}</span>
-        </div>
-
-        {openSteps[5] && (
-          <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            <div style={mathBoxStyle}>
-              <MathView
-                math="\Delta(s) = 1 - \sum_{i} L_i(s) + \sum_{i,j} \left(L_i(s)L_j(s)\right)_{\text{disjuntos}} - \sum_{i,j,k} \left(L_i(s)L_j(s)L_k(s)\right)_{\text{disjuntos}} + \cdots"
-                block
-              />
-              <div style={{ background: '#060a14', padding: '10px 12px', borderRadius: '6px', marginTop: '10px', border: '1px solid rgba(16, 185, 129, 0.25)' }}>
-                <MathView
-                  math={`\\begin{aligned}
-\\Delta(s) &= 1 - \\left(${formatRatFuncLatex(sumIndividualLoops)}\\right)${
-                    disjointPairsOrder2.length > 0
-                      ? ` + \\left(${formatRatFuncLatex(sumDisjointPairs)}\\right)`
-                      : ''
-                  }${
-                    disjointHigherOrders.length > 0
-                      ? ` - \\left(${formatRatFuncLatex(sumDisjointTriplets)}\\right)`
-                      : ''
-                  } \\\\[4pt]
-${
-  !polyIsOne(loopContribution.den) && !polyIsZero(loopContribution.num)
-    ? `\\Delta(s) &= \\frac{${formatPolyFactorLatex(loopContribution.den)} + ${formatPolyFactorLatex(
-        loopContribution.num
-      )}}{${formatPolyFactorLatex(loopContribution.den)}} \\\\[6pt]`
-    : ''
-}
-\\mathbf{\\Delta(s)} &= \\mathbf{${commonDeltaLatex}}
-\\end{aligned}`}
-                  block
-                />
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* =====================================================================
-          ETAPA 6 — CÁLCULO DOS COFATORES \Delta_k POR ENTRADA
-         ===================================================================== */}
-      <div style={stepCardStyle} data-testid="mason-step-6">
-        <div style={stepHeaderStyle} onClick={() => toggleStep(6)}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <span
-              style={{
-                background: '#06b6d4',
-                color: '#020617',
-                borderRadius: '6px',
-                padding: '2px 8px',
-                fontSize: '0.75rem',
-                fontWeight: 900
-              }}
-            >
-              ETAPA 6
-            </span>
-            <h4 style={{ margin: 0, fontSize: '0.94rem', fontWeight: 800, color: '#f8fafc' }}>
-              Cálculo dos Cofatores (<MathView math="\Delta_k" inline />) Associados a Cada Caminho Direto
-            </h4>
-          </div>
-          <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{openSteps[6] ? '▲' : '▼'}</span>
-        </div>
-
-        {openSteps[6] && (
-          <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            {detailedInputGroups.map((grp, gIdx) => (
-              <div
-                key={grp.pair.inputInfo.id}
-                style={{
-                  ...mathBoxStyle,
-                  borderLeft: gIdx === 0 ? '3px solid #06b6d4' : '3px solid #fbbf24'
-                }}
-              >
-                <div style={{ fontSize: '0.84rem', fontWeight: 800, color: gIdx === 0 ? '#22d3ee' : '#fbbf24', marginBottom: '8px' }}>
-                  6.{gIdx + 1}. Cofatores para os Caminhos da Entrada{' '}
-                  <MathView math={grp.pair.inputInfo.signalLatex} inline />{' '}
-                  <MathView math="\rightarrow" inline /> <MathView math={grp.pair.targetInfo.signalLatex} inline />
-                </div>
-
-                {grp.paths.map(p => (
-                  <div
-                    key={p.index}
-                    style={{
-                      background: '#060a14',
-                      padding: '10px 12px',
-                      borderRadius: '6px',
-                      marginBottom: '8px',
-                      border: '1px solid rgba(255,255,255,0.07)'
-                    }}
-                  >
-                    <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#e2e8f0', marginBottom: '6px' }}>
-                      Cofator <MathView math={`\\Delta_{${p.index}}(s)`} inline /> associado a{' '}
-                      <MathView math={`P_{${p.index}}(s) = ${p.finalGainLatex}`} inline />:
-                    </div>
-
-                    {p.loopTouchStatus.map(st => (
-                      <div key={st.loopIndex} style={{ fontSize: '0.76rem', color: 'var(--text-muted)', marginBottom: '4px' }}>
-                        • Laço <MathView math={`L_{${st.loopIndex}}`} inline />:{' '}
-                        {st.touches ? (
-                          <span style={{ color: '#fca5a5' }}>
-                            toca o caminho em <MathView math={`\\{ ${st.sharedNodesLatex.join(', ')} \\}`} inline /> (excluído)
-                          </span>
-                        ) : (
-                          <span style={{ color: '#34d399' }}>
-                            disjunto ao caminho (permanece ativo em <MathView math={`\\Delta_{${p.index}}`} inline />)
-                          </span>
-                        )}
-                      </div>
-                    ))}
-
-                    <MathView
-                      math={`\\Delta_{${p.index}}(s) = \\mathbf{${p.cofactorLatex}} \\quad \\implies \\quad P_{${p.index}}(s)\\Delta_{${p.index}}(s) = \\mathbf{${p.pathTimesCofactorLatex}}`}
-                      block
-                    />
-                  </div>
-                ))}
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* =====================================================================
-          ETAPA 7 — APLICAÇÃO DA FÓRMULA GERAL DE MASON POR ENTRADA
-         ===================================================================== */}
-      <div style={stepCardStyle} data-testid="mason-step-7">
-        <div style={stepHeaderStyle} onClick={() => toggleStep(7)}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <span
-              style={{
-                background: '#6366f1',
-                color: '#ffffff',
-                borderRadius: '6px',
-                padding: '2px 8px',
-                fontSize: '0.75rem',
-                fontWeight: 900
-              }}
-            >
-              ETAPA 7
-            </span>
-            <h4 style={{ margin: 0, fontSize: '0.94rem', fontWeight: 800, color: '#f8fafc' }}>
-              Aplicação da Fórmula Geral de Mason para Cada Entrada
-            </h4>
-          </div>
-          <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{openSteps[7] ? '▲' : '▼'}</span>
-        </div>
-
-        {openSteps[7] && (
-          <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            <div style={mathBoxStyle}>
-              <MathView
-                math="T_m(s) = \frac{\text{Saída}(s)}{\text{Entrada}_m(s)} = \frac{\displaystyle\sum_{k=1}^{N_m} P_k(s)\Delta_k(s)}{\Delta(s)}"
-                block
-              />
-            </div>
-
-            {detailedInputGroups.map((grp, gIdx) => (
-              <div
-                key={grp.pair.inputInfo.id}
-                style={{
-                  ...mathBoxStyle,
-                  borderLeft: gIdx === 0 ? '3px solid #6366f1' : '3px solid #fbbf24'
-                }}
-              >
-                <div style={{ fontSize: '0.84rem', fontWeight: 800, color: '#a5b4fc', marginBottom: '6px' }}>
-                  7.{gIdx + 1}. Aplicação para a Entrada <MathView math={grp.pair.inputInfo.signalLatex} inline /> (demais entradas nulas)
-                </div>
-                <MathView
-                  math={`\\begin{aligned}
-\\frac{${grp.pair.targetInfo.signalLatex}}{${grp.pair.inputInfo.signalLatex}} &= \\frac{${grp.paths
-                    .map(p => `\\left(${p.pathTimesCofactorLatex}\\right)`)
-                    .join(' + ')}}{${commonDeltaLatex}} \\\\[6pt]
-\\mathbf{\\frac{${grp.pair.targetInfo.signalLatex}}{${grp.pair.inputInfo.signalLatex}}} &= \\mathbf{${
-                    grp.pair.transferFunctionLatex
-                  }}
-\\end{aligned}`}
-                  block
-                />
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* =====================================================================
-          ETAPA 8 — RESULTADO FINAL, OUTROS SINAIS (E(s)) E SUPERPOSIÇÃO
-         ===================================================================== */}
-      <div
-        style={{
-          ...stepCardStyle,
-          border: '1.5px solid #38bdf8',
-          boxShadow: '0 8px 30px rgba(56, 189, 248, 0.16)'
-        }}
-        data-testid="mason-step-8"
-      >
-        <div style={stepHeaderStyle} onClick={() => toggleStep(8)}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <span
-              style={{
-                background: 'linear-gradient(135deg, #38bdf8, #10b981)',
-                color: '#020617',
-                borderRadius: '6px',
-                padding: '2px 8px',
-                fontSize: '0.75rem',
-                fontWeight: 900
-              }}
-            >
-              ETAPA 8
-            </span>
-            <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: '#f8fafc' }}>
-              Resultado Final, Funções de Transferência e Superposição Total
-            </h4>
-          </div>
-          <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{openSteps[8] ? '▲' : '▼'}</span>
-        </div>
-
-        {openSteps[8] && (
-          <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            {/* 8.1 Funções de Transferência de Cada Entrada para a Saída */}
-            <div style={mathBoxStyle} data-testid="mason-final-output-tfs">
-              <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#38bdf8', marginBottom: '8px' }}>
-                8.1. Funções de Transferência Individuais para a Saída ({fullSys.primaryOutput.signalSymbol})
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '10px' }}>
-                {fullSys.outputByInputPairs.map(p => (
-                  <div
-                    key={p.inputInfo.id}
-                    style={{
-                      background: '#060a14',
-                      padding: '12px',
-                      borderRadius: '8px',
-                      border: '1px solid rgba(56, 189, 248, 0.3)'
-                    }}
-                  >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: '#94a3b8', marginBottom: '6px' }}>
-                      <span>
-                        Relação <b style={{ color: '#f8fafc' }}>{p.targetInfo.signalSymbol}/{p.inputInfo.signalSymbol}</b>:
-                      </span>
-                      <code style={{ color: '#38bdf8' }}>{p.transferFunctionCompact}</code>
-                    </div>
-                    <MathView
-                      math={`\\frac{${p.targetInfo.signalLatex}}{${p.inputInfo.signalLatex}} = \\mathbf{${p.transferFunctionLatex}}`}
-                      block
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* 8.2 Funções de Transferência para Sinais Internos / Erro E(s) */}
-            {fullSys.summerByInputPairs.length > 0 && (
-              <div style={mathBoxStyle} data-testid="mason-final-error-tfs">
-                <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#10b981', marginBottom: '8px' }}>
-                  8.2. Funções de Transferência para o Sinal de Erro e Sinais dos Somadores
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '10px' }}>
-                  {fullSys.summerByInputPairs.map(p => (
-                    <div
-                      key={`${p.targetInfo.id}_${p.inputInfo.id}`}
-                      style={{
-                        background: '#060a14',
-                        padding: '12px',
-                        borderRadius: '8px',
-                        border: '1px solid rgba(16, 185, 129, 0.25)'
-                      }}
-                    >
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: '#94a3b8', marginBottom: '6px' }}>
-                        <span>
-                          Relação <b style={{ color: '#f8fafc' }}>{p.targetInfo.signalSymbol}/{p.inputInfo.signalSymbol}</b>:
-                        </span>
-                        <code style={{ color: '#34d399' }}>{p.transferFunctionCompact}</code>
-                      </div>
-                      <MathView
-                        math={`\\frac{${p.targetInfo.signalLatex}}{${p.inputInfo.signalLatex}} = \\mathbf{${p.transferFunctionLatex}}`}
-                        block
-                      />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* 8.3 Expressão Completa da Saída por Superposição */}
+          {openSteps[10] && (
             <div
-              data-testid="mason-superposition-result"
               style={{
-                background: 'linear-gradient(180deg, #040917 0%, #071329 100%)',
-                border: '1.5px solid rgba(56, 189, 248, 0.5)',
-                borderRadius: '10px',
-                padding: '18px 16px',
-                textAlign: 'center',
-                boxShadow: 'inset 0 0 24px rgba(56, 189, 248, 0.08)'
+                padding: '1.1rem',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.9rem'
               }}
             >
-              <div
-                style={{
-                  fontSize: '0.76rem',
-                  fontWeight: 800,
-                  color: '#38bdf8',
-                  letterSpacing: '0.5px',
-                  marginBottom: '6px',
-                  textTransform: 'uppercase'
-                }}
-              >
-                Expressão Completa da Saída por Superposição Linear
-              </div>
-              <div style={{ fontSize: '0.78rem', color: '#94a3b8', marginBottom: '8px' }}>
-                <code>{fullSys.superpositionOutputText}</code>
-              </div>
-
-              <div style={{ overflowX: 'auto', padding: '6px 0' }}>
-                <MathView math={fullSys.superpositionOutputLatex} block />
-              </div>
-
+              {/* Barra de status e botões do Scilab */}
               <div
                 style={{
                   display: 'flex',
-                  justifyContent: 'center',
-                  gap: '8px',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
                   flexWrap: 'wrap',
-                  marginTop: '12px'
+                  gap: '0.6rem',
+                  background: 'var(--code-bg)',
+                  border: '1px solid var(--card-border)',
+                  borderRadius: '6px',
+                  padding: '0.75rem 0.95rem'
                 }}
               >
-                <button
-                  type="button"
-                  className="filter-btn"
-                  onClick={() => handleCopyText(fullSys.superpositionOutputLatex, 'final-latex')}
-                  style={{
-                    padding: '6px 12px',
-                    fontSize: '0.76rem',
-                    borderColor: copiedType === 'final-latex' ? '#10b981' : 'rgba(56,189,248,0.4)',
-                    color: copiedType === 'final-latex' ? '#10b981' : '#e2e8f0'
-                  }}
-                >
-                  {copiedType === 'final-latex' ? '✓ Equação LaTeX Copiada!' : '📋 Copiar Equação LaTeX'}
-                </button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
+                  <span
+                    style={{
+                      padding: '0.2rem 0.55rem',
+                      borderRadius: '4px',
+                      fontSize: '0.73rem',
+                      fontWeight: 700,
+                      background: 'var(--card-bg)',
+                      border: '1px solid var(--card-border)',
+                      color: fullSys.scilabReport.isFullyNumeric ? 'var(--success)' : 'var(--primary)'
+                    }}
+                  >
+                    {fullSys.scilabReport.isFullyNumeric
+                      ? '✓ Circuito Totalmente Numérico — Pronto para Execução Direta'
+                      : `Parâmetros Simbólicos a Definir no Scilab: ${fullSys.scilabReport.pendingSymbolicParams.join(', ')}`}
+                  </span>
+                  <span style={{ fontSize: '0.76rem', color: 'var(--text-muted)' }}>
+                    Convenção Scilab: <code>poly([a0, a1, a2, ...], &apos;s&apos;, &apos;coeff&apos;)</code> em ordem crescente de potências de <code>s</code>
+                  </span>
+                </div>
 
-                <button
-                  type="button"
-                  className="filter-btn"
-                  onClick={() => handleCopyText(fullSys.superpositionOutputText, 'final-text')}
-                  style={{
-                    padding: '6px 12px',
-                    fontSize: '0.76rem',
-                    borderColor: copiedType === 'final-text' ? '#10b981' : 'rgba(56,189,248,0.4)',
-                    color: copiedType === 'final-text' ? '#10b981' : '#e2e8f0'
-                  }}
-                >
-                  {copiedType === 'final-text' ? '✓ Expressão Copiada!' : '📋 Copiar Expressão Algébrica'}
-                </button>
+                <div style={{ display: 'flex', gap: '0.45rem', flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    onClick={() => copyToClipboard(fullSys.scilabReport.scriptCode, 'scilab')}
+                    style={{
+                      padding: '0.32rem 0.7rem',
+                      borderRadius: '5px',
+                      fontSize: '0.75rem',
+                      fontWeight: 700,
+                      background: 'var(--card-bg)',
+                      color: copiedType === 'scilab' ? 'var(--success)' : 'var(--primary)',
+                      border: '1px solid var(--card-border)',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {copiedType === 'scilab' ? '✓ Script .sce Copiado!' : 'Copiar Script Scilab'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={downloadScilabFile}
+                    style={{
+                      padding: '0.32rem 0.7rem',
+                      borderRadius: '5px',
+                      fontSize: '0.75rem',
+                      fontWeight: 700,
+                      background: 'var(--primary)',
+                      color: '#fff',
+                      border: 'none',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    ⬇ Baixar Arquivo .sce
+                  </button>
+                </div>
+              </div>
 
-                <button
-                  type="button"
-                  onClick={handleDownloadLatexFile}
+              {/* Pré-visualização gráfica quando o circuito é numérico */}
+              {renderStepResponseChart()}
+
+              {/* Código-fonte Scilab */}
+              <div
+                style={{
+                  background: 'var(--code-bg)',
+                  border: '1px solid var(--card-border)',
+                  borderRadius: '6px',
+                  overflow: 'hidden'
+                }}
+              >
+                <div
                   style={{
-                    background: 'rgba(16, 185, 129, 0.16)',
-                    border: '1px solid #10b981',
-                    color: '#6ee7b7',
-                    borderRadius: '6px',
-                    padding: '6px 12px',
-                    fontSize: '0.76rem',
+                    padding: '0.45rem 0.85rem',
+                    borderBottom: '1px solid var(--card-border)',
+                    fontSize: '0.73rem',
                     fontWeight: 700,
-                    cursor: 'pointer'
+                    color: 'var(--text-muted)',
+                    display: 'flex',
+                    justifyContent: 'space-between'
                   }}
                 >
-                  📥 Baixar Memorial LaTeX (.tex)
-                </button>
+                  <span>simulacao_sistema_controle.sce</span>
+                  <span>Scilab 6.x / 2024.x Compatível</span>
+                </div>
+                <pre
+                  style={{
+                    margin: 0,
+                    padding: '0.9rem 1rem',
+                    fontSize: '0.78rem',
+                    lineHeight: 1.55,
+                    fontFamily: '"JetBrains Mono", "Fira Code", Consolas, monospace',
+                    color: 'var(--text)',
+                    overflowX: 'auto'
+                  }}
+                >
+                  <code>{fullSys.scilabReport.scriptCode}</code>
+                </pre>
               </div>
             </div>
-          </div>
-        )}
-      </div>
-
-      {/* =====================================================================
-          SEÇÃO DE VALIDAÇÃO ALGÉBRICA INDEPENDENTE (MASON vs SISTEMA DE EQUAÇÕES)
-         ===================================================================== */}
-      <div
-        style={{
-          ...stepCardStyle,
-          border: '1px solid rgba(16, 185, 129, 0.35)'
-        }}
-        data-testid="mason-algebraic-validation"
-      >
-        <div style={stepHeaderStyle} onClick={() => toggleStep(9)}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <span
-              style={{
-                background: '#10b981',
-                color: '#020617',
-                borderRadius: '6px',
-                padding: '2px 8px',
-                fontSize: '0.75rem',
-                fontWeight: 900
-              }}
-            >
-              VALIDAÇÃO ALGÉBRICA
-            </span>
-            <h4 style={{ margin: 0, fontSize: '0.94rem', fontWeight: 800, color: '#f8fafc' }}>
-              Demonstração Algébrica Independente a partir das Equações dos Somadores e Blocos
-            </h4>
-          </div>
-          <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{openSteps[9] ? '▲' : '▼'}</span>
-        </div>
-
-        {openSteps[9] && (
-          <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {fullSys.algebraicValidationSteps.map((st, idx) => (
-              <div key={idx} style={mathBoxStyle}>
-                <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#34d399', marginBottom: '4px' }}>
-                  {st.title}
-                </div>
-                <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: '8px' }}>
-                  {st.description}
-                </div>
-                <MathView math={st.equationLatex} block />
-              </div>
-            ))}
-
-            {/* Comparação direta entre Regra de Mason e Resolução Algébrica do Sistema */}
-            <div
-              style={{
-                background: fullSys.allValidationsMatch
-                  ? 'rgba(16, 185, 129, 0.1)'
-                  : 'rgba(239, 68, 68, 0.12)',
-                border: `1px solid ${fullSys.allValidationsMatch ? '#10b981' : '#ef4444'}`,
-                borderRadius: '8px',
-                padding: '12px 14px',
-                fontSize: '0.8rem',
-                color: fullSys.allValidationsMatch ? '#a7f3d0' : '#fecaca'
-              }}
-            >
-              <b>
-                {fullSys.allValidationsMatch
-                  ? '✓ Validação Cruzada Concluída com 100% de Concordância:'
-                  : '⚠️ Alerta de Divergência Matemática Detectada:'}
-              </b>{' '}
-              Todas as funções de transferência obtidas pela <b>Regra do Ganho de Mason</b> foram comparadas com a solução direta do sistema linear de equações dos somadores e blocos (<MathView math="\mathbf{A}(s)\mathbf{v}(s)=\mathbf{B}(s)\mathbf{u}(s)" inline />), confirmando identidade algébrica exata.
-            </div>
-          </div>
-        )}
+          )}
+        </section>
       </div>
     </div>
   );

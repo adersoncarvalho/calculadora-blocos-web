@@ -17,8 +17,10 @@ import { ratToLatex } from '../src/core/algebra/rational';
 import { formatElementSymbolToLatex } from '../src/features/builder/MasonDeductionView';
 import {
   analyzeCompleteBlockDiagram,
-  runMasonForInputTargetPair
+  runMasonForInputTargetPair,
+  CLASSROOM_CASE_STUDIES
 } from '../src/features/builder/symbolicMasonEngine';
+import { parseRatExpr, parseRatNumDen } from '../src/core/algebra/parser';
 
 describe('Layout Engine, 8-Point Compass Routing & 2-DOF Exercise Integration', () => {
   it('deve espaçar blocos de avanço garantindo distância mínima de 120px', () => {
@@ -442,6 +444,86 @@ describe('Layout Engine, 8-Point Compass Routing & 2-DOF Exercise Integration', 
       const a = cornerMoved[i];
       const b = cornerMoved[i + 1];
       expect(Math.abs(a.x - b.x) < 1 || Math.abs(a.y - b.y) < 1).toBe(true);
+    }
+  });
+
+  it('Seção 8 (Correção do Motor Matemático): deve preservar todos os fatores compostos no denominador sem deslocar termos para o numerador', () => {
+    // 1. combineTransferFunction deve envolver denominadores multi-fatores em parênteses externos
+    const combinedMotor = combineTransferFunction('Km', '(1+s*tau1)*(1+s*tau2)');
+    expect(combinedMotor).toBe('Km/((1+s*tau1)*(1+s*tau2))');
+
+    const combinedImplicit = combineTransferFunction('1', '(s+1)(s+2)');
+    expect(combinedImplicit).toBe('1/((s+1)(s+2))');
+
+    // 2. parseRatNumDen deve manter numerador = Km e denominador = (1+s*tau1)*(1+s*tau2)
+    const ratMotor = parseRatNumDen('Km', '(1+s*tau1)*(1+s*tau2)');
+    const latexMotor = ratToLatex(ratMotor);
+    // Numerador deve ser apenas Km (1 monômio sem s), e o denominador expandido possui 4 monômios (1 + s*tau1 + s*tau2 + s^2*tau1*tau2)
+    expect(ratMotor.num.length).toBe(1);
+    expect(ratMotor.num.every(m => !('s' in m.vars))).toBe(true);
+    expect(ratMotor.den.length).toBe(4);
+    expect(latexMotor).toContain('Km');
+
+    // 3. Fatores implícitos no denominador como 1/(2s) e 1/(s(s+1)) devem permanecer no denominador
+    const rat2s = parseRatExpr('1/(2s)');
+    expect(rat2s.num.every(m => !('s' in m.vars))).toBe(true);
+    expect(rat2s.den.some(m => m.vars['s'] === 1)).toBe(true);
+
+    const ratSS1 = parseRatNumDen('10', 's(s+1)');
+    expect(ratSS1.num.every(m => !('s' in m.vars))).toBe(true);
+    expect(ratSS1.den.some(m => m.vars['s'] === 2)).toBe(true);
+  });
+
+  it('Seção 6.1 & 6.2 (Casos de Estudo da Aula): deve resolver Motor CC (Malha Aberta e Malha Fechada) e Rolamento de Navio com as 9 etapas da Metodologia do Professor e script Scilab válido', () => {
+    const motorMA = CLASSROOM_CASE_STUDIES.find(c => c.id === 'motor_dc_ma')!;
+    const motorMF = CLASSROOM_CASE_STUDIES.find(c => c.id === 'motor_dc_mf')!;
+    const navio = CLASSROOM_CASE_STUDIES.find(c => c.id === 'navio_rolamento')!;
+    const numerico = CLASSROOM_CASE_STUDIES.find(c => c.id === 'aula_alg_ex3')!;
+
+    expect(motorMA).toBeDefined();
+    expect(motorMF).toBeDefined();
+    expect(navio).toBeDefined();
+    expect(numerico).toBeDefined();
+
+    // 1. Motor CC em Malha Aberta: Y(s)/R(s) = K*Km / ((1+s*tau1)(1+s*tau2)) e Y(s)/D(s) = -Kd / ((1+s*tau1)(1+s*tau2))
+    const analysisMA = analyzeCompleteBlockDiagram(motorMA.graph, 'r_ma', 'y_ma');
+    expect(analysisMA.allValidationsMatch).toBe(true);
+    const maYR = analysisMA.outputByInputPairs.find(p => p.inputInfo.id === 'r_ma')!;
+    const maYD = analysisMA.outputByInputPairs.find(p => p.inputInfo.id === 'd_ma')!;
+    expect(maYR.transferFunction.num.every(m => !('s' in m.vars))).toBe(true); // Numerador K*Km sem s
+    expect(maYR.transferFunction.den.some(m => m.vars['s'] === 2)).toBe(true); // Denominador de 2ª ordem em s
+    expect(maYD.transferFunction.num.every(m => !('s' in m.vars))).toBe(true); // Numerador -Kd sem s
+    expect(maYD.transferFunction.den.some(m => m.vars['s'] === 2)).toBe(true);
+
+    // 2. Motor CC em Malha Fechada: denominador inclui + K*Km no termo de grau 0
+    const analysisMF = analyzeCompleteBlockDiagram(motorMF.graph, 'r_mf', 'y_mf');
+    expect(analysisMF.allValidationsMatch).toBe(true);
+    expect(analysisMF.progressiveSubstitutionSteps.length).toBeGreaterThan(0);
+    expect(analysisMF.steadyStateReport.perInputResults.length).toBeGreaterThanOrEqual(2);
+
+    // 3. Controle de Rolamento de Navio: Gp(s) = 9/(s^2 + 1.2s + 9), controlador Ka, sensor K1
+    const analysisNavio = analyzeCompleteBlockDiagram(navio.graph, 'theta_d', 'theta_out');
+    expect(analysisNavio.allValidationsMatch).toBe(true);
+    const navioYR = analysisNavio.outputByInputPairs.find(p => p.inputInfo.id === 'theta_d')!;
+    const navioYD = analysisNavio.outputByInputPairs.find(p => p.inputInfo.id === 'td_in')!;
+    expect(navioYR.transferFunctionCompact).toContain('9');
+    expect(navioYR.transferFunctionCompact).toContain('Ka');
+    expect(navioYD.transferFunctionCompact).toContain('9');
+
+    // 4. Exemplo Numérico e Geração Obrigatória de Script Scilab (.sce)
+    const analysisNum = analyzeCompleteBlockDiagram(numerico.graph, 'r_ex3', 'c_ex3');
+    expect(analysisNum.allValidationsMatch).toBe(true);
+    expect(analysisNum.scilabReport.isFullyNumeric).toBe(true);
+    expect(analysisNum.scilabReport.scriptCode).toContain("poly([");
+    expect(analysisNum.scilabReport.scriptCode).toContain("'s', 'coeff'");
+    expect(analysisNum.scilabReport.scriptCode).toContain("syslin('c'");
+    expect(analysisNum.scilabReport.scriptCode).toContain("csim('step'");
+
+    // 5. Restrição Pedagógica: Nenhuma menção a "Mason" no código Scilab ou nas etapas geradas
+    expect(analysisNum.scilabReport.scriptCode.toLowerCase()).not.toContain('mason');
+    for (const step of analysisNum.progressiveSubstitutionSteps) {
+      expect(step.title.toLowerCase()).not.toContain('mason');
+      expect(step.explanation.toLowerCase()).not.toContain('mason');
     }
   });
 });

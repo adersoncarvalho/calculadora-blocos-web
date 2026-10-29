@@ -994,6 +994,22 @@ export function splitTransferFunction(expr: string = ''): { num: string; den: st
 }
 
 /**
+ * Verifica se a expressão inteira está envolvida por um único par externo de parênteses balanceados
+ * Ex: "(s+1)" -> true ; "(s+1)(s+2)" -> false ; "(1+s*tau1)*(1+s*tau2)" -> false
+ */
+export function isEnclosedInMatchingParens(s: string): boolean {
+  const t = s.trim();
+  if (!t.startsWith('(') || !t.endsWith(')')) return false;
+  let depth = 0;
+  for (let i = 0; i < t.length; i++) {
+    if (t[i] === '(') depth++;
+    else if (t[i] === ')') depth--;
+    if (depth === 0 && i < t.length - 1) return false;
+  }
+  return depth === 0;
+}
+
+/**
  * Combina Numerador e Denominador em uma string de função de transferência.
  * Se ambos estiverem vazios, retorna string vazia (bloco genérico ainda não definido).
  */
@@ -1004,14 +1020,19 @@ export function combineTransferFunction(num: string, den: string): string {
   if (!n) return '';
   if (!d || d === '1') return n;
 
-  const needsParens = (s: string) => /[+\-]/.test(s) && !(s.startsWith('(') && s.endsWith(')'));
-  const formattedNum = needsParens(n) ? `(${n})` : n;
-  const formattedDen = needsParens(d) ? `(${d})` : d;
+  const needsParensNum = (s: string) =>
+    !isEnclosedInMatchingParens(s) && /[+\-/]/.test(s);
+  const needsParensDen = (s: string) =>
+    !isEnclosedInMatchingParens(s) && (/[+\-*/\s()]/.test(s) || /\d[A-Za-z_]/.test(s));
+
+  const formattedNum = needsParensNum(n) ? `(${n})` : n;
+  const formattedDen = needsParensDen(d) ? `(${d})` : d;
   return `${formattedNum}/${formattedDen}`;
 }
 
 /**
- * Valida se a função de transferência de um bloco G(s) ou H(s) foi preenchida e é válida para Mason
+ * Valida se a função de transferência de um bloco G(s) ou H(s) é sintaticamente válida.
+ * Blocos sem valor numérico informado são tratados como blocos simbólicos genéricos pelo motor matemático.
  */
 export function validateTransferFunction(
   expr?: string,
@@ -1020,14 +1041,14 @@ export function validateTransferFunction(
 ): { valid: boolean; isEmpty?: boolean; error?: string } {
   const raw = (expr ?? '').trim();
   if (!raw) {
-    return { valid: false, isEmpty: true, error: 'Função de transferência ainda não definida.' };
+    return { valid: false, isEmpty: true, error: 'Bloco simbólico genérico (sem parâmetros numéricos definidos).' };
   }
   if (raw.endsWith('/') || raw.startsWith('/')) {
     return { valid: false, isEmpty: false, error: 'Fração incompleta: informe numerador e denominador.' };
   }
   if (num !== undefined && den !== undefined) {
     if (!num.trim() && !den.trim()) {
-      return { valid: false, isEmpty: true, error: 'Função de transferência ainda não definida.' };
+      return { valid: false, isEmpty: true, error: 'Bloco simbólico genérico (sem parâmetros numéricos definidos).' };
     }
     if (!num.trim()) {
       return { valid: false, isEmpty: false, error: 'O numerador N(s) não pode ficar vazio.' };

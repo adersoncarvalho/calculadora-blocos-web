@@ -42,6 +42,11 @@ export function parseRatExpr(str: string): RatFunc {
   let s = str
     .trim()
     .replace(/\\cdot/g, "*")
+    .replace(/\\tau/g, "tau")
+    .replace(/\\theta/g, "theta")
+    .replace(/\\omega/g, "omega")
+    .replace(/\\zeta/g, "zeta")
+    .replace(/(\d),(\d)/g, "$1.$2")
     .replace(/²/g, "^2")
     .replace(/³/g, "^3")
     .replace(/⁴/g, "^4");
@@ -58,8 +63,9 @@ export function parseRatExpr(str: string): RatFunc {
       i++;
       continue;
     }
-    if ("+-*/^()[]".includes(ch)) {
-      tokens.push({ type: "op", val: ch === "[" ? "(" : ch === "]" ? ")" : ch });
+    if ("+-*/^()[]{}".includes(ch)) {
+      const mapped = ch === "[" || ch === "{" ? "(" : ch === "]" || ch === "}" ? ")" : ch;
+      tokens.push({ type: "op", val: mapped });
       i++;
       continue;
     }
@@ -87,7 +93,8 @@ export function parseRatExpr(str: string): RatFunc {
     i++;
   }
 
-  // Inserir multiplicação implícita: ex: 2s, (s+1)(s+2), G1 G2
+  // Inserir multiplicação implícita ("implicit_mul") com precedência maior que "/" e "*" explícito:
+  // ex: 1/2s => 1/(2*s), 1/s(s+2) => 1/(s*(s+2)), Km/(1+s*tau1)(1+s*tau2) => Km/((1+s*tau1)*(1+s*tau2))
   const fullTokens: Token[] = [];
   for (let k = 0; k < tokens.length; k++) {
     fullTokens.push(tokens[k]);
@@ -97,7 +104,7 @@ export function parseRatExpr(str: string): RatFunc {
       const curIsVal = cur.type === "num" || cur.type === "id" || (cur.type === "op" && cur.val === ")");
       const nxtIsVal = nxt.type === "num" || nxt.type === "id" || (nxt.type === "op" && nxt.val === "(");
       if (curIsVal && nxtIsVal) {
-        fullTokens.push({ type: "op", val: "*" });
+        fullTokens.push({ type: "op", val: "implicit_mul" });
       }
     }
   }
@@ -121,11 +128,21 @@ export function parseRatExpr(str: string): RatFunc {
   }
 
   function parseTerm(): RatFunc {
-    let left = parseFactor();
+    let left = parseImplicitProduct();
     while (peek() && peek()!.type === "op" && (peek()!.val === "*" || peek()!.val === "/")) {
       const op = consume().val as string;
-      const right = parseFactor();
+      const right = parseImplicitProduct();
       left = op === "*" ? ratMul(left, right) : ratDiv(left, right);
+    }
+    return left;
+  }
+
+  function parseImplicitProduct(): RatFunc {
+    let left = parseFactor();
+    while (peek() && peek()!.type === "op" && peek()!.val === "implicit_mul") {
+      consume();
+      const right = parseFactor();
+      left = ratMul(left, right);
     }
     return left;
   }
@@ -175,4 +192,28 @@ export function parseRatExpr(str: string): RatFunc {
   } catch {
     return ratFromPoly(polyFromVar(str.trim()));
   }
+}
+
+/**
+ * Converte separadamente Numerador N(s) e Denominador D(s) em RatFunc,
+ * impedindo que fatores multiplicativos do denominador sejam deslocados para o numerador.
+ */
+export function parseRatNumDen(num?: string, den?: string, fallbackExpr?: string): RatFunc {
+  const nTrim = (num ?? "").trim();
+  const dTrim = (den ?? "").trim();
+  if (nTrim && dTrim) {
+    const nRat = parseRatExpr(nTrim);
+    const dRat = parseRatExpr(dTrim);
+    return ratDiv(nRat, dRat);
+  }
+  if (nTrim && !dTrim) {
+    return parseRatExpr(nTrim);
+  }
+  if (!nTrim && dTrim) {
+    return ratDiv(ratOne(), parseRatExpr(dTrim));
+  }
+  if (fallbackExpr && fallbackExpr.trim()) {
+    return parseRatExpr(fallbackExpr.trim());
+  }
+  return ratOne();
 }
