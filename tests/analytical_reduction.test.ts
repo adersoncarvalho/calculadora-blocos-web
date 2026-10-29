@@ -325,4 +325,84 @@ describe('Resolução Analítica, Realimentação e Álgebra de Diagramas de Blo
     expect(res.scilabReport).toBeDefined();
     expect(res.scilabReport.scriptCode).toContain('syslin');
   });
+
+  // =========================================================================
+  // CASO DE TESTE 8: CIRCUITO COM REFERÊNCIA R(s), PERTURBAÇÃO D(s) E RUÍDO N(s)
+  // =========================================================================
+  it('8. Deve suportar Ruído N(s) como entrada independente com superposição [R(s), D(s), N(s)]', () => {
+    const threeInputGraph: DiagramGraph = {
+      elements: [
+        { id: 'r1', code: 'R1', type: 'input', subType: 'reference', name: 'R(s)' },
+        { id: 'd1', code: 'D1', type: 'input', subType: 'disturbance', name: 'D(s)' },
+        { id: 'n1', code: 'N1', type: 'input', subType: 'noise', name: 'N(s)' },
+        { id: 's1', code: 'S1', type: 'summer', name: 'S1' },
+        { id: 'g1', code: 'G1', type: 'block', name: 'G1(s)' },
+        { id: 's2', code: 'S2', type: 'summer', name: 'S2' },
+        { id: 'g2', code: 'G2', type: 'block', name: 'G2(s)' },
+        { id: 'y1', code: 'C1', type: 'output', name: 'Y(s)' },
+        { id: 's3', code: 'S3', type: 'summer', name: 'S3' },
+        { id: 'h1', code: 'H1', type: 'block', name: 'H(s)', dir: 'left' }
+      ],
+      connections: [
+        // Ramo direto principal: R -> S1(+) -> G1 -> S2(+) -> G2 -> Y
+        { id: 'c1', from: 'r1', to: 's1', sign: '+' },
+        { id: 'c2', from: 's1', to: 'g1', sign: '+' },
+        { id: 'c3', from: 'g1', to: 's2', sign: '+' },
+        { id: 'c4', from: 'd1', to: 's2', sign: '+' },
+        { id: 'c5', from: 's2', to: 'g2', sign: '+' },
+        { id: 'c6', from: 'g2', to: 'y1', sign: '+' },
+        // Realimentação com ruído de medição: Y -> S3(+) & N -> S3(+) -> H -> S1(-)
+        { id: 'c7', from: 'y1', to: 's3', sign: '+' },
+        { id: 'c8', from: 'n1', to: 's3', sign: '+' },
+        { id: 'c9', from: 's3', to: 'h1', sign: '+' },
+        { id: 'c10', from: 'h1', to: 's1', sign: '-' }
+      ]
+    };
+
+    const analysis = analyzeCompleteBlockDiagram(threeInputGraph, 'r1', 'y1');
+
+    // 1. Deve identificar exatamente 3 entradas independentes com tipos próprios
+    expect(analysis.independentInputs).toHaveLength(3);
+    const inpR = analysis.independentInputs.find(i => i.role === 'input-ref');
+    const inpD = analysis.independentInputs.find(i => i.role === 'input-dist');
+    const inpN = analysis.independentInputs.find(i => i.role === 'input-noise');
+
+    expect(inpR).toBeDefined();
+    expect(inpR?.displayName).toBe('R(s)');
+
+    expect(inpD).toBeDefined();
+    expect(inpD?.displayName).toBe('D(s)');
+
+    expect(inpN).toBeDefined();
+    expect(inpN?.displayName).toBe('N(s)');
+    expect(inpN?.shortSymbol).toBe('N');
+
+    // 2. Deve calcular funções de transferência individuais para cada entrada
+    const tfR = analysis.outputByInputPairs.find(p => p.inputInfo.id === 'r1')!;
+    const tfD = analysis.outputByInputPairs.find(p => p.inputInfo.id === 'd1')!;
+    const tfN = analysis.outputByInputPairs.find(p => p.inputInfo.id === 'n1')!;
+
+    expect(tfR).toBeDefined();
+    expect(tfD).toBeDefined();
+    expect(tfN).toBeDefined();
+
+    // R: G1G2 / (1 + G1G2H)
+    expect(tfR.transferFunctionCompact).toBe('G1G2/(1 + G1G2H)');
+
+    // D: G2 / (1 + G1G2H)
+    expect(tfD.transferFunctionCompact).toBe('G2/(1 + G1G2H)');
+
+    // N: -G1G2H / (1 + G1G2H) (sinal negativo por entrar pelo somador de realimentação negativa)
+    expect(tfN.transferFunctionCompact).toBe('-G1G2H/(1 + G1G2H)');
+
+    // 3. Superposição completa da saída deve conter os três termos
+    expect(analysis.superpositionOutputText).toContain('G1G2/(1 + G1G2H)');
+    expect(analysis.superpositionOutputText).toContain('G2/(1 + G1G2H)');
+    expect(analysis.superpositionOutputText).toContain('G1G2H/(1 + G1G2H)');
+
+    // 4. Scilab deve conter suporte aos três canais
+    expect(analysis.scilabReport.scriptCode).toContain('Y(s) / R(s)');
+    expect(analysis.scilabReport.scriptCode).toContain('Y(s) / D(s)');
+    expect(analysis.scilabReport.scriptCode).toContain('Y(s) / N(s)');
+  });
 });

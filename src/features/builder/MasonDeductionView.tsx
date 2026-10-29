@@ -1309,7 +1309,7 @@ export const MasonDeductionView: React.FC<MasonDeductionViewProps> = ({
                       <div key={inp.id} style={{ fontSize: '0.88rem', fontWeight: 600 }}>
                         <MathView math={inp.signalLatex} inline />{' '}
                         <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                          ({inp.role === 'input-dist' ? 'Perturbação / Distúrbio' : 'Referência'})
+                          ({inp.role === 'input-dist' ? 'Perturbação / Distúrbio' : inp.role === 'input-noise' ? 'Ruído N(s)' : 'Referência'})
                         </span>
                       </div>
                     ))}
@@ -2402,7 +2402,8 @@ export const MasonDeductionView: React.FC<MasonDeductionViewProps> = ({
               <p style={{ margin: 0, fontSize: '0.84rem', color: 'var(--text-muted)', lineHeight: 1.6 }}>
                 Por tratar-se de um Sistema Linear Invariante no Tempo (SLIT), quando há múltiplas entradas
                 independentes atuando simultaneamente (por exemplo, referência{' '}
-                <MathView math="R(s)" inline /> e perturbação <MathView math="D(s)" inline />), aplicamos o{' '}
+                <MathView math="R(s)" inline />, perturbação <MathView math="D(s)" inline /> e ruído{' '}
+                <MathView math="N(s)" inline />), aplicamos o{' '}
                 <strong>Princípio da Superposição</strong>: avaliamos a contribuição individual de cada
                 entrada anulando as demais e somamos algebricamente as respostas parciais.
               </p>
@@ -2695,8 +2696,8 @@ export const MasonDeductionView: React.FC<MasonDeductionViewProps> = ({
                   Teorema do Valor Final (TVF) para Entradas em Degrau:
                 </div>
                 <div>
-                  Considerando entradas em degrau <MathView math="R(s) = \frac{r_0}{s}" inline /> e{' '}
-                  <MathView math="D(s) = \frac{d_0}{s}" inline />, o valor da saída e do erro em regime
+                  Considerando entradas em degrau <MathView math="R(s) = \frac{r_0}{s}" inline />,{' '}
+                  <MathView math="D(s) = \frac{d_0}{s}" inline /> e <MathView math="N(s) = \frac{n_0}{s}" inline />, o valor da saída e do erro em regime
                   permanente (<MathView math="t \to \infty" inline />) é obtido por:
                 </div>
                 <div style={{ margin: '0.45rem 0', overflowX: 'auto' }}>

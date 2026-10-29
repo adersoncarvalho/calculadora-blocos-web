@@ -93,18 +93,19 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
   const jsonFileInputRef = useRef<HTMLInputElement | null>(null);
 
   // Contadores Sequenciais Exclusivos (NUNCA reutilizam identificadores após exclusão)
-  const seqCountersRef = useRef<{ G: number; H: number; R: number; C: number; D: number; W: number; S: number }>({
+  const seqCountersRef = useRef<{ G: number; H: number; R: number; C: number; D: number; W: number; N: number; S: number }>({
     G: 0,
     H: 0,
     R: 1,
     C: 1,
     D: 0,
     W: 0,
+    N: 0,
     S: 0
   });
 
   const allocateExclusiveCode = useCallback(
-    (prefix: 'G' | 'H' | 'R' | 'C' | 'D' | 'W' | 'S'): string => {
+    (prefix: 'G' | 'H' | 'R' | 'C' | 'D' | 'W' | 'N' | 'S'): string => {
       // Garante que o contador seja sempre estritamente maior que qualquer código já existente no grafo
       let maxExisting = seqCountersRef.current[prefix];
       const regex = new RegExp(`^${prefix}(\\d+)$`, 'i');
@@ -317,7 +318,7 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
     const inputs = graph.elements.filter(e => e.type === 'input');
     const outputs = graph.elements.filter(e => e.type === 'output');
     if (inputs.length > 0 && !inputs.some(i => i.id === activeInputId)) {
-      const refInput = inputs.find(i => i.subType !== 'disturbance') || inputs[0];
+      const refInput = inputs.find(i => i.subType !== 'disturbance' && i.subType !== 'noise') || inputs[0];
       setActiveInputId(refInput.id);
     }
     if (outputs.length > 0 && !outputs.some(o => o.id === activeOutputId)) {
@@ -399,7 +400,7 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
   const handleAddInput = () => {
     const code = allocateExclusiveCode('R');
     const idxNum = code.replace('R', '');
-    const count = graph.elements.filter(e => e.type === 'input' && e.subType !== 'disturbance').length;
+    const count = graph.elements.filter(e => e.type === 'input' && e.subType !== 'disturbance' && e.subType !== 'noise').length;
     const newId = count === 0 && !graph.elements.some(e => e.id === 'IN') ? 'IN' : `in_${Date.now()}_${idxNum}`;
     const newEl: DiagramElement = {
       id: newId,
@@ -451,6 +452,28 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
       subType: 'disturbance',
       name: idxNum === '1' ? 'D(s)' : `${code}(s)`,
       x: snapToGrid(480 + count * 120, GRID_SIZE),
+      y: snapToGrid(100, GRID_SIZE)
+    };
+    const updated = { ...graph, elements: [...graph.elements, newEl] };
+    setGraph(updated);
+    pushHistory(updated);
+    setSelectedId(newId);
+    setSelectedConnId(null);
+  };
+
+  // 3.5. Adicionar Entrada de Ruído N(s)
+  const handleAddNoise = () => {
+    const code = allocateExclusiveCode('N');
+    const idxNum = code.replace('N', '');
+    const count = graph.elements.filter(e => e.subType === 'noise').length;
+    const newId = `noise_${Date.now()}_${idxNum}`;
+    const newEl: DiagramElement = {
+      id: newId,
+      code,
+      type: 'input',
+      subType: 'noise',
+      name: idxNum === '1' ? 'N(s)' : `${code}(s)`,
+      x: snapToGrid(600 + count * 120, GRID_SIZE),
       y: snapToGrid(100, GRID_SIZE)
     };
     const updated = { ...graph, elements: [...graph.elements, newEl] };
@@ -521,7 +544,7 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
       const newSelectedIds: string[] = [];
 
       sourceElements.forEach((srcEl, i) => {
-        let prefix: 'G' | 'H' | 'R' | 'C' | 'D' | 'W' | 'S' = 'G';
+        let prefix: 'G' | 'H' | 'R' | 'C' | 'D' | 'W' | 'N' | 'S' = 'G';
         if (srcEl.type === 'block') {
           prefix = srcEl.dir === 'left' || String(srcEl.code || '').startsWith('H') ? 'H' : 'G';
         } else if (srcEl.type === 'summer') {
@@ -530,6 +553,8 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
           prefix = 'C';
         } else if (srcEl.subType === 'disturbance') {
           prefix = 'D';
+        } else if (srcEl.subType === 'noise') {
+          prefix = 'N';
         } else {
           prefix = 'R';
         }
@@ -897,7 +922,7 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
         })),
         connections: classroomPreset.graph.connections.map(c => ({ ...c }))
       };
-      const firstInput = newGraph.elements.find(e => e.type === 'input' && e.subType !== 'disturbance') ||
+      const firstInput = newGraph.elements.find(e => e.type === 'input' && e.subType !== 'disturbance' && e.subType !== 'noise') ||
         newGraph.elements.find(e => e.type === 'input');
       const firstOutput = newGraph.elements.find(e => e.type === 'output');
       if (firstInput) setActiveInputId(firstInput.id);
@@ -2357,10 +2382,20 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
               </button>
               <button
                 type="button"
+                data-testid="add-noise-n"
+                className="filter-btn"
+                onClick={handleAddNoise}
+                style={{ padding: '7px 8px', fontSize: '0.76rem', fontWeight: 700, textAlign: 'left', color: '#8b5cf6' }}
+                title="Adicionar Ruído N(s): insere uma entrada independente de ruído de medição/processo"
+              >
+                ＋ Ruído N(s)
+              </button>
+              <button
+                type="button"
                 data-testid="add-summer"
                 className="filter-btn"
                 onClick={handleAddSummer}
-                style={{ padding: '7px 8px', fontSize: '0.76rem', fontWeight: 700, textAlign: 'left', color: 'var(--success)' }}
+                style={{ padding: '7px 8px', fontSize: '0.76rem', fontWeight: 700, textAlign: 'left', color: 'var(--success)', gridColumn: 'span 2' }}
                 title="Adicionar Somador: insere um ponto de soma de sinais com múltiplas entradas (+/-)"
               >
                 ⊕ Somador ∑
@@ -2928,6 +2963,8 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
                   <div style={{ fontSize: '0.76rem', fontWeight: 700, color: 'var(--primary)' }}>
                     {selectedElement.subType === 'disturbance'
                       ? 'Perturbação D(s)'
+                      : selectedElement.subType === 'noise'
+                      ? 'Ruído N(s)'
                       : selectedElement.type === 'input'
                       ? 'Entrada R(s)'
                       : 'Saída C(s)/Y(s)'}
@@ -2963,6 +3000,8 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
                 <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginTop: '5px' }}>
                   {(selectedElement.subType === 'disturbance'
                     ? ['D(s)', 'Td(s)', 'W(s)']
+                    : selectedElement.subType === 'noise'
+                    ? ['N(s)', 'n(s)', 'Ruído(s)', 'N1(s)']
                     : selectedElement.type === 'input'
                     ? ['R(s)', 'theta_d(s)', 'ref(s)', 'V(s)']
                     : ['Y(s)', 'C(s)', 'theta(s)', 'E(s)']
@@ -3994,9 +4033,10 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
                     </>
                   )}
 
-                  {/* B. ENTRADA R(s), SAÍDA C(s)/Y(s) E PERTURBAÇÃO D(s) */}
+                  {/* B. ENTRADA R(s), SAÍDA C(s)/Y(s), PERTURBAÇÃO D(s) E RUÍDO N(s) */}
                   {(el.type === 'input' || el.type === 'output') && (() => {
                     const isDisturbance = el.subType === 'disturbance';
+                    const isNoise = el.subType === 'noise';
                     const isOutput = el.type === 'output';
                     const strokeColor = isSelected
                       ? '#f59e0b'
@@ -4004,6 +4044,8 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
                       ? '#10b981'
                       : isDisturbance
                       ? '#d97706'
+                      : isNoise
+                      ? '#8b5cf6'
                       : isOutput
                       ? isLightTheme
                         ? '#059669'
@@ -4025,6 +4067,8 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
                               ? '#ffffff'
                               : isDisturbance
                               ? '#1c1608'
+                              : isNoise
+                              ? '#1a102a'
                               : '#0f172a'
                           }
                           stroke={strokeColor}
@@ -4038,7 +4082,7 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
                           textAnchor="middle"
                           fontWeight="700"
                         >
-                          {el.code || (isDisturbance ? 'D' : isOutput ? 'C' : 'R')} {el.locked ? '🔒' : ''}
+                          {el.code || (isDisturbance ? 'D' : isNoise ? 'N' : isOutput ? 'C' : 'R')} {el.locked ? '🔒' : ''}
                         </text>
                         <text
                           x={x}

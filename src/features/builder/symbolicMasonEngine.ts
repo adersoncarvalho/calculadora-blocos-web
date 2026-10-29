@@ -68,7 +68,7 @@ export interface SignalNodeInfo {
   signalSymbol: string; // Ex: "R(s)", "D(s)", "Y(s)", "E(s)", "U(s)"
   signalLatex: string; // Ex: "R(s)", "D(s)", "Y(s)", "E(s)", "U(s)"
   shortSymbol: string; // Ex: "R", "D", "Y", "E", "U"
-  role: 'input-ref' | 'input-dist' | 'output' | 'summer' | 'block';
+  role: 'input-ref' | 'input-dist' | 'input-noise' | 'output' | 'summer' | 'block';
 }
 
 export interface SummerIncidentTerm {
@@ -324,8 +324,8 @@ export function formatRatFuncLatex(R: RatFunc): string {
   const formatted = baseLatex
     .replace(/\btau_\{?(\d+)\}?/g, '\\tau_{$1}')
     .replace(/\btheta_\{?([a-zA-Z0-9]+)\}?/g, '\\theta_{$1}')
-    .replace(/(?<!\\)([GHWRCKTD])_\{?([a-zA-Z0-9]+)\}?/g, '$1_{$2}')
-    .replace(/(?<!\\)([GHWRCKTD])([a-z0-9]+)/g, '$1_{$2}');
+    .replace(/(?<!\\)([GHWRCKTDN])_\{?([a-zA-Z0-9]+)\}?/g, '$1_{$2}')
+    .replace(/(?<!\\)([GHWRCKTDN])([a-z0-9]+)/g, '$1_{$2}');
   return isNegNum ? `-${formatted}` : formatted;
 }
 
@@ -785,13 +785,16 @@ export function analyzeCompleteBlockDiagram(
     connections: validConnections
   };
 
-  // Ordena entradas: primeiro referências R(s), depois perturbações D(s)/W(s)
+  // Ordena entradas: primeiro referências R(s), depois perturbações D(s)/W(s), depois ruídos N(s)
   const inputElements = preparedElements
     .filter(e => e.type === 'input')
     .sort((a, b) => {
-      const aDist = a.subType === 'disturbance' ? 1 : 0;
-      const bDist = b.subType === 'disturbance' ? 1 : 0;
-      return aDist - bDist;
+      const getPriority = (el: DiagramElement) => {
+        if (el.subType === 'noise') return 2;
+        if (el.subType === 'disturbance') return 1;
+        return 0;
+      };
+      return getPriority(a) - getPriority(b);
     });
 
   const outputElements = preparedElements.filter(e => e.type === 'output');
@@ -804,17 +807,20 @@ export function analyzeCompleteBlockDiagram(
 
   inputElements.forEach((inp, idx) => {
     const isDist = inp.subType === 'disturbance';
-    const rawName = (inp.name || (isDist ? 'D(s)' : 'R(s)')).trim();
+    const isNoise = inp.subType === 'noise';
+    const defaultName = isDist ? 'D(s)' : isNoise ? 'N(s)' : 'R(s)';
+    const rawName = (inp.name || defaultName).trim();
     const signalSymbol = /\(\s*s\s*\)$/i.test(rawName) ? rawName : `${rawName}(s)`;
     const shortSymbol = signalSymbol.replace(/\(\s*s\s*\)$/i, '');
+    const defaultCode = isDist ? `D${idx + 1}` : isNoise ? `N${idx + 1}` : `R${idx + 1}`;
     nodeInfoMap[inp.id] = {
       id: inp.id,
-      code: inp.code || (isDist ? `D${idx + 1}` : `R${idx + 1}`),
+      code: inp.code || defaultCode,
       displayName: rawName,
       signalSymbol,
       signalLatex: formatCleanSignalLatex(signalSymbol, inp.code),
       shortSymbol,
-      role: isDist ? 'input-dist' : 'input-ref'
+      role: isDist ? 'input-dist' : isNoise ? 'input-noise' : 'input-ref'
     };
   });
 
@@ -1432,6 +1438,10 @@ export function analyzeCompleteBlockDiagram(
         ? independentInputs.filter(i => i.role === 'input-dist').length > 1
           ? `d_{${idx}}`
           : 'd_0'
+        : inp.role === 'input-noise'
+        ? independentInputs.filter(i => i.role === 'input-noise').length > 1
+          ? `n_{${idx}}`
+          : 'n_0'
         : 'r_0';
 
     const outEval = outPair ? evaluateRatFuncAtSZero(outPair.transferFunction) : null;

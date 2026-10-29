@@ -783,7 +783,7 @@ export function computeSmartConnectionPath(
   let startPort: PortPosition;
   if (conn.fromPort) {
     startPort = getElementPort(src, conn.fromPort as PortSide);
-  } else if (src.subType === 'disturbance') {
+  } else if (src.subType === 'disturbance' || src.subType === 'noise') {
     startPort = (tgt.y || 0) >= (src.y || 0) ? getElementPort(src, 'S') : getElementPort(src, 'N');
   } else if (isFeedback) {
     if (src.type === 'block' && src.dir === 'left') {
@@ -798,7 +798,7 @@ export function computeSmartConnectionPath(
   let endPort: PortPosition;
   if (conn.toPort) {
     endPort = getElementPort(tgt, conn.toPort as PortSide);
-  } else if (src.subType === 'disturbance' && tgt.type === 'summer') {
+  } else if ((src.subType === 'disturbance' || src.subType === 'noise') && tgt.type === 'summer') {
     endPort = (src.y || 0) <= (tgt.y || 0) ? getElementPort(tgt, 'N') : getElementPort(tgt, 'S');
   } else if (isFeedback) {
     if (tgt.type === 'summer') {
@@ -1136,8 +1136,8 @@ export function autoLayoutDiagram(graph: DiagramGraph): DiagramGraph {
     manualPoints: undefined
   }));
 
-  const primaryInputs = elements.filter(e => e.type === 'input' && e.subType !== 'disturbance');
-  const disturbanceInputs = elements.filter(e => e.type === 'input' && e.subType === 'disturbance');
+  const primaryInputs = elements.filter(e => e.type === 'input' && e.subType !== 'disturbance' && e.subType !== 'noise');
+  const disturbanceInputs = elements.filter(e => e.type === 'input' && (e.subType === 'disturbance' || e.subType === 'noise'));
   const outputs = elements.filter(e => e.type === 'output');
   const summers = elements.filter(e => e.type === 'summer');
   const forwardBlocks = elements.filter(e => e.type === 'block' && e.dir !== 'left');
@@ -1226,9 +1226,10 @@ export function autoLayoutDiagram(graph: DiagramGraph): DiagramGraph {
     if (dist.locked) return;
     const outConn = connections.find(c => c.from === dist.id);
     const targetEl = outConn ? elements.find(e => e.id === outConn.to) : null;
+    const isNoise = dist.subType === 'noise';
     if (targetEl) {
       dist.x = snapToGrid(targetEl.x || 360, GRID_SIZE);
-      dist.y = snapToGrid((targetEl.y || BASE_Y) - 120, GRID_SIZE);
+      dist.y = snapToGrid((targetEl.y || BASE_Y) - (isNoise ? 130 : 110), GRID_SIZE);
     } else {
       dist.x = snapToGrid(360 + idx * 160, GRID_SIZE);
       dist.y = snapToGrid(BASE_Y - 120, GRID_SIZE);
