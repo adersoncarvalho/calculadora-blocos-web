@@ -28,6 +28,7 @@ import {
   InputOutputMasonPair
 } from './symbolicMasonEngine';
 import { EquivalentDiagramRenderer } from './EquivalentDiagramRenderer';
+import { SteadyStateModuleView } from './SteadyStateModuleView';
 
 export type SplitPanelMode = 'split' | 'circuit-maximized' | 'calc-maximized';
 
@@ -2849,6 +2850,38 @@ export const MasonDeductionView: React.FC<MasonDeductionViewProps> = ({
             </div>
           )}
         </section>
+
+        {/* =================================================================
+            NOVA SEÇÃO (FASE 1 E FASE 2) — ANÁLISE DE REGIME PERMANENTE E ERRO ESTACIONÁRIO
+            ================================================================= */}
+        {fullSys.outputByInputPairs.length > 0 && (
+          <SteadyStateModuleView
+            closedLoopTf={fullSys.outputByInputPairs[0].transferFunction}
+            errorTfCandidate={
+              fullSys.summers.length > 0 && fullSys.independentInputs.length > 0
+                ? fullSys.summerByInputPairs.find(
+                    p =>
+                      p.inputInfo.id === fullSys.independentInputs[0].id &&
+                      p.targetInfo.id === fullSys.summers[0].id
+                  )?.transferFunction
+                : null
+            }
+            openLoopTfCandidate={null}
+            disturbancePair={
+              (() => {
+                const p = fullSys.outputByInputPairs.find(pair => pair.inputInfo.role === 'input-dist');
+                return p ? { tf: p.transferFunction, name: p.inputInfo.displayName || 'Perturbação D(s)' } : null;
+              })()
+            }
+            noisePair={
+              (() => {
+                const p = fullSys.outputByInputPairs.find(pair => pair.inputInfo.role === 'input-noise');
+                return p ? { tf: p.transferFunction, name: p.inputInfo.displayName || 'Ruído N(s)' } : null;
+              })()
+            }
+            isInitialOpen={true}
+          />
+        )}
 
         {/* =================================================================
             SEÇÃO 10 (OBRIGATÓRIA) — IMPLEMENTAÇÃO E SIMULAÇÃO NO SCILAB
