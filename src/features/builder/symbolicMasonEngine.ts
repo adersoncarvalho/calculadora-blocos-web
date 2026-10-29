@@ -49,6 +49,17 @@ import {
   analyzeTransferFunction,
   checkRouthHurwitz
 } from '@/core/analysis/stability';
+import {
+  normalizeSignalDirections,
+  DirectionCorrection,
+  CircuitValidationReport,
+  validateCircuitTopology
+} from './circuitTopology';
+import {
+  reduceBlockDiagramGraphically,
+  GraphicalReductionResult,
+  ReductionStep
+} from './graphicalReduction';
 
 export interface SignalNodeInfo {
   id: string;
@@ -238,6 +249,12 @@ export interface CompleteSystemAnalysis {
   steadyStateReport: SteadyStateReport;
   /** Geração Automática de Script Scilab (.sce) e Prévia Numérica (Seção 7) */
   scilabReport: ScilabGenerationReport;
+  /** Redução Gráfica Progressiva com diagramas equivalentes passo a passo (Seção 3) */
+  graphicalReduction: GraphicalReductionResult;
+  /** Relatório das 8 validações topológicas obrigatórias do circuito (Seção 7) */
+  validationReport: CircuitValidationReport;
+  /** Correções automáticas de sentido de sinal aplicadas */
+  directionCorrections: DirectionCorrection[];
 }
 
 /**
@@ -342,6 +359,7 @@ export function runMasonForInputTargetPair(
   inputId: string,
   targetId: string
 ): MasonAnalysis {
+  const { graph: normGraph } = normalizeSignalDirections(cleanGraph);
   const VIRTUAL_IN = '__MASON_VIRTUAL_IN__';
   const VIRTUAL_OUT = '__MASON_VIRTUAL_OUT__';
 
@@ -357,18 +375,30 @@ export function runMasonForInputTargetPair(
   };
 
   // Mantém apenas a entrada ativa (as demais entradas independentes são zeradas por superposição)
-  const activeElements: DiagramElement[] = cleanGraph.elements
+  const activeElements: DiagramElement[] = normGraph.elements
     .filter(el => el.type !== 'input' || el.id === inputId)
-    .map(el => ({
-      ...el,
-      id: encodeId(el.id),
-      type: el.type === 'block' ? 'block' : 'summer',
-      rat: el.type === 'block' ? el.rat || ratOne() : ratOne()
-    }));
+    .map(el => {
+      let r = el.rat;
+      if (el.type === 'block' && (!r || ratIsOne(r))) {
+        const symId = extractSymbolicIdentifierFromName(el.name, el.code);
+        const nTrim = (el.num ?? '').trim();
+        const dTrim = (el.den ?? '').trim();
+        const expr = (el.expr ?? '').trim();
+        if (!nTrim && !dTrim && (!expr || expr === '1')) {
+          r = parseRatExpr(symId);
+        }
+      }
+      return {
+        ...el,
+        id: encodeId(el.id),
+        type: el.type === 'block' ? 'block' : 'summer',
+        rat: el.type === 'block' ? r || ratOne() : ratOne()
+      };
+    });
 
   const validOriginalIds = new Set(activeElements.map(e => e.id));
 
-  const activeConnections: DiagramConnection[] = cleanGraph.connections
+  const activeConnections: DiagramConnection[] = normGraph.connections
     .filter(c => !c.isPending && c.from && c.to)
     .map(c => ({
       ...c,
@@ -676,11 +706,12 @@ export function analyzeCompleteBlockDiagram(
   preferredInputId?: string,
   preferredOutputId?: string
 ): CompleteSystemAnalysis {
-  const validConnections = rawGraph.connections.filter(
+  const { graph: normalizedGraph, corrections } = normalizeSignalDirections(rawGraph);
+  const validConnections = normalizedGraph.connections.filter(
     c => !c.isPending && c.from && c.to && c.from !== c.to
   );
 
-  const rawBlocks = rawGraph.elements.filter(e => e.type === 'block');
+  const rawBlocks = normalizedGraph.elements.filter(e => e.type === 'block');
 
   // Verifica se todos os blocos possuem expressão vazia ou '1' sem polinômio numérico explícito
   const hasExplicitNonUnitRational = rawBlocks.some(b => {
@@ -706,7 +737,7 @@ export function analyzeCompleteBlockDiagram(
   const blockNatures: Record<string, 'numeric' | 'symbolic-parametric' | 'symbolic-generic'> = {};
 
   // Prepara cada elemento usando parseRatNumDen (garantindo que fatores do denominador nunca subam para o numerador)
-  const preparedElements: DiagramElement[] = rawGraph.elements.map(el => {
+  const preparedElements: DiagramElement[] = normalizedGraph.elements.map(el => {
     if (el.type !== 'block') {
       return { ...el, rat: ratOne() };
     }
@@ -716,7 +747,12 @@ export function analyzeCompleteBlockDiagram(
     const symId = extractSymbolicIdentifierFromName(el.name, el.code);
 
     let effectiveRat: RatFunc;
-    const isBlankBlock = !nTrim && !dTrim && !expr;
+    const isBlankBlock =
+      (!nTrim && !dTrim && !expr) ||
+      expr === symId ||
+      expr === `${symId}(s)` ||
+      nTrim === symId ||
+      (!nTrim && !dTrim && (expr === '1' || expr === ''));
 
     if (isBlankBlock || (isPureSymbolicMode && (!expr || expr === '1') && (!nTrim || nTrim === '1') && (!dTrim || dTrim === '1'))) {
       effectiveRat = parseRatExpr(symId);
@@ -1519,6 +1555,47 @@ export function analyzeCompleteBlockDiagram(
     stabilityReport
   );
 
+  // =========================================================================
+  // REDUÇÃO GRÁFICA PROGRESSIVA (ÁLGEBRA DE BLOCOS PASSO A PASSO — SEÇÃO 3)
+  // =========================================================================
+  const blockSymbols: Record<string, { sym: RatFunc; label: string }> = {};
+  preparedElements.filter(e => e.type === 'block').forEach(b => {
+    const symId = extractSymbolicIdentifierFromName(b.name, b.code);
+    const symRat = parseRatExpr(symId);
+    const label = formatCleanSignalLatex(b.name, b.code);
+    blockSymbols[b.id] = { sym: symRat, label };
+  });
+
+  const signalLatexMap: Record<string, string> = {};
+  Object.values(nodeInfoMap).forEach(n => {
+    signalLatexMap[n.id] = n.signalLatex;
+  });
+
+  const graphicalReduction = reduceBlockDiagramGraphically(
+    preparedGraph,
+    primaryInput.id,
+    primaryOutput.id,
+    {
+      blockSymbols,
+      signalLatex: signalLatexMap,
+      formatLatex: formatRatFuncLatex
+    }
+  );
+
+  // =========================================================================
+  // VALIDAÇÃO TOPOLÓGICA COMPLETA DO CIRCUITO (8 REGRAS OBRIGATÓRIAS — SEÇÃO 7)
+  // =========================================================================
+  const forwardPathsNodes = outputByInputPairs.flatMap(p => p.masonAnalysis.forwardPaths.map(fp => fp.nodes));
+  const loopsNodes = outputByInputPairs.flatMap(p => p.masonAnalysis.loops.map(l => l.nodes));
+  const validationReport = validateCircuitTopology(
+    preparedGraph,
+    primaryInput.id,
+    primaryOutput.id,
+    { forwardPathsNodes, loopsNodes },
+    corrections,
+    allValidationsMatch
+  );
+
   return {
     preparedGraph,
     isPureSymbolicMode,
@@ -1542,7 +1619,10 @@ export function analyzeCompleteBlockDiagram(
     algebraicValidationSteps,
     allValidationsMatch,
     steadyStateReport,
-    scilabReport
+    scilabReport,
+    graphicalReduction,
+    validationReport,
+    directionCorrections: corrections
   };
 }
 

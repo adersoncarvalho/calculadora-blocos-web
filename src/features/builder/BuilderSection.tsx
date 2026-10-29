@@ -31,6 +31,7 @@ import {
 } from './layoutEngine';
 import { MasonDeductionView, SplitPanelMode } from './MasonDeductionView';
 import { CLASSROOM_CASE_STUDIES, runMasonForInputTargetPair } from './symbolicMasonEngine';
+import { normalizeSignalDirections } from './circuitTopology';
 
 interface BuilderSectionProps {
   onBack: () => void;
@@ -1833,8 +1834,16 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
     const chosenInput = inputs.find(i => i.id === activeInputId) || inputs[0];
     const chosenOutput = outputs.find(o => o.id === activeOutputId) || outputs[0];
 
+    const { graph: normalizedGraph, corrections } = normalizeSignalDirections(graph);
+    let activeGraph = graph;
+    if (corrections.length > 0) {
+      activeGraph = normalizedGraph;
+      setGraph(normalizedGraph);
+      pushHistory(normalizedGraph);
+    }
+
     try {
-      const result = runMasonForInputTargetPair(graph, chosenInput.id, chosenOutput.id);
+      const result = runMasonForInputTargetPair(activeGraph, chosenInput.id, chosenOutput.id);
       if (result.forwardPaths.length === 0) {
         showToast(`⚠️ Não há caminho contínuo conectado entre ${chosenInput.name} e ${chosenOutput.name}.`);
         return;
@@ -1842,7 +1851,7 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
 
       setAnalysisResult(result);
       setAnalysisSnapshot({
-        graph,
+        graph: activeGraph,
         inputEl: chosenInput,
         outputEl: chosenOutput
       });

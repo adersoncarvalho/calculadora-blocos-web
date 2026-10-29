@@ -27,6 +27,7 @@ import {
   formatRatFuncLatex,
   InputOutputMasonPair
 } from './symbolicMasonEngine';
+import { EquivalentDiagramRenderer } from './EquivalentDiagramRenderer';
 
 export type SplitPanelMode = 'split' | 'circuit-maximized' | 'calc-maximized';
 
@@ -87,6 +88,7 @@ export const MasonDeductionView: React.FC<MasonDeductionViewProps> = ({
 }) => {
   const [copiedType, setCopiedType] = useState<'none' | 'final-latex' | 'final-text' | 'memorial' | 'scilab'>('none');
   const [openSteps, setOpenSteps] = useState<Record<number, boolean>>({
+    0: true,
     1: true,
     2: true,
     3: true,
@@ -105,6 +107,7 @@ export const MasonDeductionView: React.FC<MasonDeductionViewProps> = ({
 
   const setAllSteps = (open: boolean) => {
     setOpenSteps({
+      0: open,
       1: open,
       2: open,
       3: open,
@@ -376,6 +379,16 @@ export const MasonDeductionView: React.FC<MasonDeductionViewProps> = ({
       lines.push(`% Passo 4.${st.stepNumber}: ${st.title}`);
       lines.push(`$$${st.resultLatex}$$`);
     });
+    lines.push('');
+    lines.push('% ETAPA 5 — REDUÇÃO GRÁFICA PROGRESSIVA (ÁLGEBRA DE BLOCOS)');
+    if (fullSys.graphicalReduction?.steps?.length > 0) {
+      fullSys.graphicalReduction.steps.forEach(st => {
+        lines.push(`% Passo: ${st.title} — ${st.description}`);
+        st.equations.forEach(eq => {
+          lines.push(`$$${eq.latex}$$`);
+        });
+      });
+    }
     lines.push('');
     lines.push('% ETAPA 5 E 6 — DESENVOLVIMENTO ALGÉBRICO E FUNÇÕES DE TRANSFERÊNCIA');
     fullSys.outputByInputPairs.forEach(p => {
@@ -1073,6 +1086,131 @@ export const MasonDeductionView: React.FC<MasonDeductionViewProps> = ({
         </div>
 
         {/* =================================================================
+            PAINEL DE VALIDAÇÃO TOPOLÓGICA DO CIRCUITO (8 REGRAS OBRIGATÓRIAS — SEÇÃO 7)
+            ================================================================= */}
+        {fullSys.validationReport && (
+          <section
+            style={{
+              background: 'var(--card-bg)',
+              border: `1px solid ${fullSys.validationReport.hasErrors ? 'var(--danger)' : 'var(--card-border)'}`,
+              borderRadius: '8px',
+              overflow: 'hidden'
+            }}
+          >
+            {renderSectionHeader(
+              0,
+              fullSys.validationReport.hasErrors ? 'Atenção' : 'Validação 8/8',
+              'Validação Topológica do Circuito',
+              fullSys.validationReport.hasErrors
+                ? 'Existem pendências na topologia que impedem a redução completa'
+                : 'Todas as 8 verificações topológicas foram aprovadas com sucesso',
+              fullSys.validationReport.hasErrors ? 'var(--danger)' : 'var(--success)'
+            )}
+
+            {openSteps[0] && (
+              <div
+                style={{
+                  padding: '1.1rem',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.85rem'
+                }}
+              >
+                {fullSys.directionCorrections && fullSys.directionCorrections.length > 0 && (
+                  <div
+                    style={{
+                      background: 'rgba(56, 189, 248, 0.1)',
+                      border: '1px solid rgba(56, 189, 248, 0.35)',
+                      borderRadius: '6px',
+                      padding: '0.75rem 0.95rem',
+                      fontSize: '0.8rem',
+                      color: 'var(--text)',
+                      lineHeight: 1.5
+                    }}
+                  >
+                    <strong style={{ color: 'var(--primary)' }}>ℹ️ Sentido de sinal normalizado:</strong>{' '}
+                    {fullSys.directionCorrections.length} linha(s) desenhada(s) no sentido inverso ao fluxo de sinal
+                    foi(foram) alinhada(s) automaticamente para permitir a resolução completa da malha.
+                  </div>
+                )}
+
+                {fullSys.validationReport.hasErrors && (
+                  <div
+                    style={{
+                      background: 'rgba(239, 68, 68, 0.1)',
+                      border: '1px solid var(--danger)',
+                      borderRadius: '6px',
+                      padding: '0.75rem 0.95rem',
+                      fontSize: '0.82rem',
+                      color: 'var(--danger)',
+                      lineHeight: 1.5
+                    }}
+                  >
+                    <strong>⚠️ Circuito Incompleto ou Inválido:</strong>
+                    <ul style={{ margin: '0.4rem 0 0 1.2rem', padding: 0 }}>
+                      {fullSys.validationReport.errorMessages.map((msg, idx) => (
+                        <li key={idx}>{msg}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+                    gap: '0.65rem'
+                  }}
+                >
+                  {fullSys.validationReport.checks.map(check => {
+                    const isOk = check.status === 'ok';
+                    const isWarn = check.status === 'warning';
+                    const badgeColor = isOk ? 'var(--success)' : isWarn ? '#f59e0b' : 'var(--danger)';
+                    const badgeIcon = isOk ? '✓' : isWarn ? '⚠' : '✗';
+                    return (
+                      <div
+                        key={check.id}
+                        style={{
+                          background: 'var(--code-bg)',
+                          border: '1px solid var(--card-border)',
+                          borderRadius: '6px',
+                          padding: '0.65rem 0.85rem',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '0.3rem'
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
+                          <span style={{ fontSize: '0.79rem', fontWeight: 700, color: 'var(--text)' }}>
+                            {check.label}
+                          </span>
+                          <span
+                            style={{
+                              fontSize: '0.72rem',
+                              fontWeight: 800,
+                              color: badgeColor,
+                              background: 'var(--card-bg)',
+                              padding: '0.12rem 0.4rem',
+                              borderRadius: '4px',
+                              border: '1px solid var(--card-border)'
+                            }}
+                          >
+                            {badgeIcon} {isOk ? 'Aprovado' : isWarn ? 'Atenção' : 'Incompleto'}
+                          </span>
+                        </div>
+                        <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', lineHeight: 1.45 }}>
+                          {check.detail}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </section>
+        )}
+
+        {/* =================================================================
             ETAPA 1 — IDENTIFICAÇÃO DO SISTEMA
             ================================================================= */}
         <section
@@ -1694,6 +1832,95 @@ export const MasonDeductionView: React.FC<MasonDeductionViewProps> = ({
                 reduzimos as frações racionais ao mesmo denominador (MMC) e isolamos a saída{' '}
                 <MathView math={fullSys.primaryOutput.signalLatex} inline />:
               </p>
+
+              {/* 5.1 — Redução Gráfica Progressiva com Diagramas Equivalentes (Seção 3) */}
+              {fullSys.graphicalReduction?.steps?.length > 0 && (
+                <div
+                  style={{
+                    background: 'var(--card-bg)',
+                    border: '1px solid var(--card-border)',
+                    borderRadius: '8px',
+                    padding: '1rem',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '0.85rem'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
+                    <div style={{ fontSize: '0.86rem', fontWeight: 800, color: 'var(--primary)' }}>
+                      📐 Sequência Didática — Diagramas Equivalentes e Álgebra de Blocos
+                    </div>
+                    <span style={{ fontSize: '0.73rem', color: 'var(--text-muted)' }}>
+                      {fullSys.graphicalReduction.steps.length} etapas visuais progressivas
+                    </span>
+                  </div>
+                  <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-muted)', lineHeight: 1.55 }}>
+                    Transformação passo a passo do diagrama de blocos até a redução final a um único bloco equivalente,
+                    preservando a estrita equivalência matemática e gráfica das conexões:
+                  </p>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    {fullSys.graphicalReduction.steps.map((st, sIdx) => (
+                      <div
+                        key={`gstep-${sIdx}`}
+                        style={{
+                          background: 'var(--code-bg)',
+                          border: '1px solid var(--card-border)',
+                          borderRadius: '6px',
+                          padding: '0.85rem 1rem',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '0.55rem'
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.4rem' }}>
+                          <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text)' }}>
+                            Etapa 5.{sIdx + 1} — {st.title}
+                          </span>
+                          <span style={{ fontSize: '0.69rem', background: 'var(--card-bg)', border: '1px solid var(--card-border)', padding: '0.15rem 0.45rem', borderRadius: '4px', color: 'var(--text-muted)', fontWeight: 600 }}>
+                            {st.rule}
+                          </span>
+                        </div>
+
+                        <div style={{ fontSize: '0.79rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
+                          {st.description}
+                        </div>
+
+                        {/* Diagrama Equivalente SVG */}
+                        <EquivalentDiagramRenderer
+                          diagram={st.diagram}
+                          stepTitle={`Representação Gráfica Equivalente — Etapa ${sIdx + 1}`}
+                        />
+
+                        {/* Equações da Etapa */}
+                        {st.equations.length > 0 && (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', marginTop: '0.2rem' }}>
+                            {st.equations.map((eq, eIdx) => (
+                              <div
+                                key={`eq-${eIdx}`}
+                                style={{
+                                  background: 'var(--card-bg)',
+                                  border: '1px solid var(--card-border)',
+                                  borderRadius: '5px',
+                                  padding: '0.55rem 0.8rem',
+                                  overflowX: 'auto'
+                                }}
+                              >
+                                <MathView math={eq.latex} />
+                                {eq.note && (
+                                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
+                                    💡 {eq.note}
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Ramos de transmissão direta identificados por entrada */}
               {systemData.detailedOutputPairs.map((dPair, pIdx) => (
