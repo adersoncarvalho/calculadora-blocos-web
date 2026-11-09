@@ -6,6 +6,7 @@ import { ThemeToggle } from './ThemeToggle';
 interface HeaderProps {
   onOpenShortcuts: () => void;
   onOpenBuilder: () => void;
+  onOpenCompensators: () => void;
   onOpenGuide: () => void;
   onOpenPractice: () => void;
   onOpenSimulations: () => void;
@@ -14,6 +15,7 @@ interface HeaderProps {
 export const Header: React.FC<HeaderProps> = ({
   onOpenShortcuts,
   onOpenBuilder,
+  onOpenCompensators,
   onOpenGuide,
   onOpenPractice,
   onOpenSimulations
@@ -42,6 +44,15 @@ export const Header: React.FC<HeaderProps> = ({
           <button
             type="button"
             className="btn-open-guide btn-highlight-builder"
+            onClick={onOpenCompensators}
+            style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#fff', fontWeight: 700 }}
+            aria-label="Abrir Projetista de Compensadores (Avanço/Atraso)"
+          >
+            🎛️ Compensadores (Avanço/Atraso)
+          </button>
+          <button
+            type="button"
+            className="btn-open-guide"
             onClick={onOpenBuilder}
             aria-label="Criar Meu Próprio Diagrama no Construtor Livre"
           >

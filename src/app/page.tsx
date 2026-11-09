@@ -8,8 +8,9 @@ import { PracticeSection } from '@/features/practice/PracticeSection';
 import { SimulationsGallerySection } from '@/features/simulations/SimulationsGallerySection';
 import { BuilderSection } from '@/features/builder/BuilderSection';
 import { CalculatorSection } from '@/features/calculator/CalculatorSection';
+import { CompensatorSection } from '@/features/compensator/CompensatorSection';
 
-type ActiveView = 'home' | 'builder' | 'guide' | 'practice' | 'simulations';
+type ActiveView = 'home' | 'builder' | 'guide' | 'practice' | 'simulations' | 'compensators';
 
 export default function HomePage() {
   const [view, setView] = useState<ActiveView>('home');
@@ -85,12 +86,24 @@ export default function HomePage() {
     );
   }
 
+  if (view === 'compensators') {
+    return (
+      <main style={{ padding: '16px 20px', minHeight: '100vh' }}>
+        <CompensatorSection
+          onBack={() => handleSetView('home')}
+        />
+        <ShortcutsModal isOpen={showShortcuts} onClose={() => setShowShortcuts(false)} />
+      </main>
+    );
+  }
+
   // Visualização Inicial Padrão (HOME) - Totalmente Clean
   return (
     <main style={{ padding: '16px 20px', minHeight: '100vh' }}>
       {/* Top Header Principal */}
       <Header
         onOpenShortcuts={() => setShowShortcuts(true)}
+        onOpenCompensators={() => handleSetView('compensators')}
         onOpenBuilder={() => handleSetView('builder')}
         onOpenGuide={() => handleSetView('guide')}
         onOpenPractice={() => handleSetView('practice')}
@@ -197,6 +210,27 @@ export default function HomePage() {
             <div style={{ fontSize: '0.72rem', color: 'var(--primary)', fontWeight: 700 }}>Etapa 4 • Criação</div>
             <div style={{ fontWeight: 700, fontSize: '0.96rem', margin: '4px 0', color: 'var(--text)' }}>🛠️ Construtor Livre</div>
             <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', lineHeight: '1.45' }}>Monte qualquer diagrama arbitrário e calcule a redução via Mason.</div>
+          </div>
+
+          {/* Etapa 5 • Compensadores (Avanço / Atraso) */}
+          <div
+            className="learning-step-card"
+            onClick={() => handleSetView('compensators')}
+            role="button"
+            tabIndex={0}
+            style={{
+              cursor: 'pointer',
+              background: 'linear-gradient(145deg, rgba(2,132,199,0.12) 0%, rgba(15,23,42,0.6) 100%)',
+              border: '1px solid #0284c7',
+              borderRadius: '8px',
+              padding: '16px'
+            }}
+          >
+            <div style={{ fontSize: '0.72rem', color: '#38BDF8', fontWeight: 800 }}>Etapa 5 • Projeto LGR</div>
+            <div style={{ fontWeight: 700, fontSize: '0.96rem', margin: '4px 0', color: '#F0F9FF' }}>🎛️ Compensadores (Avanço/Atraso)</div>
+            <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', lineHeight: '1.45' }}>
+              Projeto analítico passo a passo de PD Real, Atraso e Lead-Lag com gráficos e Scilab.
+            </div>
           </div>
         </div>
       </div>

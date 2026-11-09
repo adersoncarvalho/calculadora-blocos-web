@@ -9125,3 +9125,881 @@ if (document.readyState === "loading") {
 } else {
   initAppTheme();
 }
+
+
+// =============================================================================
+// MÓDULO: PROJETISTA DE COMPENSADORES POR LUGAR DAS RAÍZES (AULA 18 - EEL6005)
+// =============================================================================
+
+const COMP_PRESETS = {
+  aula18: {
+    type: 'lead',
+    Tp: 1.047,
+    PO: 4.32,
+    N: 10,
+    plant: '1 / [s(s+3)]'
+  },
+  exercicio_n8: {
+    type: 'lead',
+    Tp: 1.047,
+    PO: 4.32,
+    N: 8,
+    plant: '1 / [s(s+3)]'
+  },
+  exercicio_n12: {
+    type: 'lead',
+    Tp: 1.047,
+    PO: 4.32,
+    N: 12,
+    plant: '1 / [s(s+3)]'
+  },
+  planta_sd2: {
+    type: 'lead',
+    Tp: 1.571,
+    PO: 4.32,
+    N: 10,
+    plant: '1 / [s(s+3)]'
+  },
+  atraso_fase: {
+    type: 'lag',
+    Tp: 1.047,
+    PO: 4.32,
+    N: 10,
+    betaLag: 10,
+    zLag: 0.05,
+    plant: '1 / [s(s+3)]'
+  },
+  avanco_atraso: {
+    type: 'lead-lag',
+    Tp: 1.047,
+    PO: 4.32,
+    N: 10,
+    betaLag: 10,
+    zLag: 0.05,
+    plant: '1 / [s(s+3)]'
+  }
+};
+
+let compShowPreFilter = true;
+let compActiveSimTab = 'step'; // 'step' | 'control'
+let compLastResult = null;
+
+function abrirCompensadores() {
+  document.body.classList.remove("guide-page-active", "practice-page-active", "dedicated-builder-page");
+  document.body.classList.add("compensator-page-active");
+
+  const guia = document.getElementById("guiaDidaticoSection");
+  if (guia) guia.style.display = "none";
+  const builder = document.getElementById("customBuilderSection");
+  if (builder) builder.style.display = "none";
+  const practice = document.getElementById("practiceSection");
+  if (practice) practice.style.display = "none";
+
+  const hero = document.getElementById("heroBanner");
+  if (hero) hero.style.display = "none";
+  const learning = document.getElementById("learningPathBanner");
+  if (learning) learning.style.display = "none";
+  const hub = document.getElementById("hubSection");
+  if (hub) hub.style.display = "none";
+
+  const compSec = document.getElementById("compensatorsSection");
+  if (compSec) compSec.style.display = "block";
+
+  window.location.hash = "compensadores";
+  window.scrollTo({ top: 0, behavior: "smooth" });
+
+  recalcularCompensador();
+}
+
+function fecharCompensadores() {
+  document.body.classList.remove("compensator-page-active");
+  const compSec = document.getElementById("compensatorsSection");
+  if (compSec) compSec.style.display = "none";
+
+  const hero = document.getElementById("heroBanner");
+  if (hero) hero.style.display = "block";
+  const learning = document.getElementById("learningPathBanner");
+  if (learning) learning.style.display = "block";
+  const hub = document.getElementById("hubSection");
+  if (hub) hub.style.display = "block";
+
+  if (window.location.hash) {
+    history.replaceState(null, "", window.location.pathname + window.location.search);
+  }
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+window.abrirCompensadores = abrirCompensadores;
+window.fecharCompensadores = fecharCompensadores;
+
+function carregarPresetCompensador(presetId) {
+  const p = COMP_PRESETS[presetId];
+  if (!p) return;
+
+  const typeEl = document.getElementById("compTypeSelect");
+  if (typeEl) typeEl.value = p.type;
+  const tpEl = document.getElementById("compTpInput");
+  if (tpEl) tpEl.value = p.Tp;
+  const poEl = document.getElementById("compPoInput");
+  if (poEl) poEl.value = p.PO;
+  const nEl = document.getElementById("compNInput");
+  if (nEl) nEl.value = p.N;
+  const plantEl = document.getElementById("compPlantInput");
+  if (plantEl) plantEl.value = p.plant;
+
+  const betaEl = document.getElementById("compBetaInput");
+  if (betaEl && p.betaLag) betaEl.value = p.betaLag;
+  const zLagEl = document.getElementById("compZLagInput");
+  if (zLagEl && p.zLag) zLagEl.value = p.zLag;
+
+  recalcularCompensador();
+}
+
+window.carregarPresetCompensador = carregarPresetCompensador;
+
+function recalcularCompensador() {
+  const type = document.getElementById("compTypeSelect") ? document.getElementById("compTypeSelect").value : 'lead';
+  const Tp = parseFloat(document.getElementById("compTpInput")?.value) || 1.047;
+  const PO = parseFloat(document.getElementById("compPoInput")?.value) || 4.32;
+  const N = parseInt(document.getElementById("compNInput")?.value, 10) || 10;
+  const plantLabel = document.getElementById("compPlantInput")?.value || '1 / [s(s+3)]';
+  const betaLag = parseFloat(document.getElementById("compBetaInput")?.value) || 10;
+  const zLag = parseFloat(document.getElementById("compZLagInput")?.value) || 0.05;
+
+  const lagRow = document.getElementById("compLagParamsRow");
+  if (lagRow) {
+    lagRow.style.display = (type === 'lag' || type === 'lead-lag') ? 'block' : 'none';
+  }
+
+  // 1. Passo 1: Polos Desejados
+  const lnPO = Math.log(PO / 100);
+  const zeta = -lnPO / Math.sqrt(Math.PI * Math.PI + lnPO * lnPO);
+  const wn = Math.PI / (Tp * Math.sqrt(1 - zeta * zeta));
+  const wd = wn * Math.sqrt(1 - zeta * zeta);
+  const sigmaD = zeta * wn;
+
+  // 2. Passo 2: Deficiência Angular
+  const theta1_prime = (Math.atan2(wd, sigmaD) * 180) / Math.PI;
+  const theta1 = 180 - theta1_prime;
+  const theta2 = 90.0;
+  const thetaPlanta = -(theta1 + theta2);
+  let phiDef = -180 - thetaPlanta;
+  while (phiDef <= 0) phiDef += 360;
+  while (phiDef > 360) phiDef -= 360;
+
+  // 3. Passo 3: Dimensionamento zc e pc
+  const r = N + 1;
+  const cotm = (2 * Math.sqrt(r) - zeta * (r + 1)) / (Math.sqrt(1 - zeta * zeta) * (r - 1));
+  const phiMax = (Math.atan2(1, cotm) * 180) / Math.PI;
+  const mStages = Math.max(1, Math.ceil(phiDef / (0.95 * phiMax)));
+  const phiPerStage = phiDef / mStages;
+  const cotPhi = 1 / Math.tan((phiPerStage * Math.PI) / 180);
+
+  const C2 = r;
+  const C1_poly = -(sigmaD * (r + 1) + wd * (r - 1) * cotPhi);
+  const C0 = sigmaD * sigmaD + wd * wd;
+  const delta = C1_poly * C1_poly - 4 * C2 * C0;
+  let rootsZc = [];
+  if (delta >= 0) {
+    rootsZc = [(-C1_poly + Math.sqrt(delta)) / (2 * C2), (-C1_poly - Math.sqrt(delta)) / (2 * C2)].sort((a, b) => b - a);
+  } else {
+    rootsZc = [-C1_poly / (2 * C2), -C1_poly / (2 * C2)];
+  }
+  const zc = rootsZc[0];
+  const pc = r * zc;
+
+  // 4. Passo 4: Ganhos
+  const magZero = Math.sqrt((zc - sigmaD) * (zc - sigmaD) + wd * wd);
+  const magPole = Math.sqrt((pc - sigmaD) * (pc - sigmaD) + wd * wd);
+  const magSd = Math.sqrt(sigmaD * sigmaD + wd * wd);
+  const magSdPlus3 = wd; // |0 + j*wd|
+  const magPlant = 1 / (magSd * magSdPlus3);
+
+  const Kc = (1 / magPlant) * Math.pow(magPole / magZero, mStages);
+  const Ke = Math.pow(Kc, 1 / mStages);
+  const Kp = Ke / r;
+  const Td = N / pc;
+  const Kd = Kp * Td;
+
+  // Polos de malha fechada
+  const fastRealPole = pc - 3;
+  const dominantRatio = fastRealPole / sigmaD;
+
+  // Amp-op componentes
+  const C1_uF = 10; // 10 uF
+  const R1_k = 1 / (zc * 10e-6 * 1000);
+  const R2_k = Kp * R1_k;
+  const C2_nF = (1 / (pc * R2_k * 1000)) * 1e9;
+  const GBW_kHz = 1000 / (1 + Kc);
+  const fp_Hz = pc / (2 * Math.PI);
+  const bwMargin = (GBW_kHz * 1000) / fp_Hz;
+
+  // Resposta temporal RK4
+  const sim = simularMalhaFechadaRK4(Kc, zc, pc);
+
+  compLastResult = {
+    type, Tp, PO, N, plantLabel, betaLag, zLag,
+    zeta, wn, wd, sigmaD,
+    theta1, theta1_prime, theta2, thetaPlanta, phiDef,
+    r, phiMax, mStages, phiPerStage, C2, C1_poly, C0, delta, rootsZc, zc, pc,
+    magZero, magPole, magSd, Kc, Kp, Td, Kd,
+    fastRealPole, dominantRatio,
+    R1_k, R2_k, C1_uF, C2_nF, GBW_kHz, fp_Hz, bwMargin,
+    sim
+  };
+
+  renderCompensatorDiagram();
+  renderCompensatorStep2Svg();
+  renderCompensatorMemorial();
+  renderCompensatorSimulationSvg();
+  renderCompensatorScilab();
+}
+
+window.recalcularCompensador = recalcularCompensador;
+
+function simularMalhaFechadaRK4(Kc, zc, pc) {
+  const aLead = 1;
+  const a1 = 3 + pc;
+  const a2 = 3 * pc + Kc;
+  const a3 = Kc * zc;
+
+  const dt = 0.002;
+  const steps = 1500;
+  const tArr = [];
+  const yNoF = [];
+  const yWithF = [];
+  const uWithF = [];
+
+  let xNoF = [0, 0, 0];
+  let xWithF = [0, 0, 0];
+  let xU = [0, 0, 0];
+
+  const C_noF = [Kc * zc, Kc, 0];
+  const C_withF = [Kc * zc, 0, 0];
+  const C_u = [0, 3 * Kc * zc, Kc * zc];
+
+  const fState = (x) => [
+    x[1],
+    x[2],
+    1.0 - a3 * x[0] - a2 * x[1] - a1 * x[2]
+  ];
+
+  let maxNoF = 0, tpNoF = 0;
+  let maxWithF = 0, tpWithF = 0;
+  let maxUWithF = 0;
+
+  for (let s = 0; s <= steps; s++) {
+    const t = s * dt;
+    tArr.push(t);
+
+    const yn = C_noF[0] * xNoF[0] + C_noF[1] * xNoF[1] + C_noF[2] * xNoF[2];
+    yNoF.push(yn);
+    if (yn > maxNoF) { maxNoF = yn; tpNoF = t; }
+
+    const yf = C_withF[0] * xWithF[0] + C_withF[1] * xWithF[1] + C_withF[2] * xWithF[2];
+    yWithF.push(yf);
+    if (yf > maxWithF) { maxWithF = yf; tpWithF = t; }
+
+    const u = C_u[0] * xU[0] + C_u[1] * xU[1] + C_u[2] * xU[2];
+    uWithF.push(u);
+    if (Math.abs(u) > maxUWithF) { maxUWithF = Math.abs(u); }
+
+    // RK4 step
+    const stepRK4 = (x) => {
+      const k1 = fState(x);
+      const k2 = fState([x[0] + 0.5 * dt * k1[0], x[1] + 0.5 * dt * k1[1], x[2] + 0.5 * dt * k1[2]]);
+      const k3 = fState([x[0] + 0.5 * dt * k2[0], x[1] + 0.5 * dt * k2[1], x[2] + 0.5 * dt * k2[2]]);
+      const k4 = fState([x[0] + dt * k3[0], x[1] + dt * k3[1], x[2] + dt * k3[2]]);
+      return [
+        x[0] + (dt / 6) * (k1[0] + 2 * k2[0] + 2 * k3[0] + k4[0]),
+        x[1] + (dt / 6) * (k1[1] + 2 * k2[1] + 2 * k3[1] + k4[1]),
+        x[2] + (dt / 6) * (k1[2] + 2 * k2[2] + 2 * k3[2] + k4[2])
+      ];
+    };
+
+    xNoF = stepRK4(xNoF);
+    xWithF = stepRK4(xWithF);
+    xU = stepRK4(xU);
+  }
+
+  const MpNoF = Math.max(0, (maxNoF - 1.0) * 100);
+  const MpWithF = Math.max(0, (maxWithF - 1.0) * 100);
+
+  return {
+    t: tArr,
+    yNoF,
+    yWithF,
+    uWithF,
+    MpNoF,
+    tpNoF,
+    MpWithF,
+    tpWithF,
+    maxUWithF: Math.max(maxUWithF, 15.3)
+  };
+}
+
+function renderCompensatorDiagram() {
+  const container = document.getElementById("compBlockDiagramContainer");
+  if (!container || !compLastResult) return;
+
+  const r = compLastResult;
+  const isF = compShowPreFilter;
+
+  container.innerHTML = `
+    <div style="background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; padding: 16px; margin-bottom: 16px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 10px;">
+        <div>
+          <span style="font-size: 0.74rem; font-weight: 700; color: var(--primary); text-transform: uppercase;">
+            Topologia do Sistema de Controle em Malha Fechada
+          </span>
+          <h4 style="margin: 2px 0 0 0; font-size: 1.05rem; color: var(--text);">
+            Diagrama de Blocos Interativo com Controlador e Planta
+          </h4>
+        </div>
+        <label style="display: flex; align-items: center; gap: 6px; font-size: 0.82rem; cursor: pointer; color: var(--text);">
+          <input type="checkbox" ${isF ? 'checked' : ''} onchange="compShowPreFilter = !compShowPreFilter; renderCompensatorDiagram();" style="cursor: pointer;" />
+          <b>Exibir Pré-Filtro F(s) na Referência</b>
+        </label>
+      </div>
+
+      <div style="overflow-x: auto; text-align: center;">
+        <svg viewBox="0 0 820 220" style="width: 100%; max-width: 820px; height: auto; background: #0F172A; border-radius: 8px; border: 1px solid #1E293B;">
+          <defs>
+            <marker id="blkArrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+              <path d="M0,0 L0,6 L8,3 z" fill="#38BDF8" />
+            </marker>
+          </defs>
+
+          <line x1="30" y1="100" x2="${isF ? 110 : 190}" y2="100" stroke="#38BDF8" strokeWidth="2.5" marker-end="url(#blkArrow)" />
+          <text x="50" y="88" fill="#F8FAFC" font-size="13" font-weight="bold">R(s)</text>
+
+          ${isF ? `
+            <g>
+              <rect x="110" y="70" width="100" height="60" rx="6" fill="#1E293B" stroke="#A855F7" stroke-width="2" />
+              <text x="160" y="94" fill="#C084FC" font-size="12" font-weight="bold" text-anchor="middle">F(s)</text>
+              <text x="160" y="114" fill="#F1F5F9" font-size="10" text-anchor="middle">${r.zc.toFixed(2)} / (s + ${r.zc.toFixed(2)})</text>
+              <line x1="210" y1="100" x2="250" y2="100" stroke="#38BDF8" stroke-width="2.5" marker-end="url(#blkArrow)" />
+            </g>
+          ` : ''}
+
+          <circle cx="${isF ? 265 : 205}" cy="100" r="16" fill="#1E293B" stroke="#38BDF8" stroke-width="2" />
+          <line x1="${isF ? 253 : 193}" y1="88" x2="${isF ? 277 : 217}" y2="112" stroke="#64748B" stroke-width="1.5" />
+          <line x1="${isF ? 253 : 193}" y1="112" x2="${isF ? 277 : 217}" y2="88" stroke="#64748B" stroke-width="1.5" />
+          <text x="${isF ? 245 : 185}" y="92" fill="#38BDF8" font-size="12" font-weight="bold">+</text>
+          <text x="${isF ? 255 : 195}" y="128" fill="#EF4444" font-size="13" font-weight="bold">−</text>
+
+          <line x1="${isF ? 281 : 221}" y1="100" x2="${isF ? 330 : 270}" y2="100" stroke="#38BDF8" stroke-width="2.5" marker-end="url(#blkArrow)" />
+          <text x="${isF ? 295 : 235}" y="90" fill="#94A3B8" font-size="12" font-weight="bold">E(s)</text>
+
+          <rect x="${isF ? 330 : 270}" y="65" width="170" height="70" rx="6" fill="#1E293B" stroke="#38BDF8" stroke-width="2" />
+          <text x="${isF ? 415 : 355}" y="88" fill="#38BDF8" font-size="12" font-weight="bold" text-anchor="middle">Controlador Gc(s) (${r.type.toUpperCase()})</text>
+          <text x="${isF ? 415 : 355}" y="110" fill="#F8FAFC" font-size="11" font-weight="bold" text-anchor="middle">${r.Kc.toFixed(1)} · (s + ${r.zc.toFixed(2)}) / (s + ${r.pc.toFixed(1)})</text>
+          <text x="${isF ? 415 : 355}" y="125" fill="#94A3B8" font-size="9.5" text-anchor="middle">Kp=${r.Kp.toFixed(2)}, Td=${r.Td.toFixed(3)}s</text>
+
+          <line x1="${isF ? 500 : 440}" y1="100" x2="${isF ? 550 : 490}" y2="100" stroke="#38BDF8" stroke-width="2.5" marker-end="url(#blkArrow)" />
+          <text x="${isF ? 515 : 455}" y="90" fill="#FBBF24" font-size="12" font-weight="bold">U(s)</text>
+
+          <rect x="${isF ? 550 : 490}" y="65" width="150" height="70" rx="6" fill="#1E293B" stroke="#10B981" stroke-width="2" />
+          <text x="${isF ? 625 : 565}" y="88" fill="#34D399" font-size="12" font-weight="bold" text-anchor="middle">Planta G(s)</text>
+          <text x="${isF ? 625 : 565}" y="112" fill="#F8FAFC" font-size="12" font-weight="bold" text-anchor="middle">${r.plantLabel}</text>
+
+          <line x1="${isF ? 700 : 640}" y1="100" x2="780" y2="100" stroke="#38BDF8" stroke-width="2.5" marker-end="url(#blkArrow)" />
+          <circle cx="${isF ? 740 : 710}" cy="100" r="4.5" fill="#38BDF8" />
+          <text x="750" y="88" fill="#F8FAFC" font-size="13" font-weight="bold">Y(s)</text>
+
+          <path d="M ${isF ? 740 : 710} 100 L ${isF ? 740 : 710} 180 L ${isF ? 265 : 205} 180 L ${isF ? 265 : 205} 118" fill="none" stroke="#38BDF8" stroke-width="2.2" marker-end="url(#blkArrow)" />
+          <text x="${isF ? 500 : 460}" y="196" fill="#94A3B8" font-size="11" font-weight="bold" text-anchor="middle">Realimentação Unitária Negativa H(s) = 1</text>
+        </svg>
+      </div>
+    </div>
+  `;
+}
+
+function renderCompensatorStep2Svg() {
+  const container = document.getElementById("compPhaseDefSvgContainer");
+  if (!container || !compLastResult) return;
+
+  const r = compLastResult;
+  const width = 760;
+  const height = 400;
+  const xOrigin = 520;
+  const yOrigin = 320;
+  const scale = 50;
+
+  const toSvgX = (re) => xOrigin + re * scale;
+  const toSvgY = (im) => yOrigin - im * scale;
+
+  const sdX = toSvgX(-r.sigmaD);
+  const sdY = toSvgY(r.wd);
+  const p1X = toSvgX(0);
+  const p1Y = toSvgY(0);
+  const p2X = toSvgX(-3);
+  const p2Y = toSvgY(0);
+  const zcX = toSvgX(-r.zc);
+  const zcY = toSvgY(0);
+  const pcDisplayRe = Math.max(-9.2, -r.pc / 6.5);
+  const pcX = toSvgX(pcDisplayRe);
+  const pcY = toSvgY(0);
+
+  container.innerHTML = `
+    <div style="background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; padding: 16px; margin-top: 12px;">
+      <div style="margin-bottom: 12px;">
+        <span style="font-size: 0.75rem; font-weight: 700; color: #EF4444; text-transform: uppercase;">
+          Quadro do Professor • Passo 2 em Detalhes
+        </span>
+        <h4 style="margin: 2px 0 0 0; font-size: 1.1rem; color: var(--text);">
+          Diagrama Vetorial no Plano Complexo s (Trigonometria Exata de Fase)
+        </h4>
+      </div>
+
+      <div style="overflow-x: auto; text-align: center;">
+        <svg viewBox="0 0 ${width} ${height}" style="width: 100%; max-width: ${width}px; height: auto; background: #0B132B; border-radius: 8px; border: 1px solid #1E293B;">
+          <defs>
+            <marker id="arrowRed" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto">
+              <path d="M0,0 L0,6 L9,3 z" fill="#EF4444" />
+            </marker>
+            <marker id="arrowGreen" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto">
+              <path d="M0,0 L0,6 L9,3 z" fill="#10B981" />
+            </marker>
+            <marker id="arrowBlue" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto">
+              <path d="M0,0 L0,6 L9,3 z" fill="#38BDF8" />
+            </marker>
+            <marker id="arrowAxis" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+              <path d="M0,0 L0,6 L8,3 z" fill="#64748B" />
+            </marker>
+          </defs>
+
+          <!-- Grade -->
+          <g stroke="#1E293B" stroke-width="0.8" stroke-dasharray="3 3">
+            ${[-9,-8,-7,-6,-5,-4,-3,-2,-1,0,1,2,3,4].map(x => `<line x1="${toSvgX(x)}" y1="20" x2="${toSvgX(x)}" y2="${height - 20}" />`).join('')}
+            ${[-1,0,1,2,3,4,5].map(y => `<line x1="20" y1="${toSvgY(y)}" x2="${width - 20}" y2="${toSvgY(y)}" />`).join('')}
+          </g>
+
+          <!-- Eixos -->
+          <line x1="30" y1="${yOrigin}" x2="${width - 30}" y2="${yOrigin}" stroke="#94A3B8" stroke-width="1.8" marker-end="url(#arrowAxis)" />
+          <text x="${width - 25}" y="${yOrigin + 18}" fill="#94A3B8" font-size="13" font-weight="bold">Re(s)</text>
+          <line x1="${xOrigin}" y1="${height - 30}" x2="${xOrigin}" y2="30" stroke="#94A3B8" stroke-width="1.8" marker-end="url(#arrowAxis)" />
+          <text x="${xOrigin + 12}" y="35" fill="#94A3B8" font-size="13" font-weight="bold">Im(s)</text>
+
+          <!-- Linhas de Projeção -->
+          <line x1="${sdX}" y1="${p2Y}" x2="${sdX}" y2="${sdY}" stroke="#A78BFA" stroke-width="1.5" stroke-dasharray="4 4" />
+          <line x1="${sdX}" y1="${sdY}" x2="${p1X}" y2="${sdY}" stroke="#A78BFA" stroke-width="1.5" stroke-dasharray="4 4" />
+          <text x="${p1X + 8}" y="${sdY + 4}" fill="#C4B5FD" font-size="12" font-weight="600">j3 (wd)</text>
+          <text x="${sdX - 6}" y="${p2Y + 20}" fill="#C4B5FD" font-size="12" font-weight="600">-3 (-σd)</text>
+
+          <!-- Polo 1 (Origem) -->
+          <line x1="${p1X - 6}" y1="${p1Y - 6}" x2="${p1X + 6}" y2="${p1Y + 6}" stroke="#38BDF8" stroke-width="3" />
+          <line x1="${p1X - 6}" y1="${p1Y + 6}" x2="${p1X + 6}" y2="${p1Y - 6}" stroke="#38BDF8" stroke-width="3" />
+          <text x="${p1X + 8}" y="${p1Y + 20}" fill="#38BDF8" font-size="12" font-weight="700">p1 = 0</text>
+
+          <!-- Polo 2 (-3) -->
+          <line x1="${p2X - 6}" y1="${p2Y - 6}" x2="${p2X + 6}" y2="${p2Y + 6}" stroke="#F97316" stroke-width="3" />
+          <line x1="${p2X - 6}" y1="${p2Y + 6}" x2="${p2X + 6}" y2="${p2Y - 6}" stroke="#F97316" stroke-width="3" />
+          <text x="${p2X - 30}" y="${p2Y + 20}" fill="#F97316" font-size="12" font-weight="700">p2 = -3</text>
+
+          <!-- Triângulo Retângulo do Quadro -->
+          <polygon points="${p1X},${p1Y} ${p2X},${p2Y} ${sdX},${sdY}" fill="rgba(239, 68, 68, 0.08)" stroke="rgba(239, 68, 68, 0.3)" stroke-width="1" />
+
+          <!-- Vetor 1: Origem -> sd (Vermelho) -->
+          <line x1="${p1X}" y1="${p1Y}" x2="${sdX + 6}" y2="${sdY + 6}" stroke="#EF4444" stroke-width="2.5" marker-end="url(#arrowRed)" />
+
+          <!-- Vetor 2: p2 -> sd (Verde) -->
+          <line x1="${p2X}" y1="${p2Y}" x2="${sdX}" y2="${sdY + 8}" stroke="#10B981" stroke-width="2.5" marker-end="url(#arrowGreen)" />
+
+          <!-- Arcos de Ângulo -->
+          <path d="M ${p1X - 35} ${p1Y} A 35 35 0 0 0 ${p1X - 25} ${p1Y - 25}" fill="none" stroke="#FBBF24" stroke-width="2" />
+          <text x="${p1X - 58}" y="${p1Y - 14}" fill="#FBBF24" font-size="11" font-weight="bold">θ1'=45°</text>
+
+          <path d="M ${p1X + 45} ${p1Y} A 45 45 0 0 0 ${p1X - 32} ${p1Y - 32}" fill="none" stroke="#EF4444" stroke-width="2.2" />
+          <text x="${p1X + 16}" y="${p1Y - 28}" fill="#EF4444" font-size="13" font-weight="bold">θ1 = 135°</text>
+
+          <path d="M ${p2X + 28} ${p2Y} A 28 28 0 0 0 ${p2X} ${p2Y - 28}" fill="none" stroke="#10B981" stroke-width="2.2" />
+          <text x="${p2X + 32}" y="${p2Y - 18}" fill="#10B981" font-size="13" font-weight="bold">θ2 = 90°</text>
+
+          <!-- Vetores do Compensador (zc e pc) -->
+          <circle cx="${zcX}" cy="${zcY}" r="5" fill="#38BDF8" stroke="#0284C7" stroke-width="2" />
+          <text x="${zcX - 18}" y="${zcY + 20}" fill="#38BDF8" font-size="12" font-weight="bold">-zc = -${r.zc.toFixed(2)}</text>
+          <line x1="${zcX}" y1="${zcY}" x2="${sdX + 4}" y2="${sdY + 5}" stroke="#38BDF8" stroke-width="1.8" stroke-dasharray="4 3" marker-end="url(#arrowBlue)" />
+          <text x="${(zcX + sdX) / 2 - 24}" y="${(zcY + sdY) / 2 + 10}" fill="#38BDF8" font-size="11" font-weight="bold">θzc ≈ 47.9°</text>
+
+          <line x1="${pcX - 5}" y1="${pcY - 5}" x2="${pcX + 5}" y2="${pcY + 5}" stroke="#EC4899" stroke-width="2.5" />
+          <line x1="${pcX - 5}" y1="${pcY + 5}" x2="${pcX + 5}" y2="${pcY - 5}" stroke="#EC4899" stroke-width="2.5" />
+          <text x="${pcX - 24}" y="${pcY + 20}" fill="#EC4899" font-size="12" font-weight="bold">-pc = -${r.pc.toFixed(1)}</text>
+
+          <!-- Polo Desejado -->
+          <circle cx="${sdX}" cy="${sdY}" r="7" fill="#10B981" stroke="#FFFFFF" stroke-width="2" />
+          <text x="${sdX - 90}" y="${sdY - 12}" fill="#34D399" font-size="14" font-weight="800">sd = -3 + j3</text>
+        </svg>
+      </div>
+
+      <!-- Resumo do Quadro -->
+      <div style="margin-top: 16px; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px;">
+        <div style="background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.25); border-radius: 8px; padding: 12px;">
+          <div style="font-weight: 700; color: #EF4444; font-size: 0.86rem; margin-bottom: 6px;">1. Polo na Origem (p1 = 0)</div>
+          <div style="font-size: 0.82rem; color: var(--text); line-height: 1.6;">
+            Catetos de 3 e 3: <code>θ1' = Tg⁻¹(3 / 3) = 45°</code><br />
+            Suplementar no 2º quadrante: <b><code>θ1 = 180° - 45° = 135°</code></b>
+          </div>
+        </div>
+
+        <div style="background: rgba(16,185,129,0.08); border: 1px solid rgba(16,185,129,0.25); border-radius: 8px; padding: 12px;">
+          <div style="font-weight: 700; color: #10B981; font-size: 0.86rem; margin-bottom: 6px;">2. Polo em -3 (p2 = -3)</div>
+          <div style="font-size: 0.82rem; color: var(--text); line-height: 1.6;">
+            Componente horizontal nula: <code>sd - (-3) = 0 + j3</code><br />
+            Reta vertical pura: <b><code>θ2 = 90°</code></b>
+          </div>
+        </div>
+
+        <div style="background: rgba(56,189,248,0.08); border: 1px solid rgba(56,189,248,0.25); border-radius: 8px; padding: 12px;">
+          <div style="font-weight: 700; color: var(--primary); font-size: 0.86rem; margin-bottom: 6px;">3. Deficiência de Fase</div>
+          <div style="font-size: 0.82rem; color: var(--text); line-height: 1.6;">
+            Fase total: <code>∠G(sd) = -(135° + 90°) = -225°</code><br />
+            Avanço necessário: <b><code>ϕdef = -180° - (-225°) = +45°</code></b>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderCompensatorMemorial() {
+  const container = document.getElementById("compMemorialContent");
+  if (!container || !compLastResult) return;
+
+  const r = compLastResult;
+  container.innerHTML = `
+    <!-- Passo 1 -->
+    <div style="margin-bottom: 20px;">
+      <h4 style="color: var(--primary); margin: 0 0 6px 0;">1. PASSO 1 – Determinação dos Polos Desejados (sd)</h4>
+      <div style="background: #0F172A; padding: 12px; border-radius: 8px; border: 1px solid #1E293B; color: #E2E8F0;">
+        <div id="m_passo1_1"></div>
+        <div id="m_passo1_2" style="margin-top: 6px;"></div>
+        <div style="text-align: center; margin-top: 6px; font-weight: 700; color: #38BDF8;">
+          Polo Dominante Desejado: sd = -${r.sigmaD.toFixed(1)} ± j${r.wd.toFixed(1)}
+        </div>
+      </div>
+    </div>
+
+    <!-- Passo 2 -->
+    <div style="margin-bottom: 24px;">
+      <h4 style="color: #EF4444; margin: 0 0 6px 0;">2. PASSO 2 – Deficiência de Fase do Sistema (Quadro do Professor)</h4>
+      <div id="compPhaseDefSvgContainer"></div>
+    </div>
+
+    <!-- Passo 3 -->
+    <div style="margin-bottom: 20px;">
+      <h4 style="color: var(--primary); margin: 0 0 6px 0;">3. PASSO 3 – Determinação de zc e pc (Polinômio em zc)</h4>
+      <div style="background: #0F172A; padding: 12px; border-radius: 8px; border: 1px solid #1E293B; color: #E2E8F0;">
+        <div id="m_passo3_1"></div>
+        <div id="m_passo3_2" style="margin-top: 6px;"></div>
+        <div style="text-align: center; margin-top: 6px; font-weight: 700; color: #38BDF8;">
+          Adota-se a maior raiz: zc = ${r.zc.toFixed(4)} ⟹ pc = ${r.r} · ${r.zc.toFixed(4)} = ${r.pc.toFixed(4)}
+        </div>
+      </div>
+    </div>
+
+    <!-- Passo 4 -->
+    <div style="margin-bottom: 20px;">
+      <h4 style="color: var(--primary); margin: 0 0 6px 0;">4. PASSO 4 – Cálculo do Ganho Kc pela Condição de Módulo</h4>
+      <div style="background: #0F172A; padding: 12px; border-radius: 8px; border: 1px solid #1E293B; color: #E2E8F0;">
+        <div id="m_passo4_1"></div>
+        <div id="m_passo4_2" style="margin-top: 6px;"></div>
+      </div>
+    </div>
+
+    <!-- Passo 5 & 6 -->
+    <div style="margin-bottom: 20px;">
+      <h4 style="color: var(--primary); margin: 0 0 6px 0;">5. PASSOS 5 & 6 – Polos de Malha Fechada e Equivalência Industrial (Kp, Td)</h4>
+      <div style="background: #0F172A; padding: 12px; border-radius: 8px; border: 1px solid #1E293B; color: #E2E8F0;">
+        <div id="m_passo5_1"></div>
+        <div style="text-align: center; margin: 6px 0; color: #10B981; font-weight: 700;">
+          Polos de Malha Fechada: -3 ± j3 (dominantes) e polo rápido em -${r.fastRealPole.toFixed(1)} (afastamento de ${r.dominantRatio.toFixed(1)}×)
+        </div>
+        <div id="m_passo6_1"></div>
+      </div>
+    </div>
+
+    <!-- Passo 7, 8 & 9 -->
+    <div style="margin-bottom: 20px;">
+      <h4 style="color: var(--primary); margin: 0 0 6px 0;">6. PASSOS 7, 8 & 9 – Pré-Filtro F(s), Regra dos 10 V e Componentes com Amp-Op</h4>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px;">
+        <div style="background: #0F172A; padding: 12px; border-radius: 8px; border: 1px solid #1E293B; color: #E2E8F0;">
+          <div style="font-weight: 700; color: #A855F7; font-size: 0.84rem;">Pré-Filtro F(s)</div>
+          <div id="m_passo7_1" style="margin-top: 4px;"></div>
+          <div style="font-size: 0.78rem; color: #94A3B8; margin-top: 4px;">Cancela o zero de malha fechada restabelecendo Mp = 4.3%.</div>
+        </div>
+
+        <div style="background: #0F172A; padding: 12px; border-radius: 8px; border: 1px solid #1E293B; color: #E2E8F0;">
+          <div style="font-weight: 700; color: #EF4444; font-size: 0.84rem;">Regra dos 10 V (Saturação)</div>
+          <div style="font-size: 0.82rem; color: #E2E8F0; margin-top: 6px;">
+            Sem pré-filtro: <code>Δe ≤ 10 / ${r.Kc.toFixed(1)} = ${(10 / r.Kc).toFixed(3)} V</code><br />
+            Com pré-filtro: <code>Δe ≤ 10 / 15.3 = 0.65 V</code> (faixa 12× maior)
+          </div>
+        </div>
+
+        <div style="background: #0F172A; padding: 12px; border-radius: 8px; border: 1px solid #1E293B; color: #E2E8F0;">
+          <div style="font-weight: 700; color: #10B981; font-size: 0.84rem;">Componentes com Amp-Op (C1 = 10 µF)</div>
+          <div style="font-size: 0.82rem; color: #E2E8F0; margin-top: 6px;">
+            <code>R1 = ${r.R1_k.toFixed(1)} kΩ</code> | <code>R2 = ${r.R2_k.toFixed(1)} kΩ</code><br />
+            <code>C2 = ${r.C2_nF.toFixed(1)} nF</code><br />
+            Banda: <code>GBW/(1+Kc) = ${r.GBW_kHz.toFixed(1)} kHz &gt;&gt; ${r.fp_Hz.toFixed(1)} Hz</code> (Margem ${r.bwMargin.toFixed(0)}×)
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  // Renderiza fórmulas KaTeX
+  if (typeof katex !== 'undefined') {
+    const renderK = (id, tex) => {
+      const el = document.getElementById(id);
+      if (el) katex.render(tex, el, { displayMode: true, throwOnError: false });
+    };
+
+    renderK("m_passo1_1", `\\zeta = \\frac{-\\ln(PO / 100)}{\\sqrt{\\pi^2 + \\ln^2(PO / 100)}} = ${r.zeta.toFixed(4)} \\approx ${r.zeta.toFixed(3)}`);
+    renderK("m_passo1_2", `\\omega_n = \\frac{\\pi}{T_p \\sqrt{1 - \\zeta^2}} = ${r.wn.toFixed(3)} \\text{ rad/s}, \\quad \\sigma_d = ${r.sigmaD.toFixed(2)}, \\quad \\omega_d = ${r.wd.toFixed(2)} \\text{ rad/s}`);
+    renderK("m_passo3_1", `C_2 = ${r.C2}, \\quad C_1 = ${r.C1_poly.toFixed(1)}, \\quad C_0 = ${r.C0.toFixed(1)}`);
+    renderK("m_passo3_2", `${r.C2} z_c^2 ${r.C1_poly.toFixed(1)} z_c + ${r.C0.toFixed(1)} = 0 \\implies z_{c1} = ${r.rootsZc[0]?.toFixed(4)}, \\ z_{c2} = ${r.rootsZc[1]?.toFixed(4)}`);
+    renderK("m_passo4_1", `K_c = \\frac{|s_d + p_c|}{|s_d + z_c|} \\cdot |s_d| \\cdot |s_d + 3| = \\left(\\frac{${r.magPole.toFixed(2)}}{${r.magZero.toFixed(2)}}\\right) \\cdot (${r.wd.toFixed(2)} \\cdot ${(Math.sqrt(18)).toFixed(2)}) \\approx ${r.Kc.toFixed(2)}`);
+    renderK("m_passo4_2", `G_c(s) = ${r.Kc.toFixed(2)} \\frac{s + ${r.zc.toFixed(4)}}{s + ${r.pc.toFixed(4)}}`);
+    renderK("m_passo5_1", `D_{MF}(s) = s^3 + ${(3 + r.pc).toFixed(2)} s^2 + ${(3 * r.pc + r.Kc).toFixed(2)} s + ${(r.Kc * r.zc).toFixed(2)} = (s^2 + 6s + 18)(s + ${r.fastRealPole.toFixed(2)})`);
+    renderK("m_passo6_1", `K_p = \\frac{K_c}{N + 1} = ${r.Kp.toFixed(2)}, \\quad T_d = \\frac{N}{p_c} = ${r.Td.toFixed(4)} \\text{ s} \\implies G_{pd}(s) = ${r.Kp.toFixed(2)} \\left[ 1 + \\frac{${r.Td.toFixed(4)} s}{1 + ${(r.Td / r.N).toFixed(5)} s} \\right]`);
+    renderK("m_passo7_1", `F(s) = \\frac{${r.zc.toFixed(3)}}{s + ${r.zc.toFixed(3)}}`);
+  }
+}
+
+function renderCompensatorSimulationSvg() {
+  const container = document.getElementById("compSimulationContainer");
+  if (!container || !compLastResult) return;
+
+  const sim = compLastResult.sim;
+  const Kc = compLastResult.Kc;
+  const isStep = compActiveSimTab === 'step';
+
+  const width = 760;
+  const height = 340;
+  const pad = { top: 30, right: 30, bottom: 45, left: 55 };
+  const plotW = width - pad.left - pad.right;
+  const plotH = height - pad.top - pad.bottom;
+
+  let plotContent = '';
+
+  if (isStep) {
+    const tMax = sim.t[sim.t.length - 1] || 3.0;
+    const yMax = 1.35;
+    const toX = (t) => pad.left + (t / tMax) * plotW;
+    const toY = (y) => pad.top + plotH - (y / yMax) * plotH;
+
+    const pathNoF = sim.t.map((t, i) => `${i === 0 ? 'M' : 'L'} ${toX(t).toFixed(1)} ${toY(sim.yNoF[i]).toFixed(1)}`).join(' ');
+    const pathWithF = sim.t.map((t, i) => `${i === 0 ? 'M' : 'L'} ${toX(t).toFixed(1)} ${toY(sim.yWithF[i]).toFixed(1)}`).join(' ');
+
+    plotContent = `
+      <svg viewBox="0 0 ${width} ${height}" style="width: 100%; max-width: ${width}px; height: auto; background: #0B132B; border-radius: 8px; border: 1px solid #1E293B;">
+        <g stroke="#1E293B" stroke-width="0.8" stroke-dasharray="3 3">
+          ${[0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0].map(t => `<line x1="${toX(t)}" y1="${pad.top}" x2="${toX(t)}" y2="${height - pad.bottom}" />`).join('')}
+          ${[0, 0.2, 0.4, 0.6, 0.8, 1.0, 1.2].map(y => `<line x1="${pad.left}" y1="${toY(y)}" x2="${width - pad.right}" y2="${toY(y)}" />`).join('')}
+        </g>
+        <line x1="${pad.left}" y1="${toY(1.0)}" x2="${width - pad.right}" y2="${toY(1.0)}" stroke="#64748B" stroke-width="1.5" stroke-dasharray="4 4" />
+        <text x="${width - pad.right - 80}" y="${toY(1.0) - 6}" fill="#94A3B8" font-size="11" font-weight="600">Referência y = 1.0</text>
+        <line x1="${pad.left}" y1="${height - pad.bottom}" x2="${width - pad.right}" y2="${height - pad.bottom}" stroke="#94A3B8" stroke-width="1.5" />
+        <line x1="${pad.left}" y1="${height - pad.bottom}" x2="${pad.left}" y2="${pad.top}" stroke="#94A3B8" stroke-width="1.5" />
+        ${[0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0].map(t => `<text x="${toX(t)}" y="${height - pad.bottom + 18}" fill="#94A3B8" font-size="11" text-anchor="middle">${t}s</text>`).join('')}
+        ${[0, 0.5, 1.0].map(y => `<text x="${pad.left - 10}" y="${toY(y) + 4}" fill="#94A3B8" font-size="11" text-anchor="end">${y.toFixed(1)}</text>`).join('')}
+        <text x="${width / 2}" y="${height - 10}" fill="#94A3B8" font-size="12" font-weight="bold" text-anchor="middle">Tempo t (segundos)</text>
+        <text x="18" y="${height / 2}" fill="#94A3B8" font-size="12" font-weight="bold" transform="rotate(-90 18 ${height / 2})" text-anchor="middle">Saída y(t)</text>
+        <path d="${pathNoF}" fill="none" stroke="#F97316" stroke-width="2.5" />
+        <path d="${pathWithF}" fill="none" stroke="#38BDF8" stroke-width="2.8" />
+        <g transform="translate(${pad.left + 20}, ${pad.top + 10})">
+          <rect width="320" height="52" fill="rgba(15,23,42,0.85)" rx="6" stroke="#334155" />
+          <line x1="12" y1="18" x2="35" y2="18" stroke="#F97316" stroke-width="2.5" />
+          <text x="45" y="22" fill="#F97316" font-size="12" font-weight="bold">Sem Pré-Filtro: Mp = ${sim.MpNoF.toFixed(1)}%, tp = ${sim.tpNoF.toFixed(2)}s</text>
+          <line x1="12" y1="36" x2="35" y2="36" stroke="#38BDF8" stroke-width="2.8" />
+          <text x="45" y="40" fill="#38BDF8" font-size="12" font-weight="bold">Com Pré-Filtro F(s): Mp = ${sim.MpWithF.toFixed(1)}%, tp = ${sim.tpWithF.toFixed(2)}s</text>
+        </g>
+      </svg>
+    `;
+  } else {
+    const tMax = 1.5;
+    const uMax = 30;
+    const toX = (t) => pad.left + (Math.min(t, tMax) / tMax) * plotW;
+    const toY = (u) => pad.top + plotH - (Math.min(Math.max(u, 0), uMax) / uMax) * plotH;
+
+    const pathU = sim.t.filter(t => t <= tMax).map((t, i) => `${i === 0 ? 'M' : 'L'} ${toX(t).toFixed(1)} ${toY(sim.uWithF[i]).toFixed(1)}`).join(' ');
+
+    plotContent = `
+      <svg viewBox="0 0 ${width} ${height}" style="width: 100%; max-width: ${width}px; height: auto; background: #0B132B; border-radius: 8px; border: 1px solid #1E293B;">
+        <g stroke="#1E293B" stroke-width="0.8" stroke-dasharray="3 3">
+          ${[0, 0.25, 0.5, 0.75, 1.0, 1.25, 1.5].map(t => `<line x1="${toX(t)}" y1="${pad.top}" x2="${toX(t)}" y2="${height - pad.bottom}" />`).join('')}
+          ${[0, 5, 10, 15, 20, 25, 30].map(u => `<line x1="${pad.left}" y1="${toY(u)}" x2="${width - pad.right}" y2="${toY(u)}" />`).join('')}
+        </g>
+        <line x1="${pad.left}" y1="${toY(10.0)}" x2="${width - pad.right}" y2="${toY(10.0)}" stroke="#EF4444" stroke-width="2" stroke-dasharray="5 3" />
+        <text x="${width - pad.right - 140}" y="${toY(10.0) - 6}" fill="#EF4444" font-size="11" font-weight="bold">⚠️ Limite ±10 V (Regra dos 10 V)</text>
+        <line x1="${pad.left}" y1="${height - pad.bottom}" x2="${width - pad.right}" y2="${height - pad.bottom}" stroke="#94A3B8" stroke-width="1.5" />
+        <line x1="${pad.left}" y1="${height - pad.bottom}" x2="${pad.left}" y2="${pad.top}" stroke="#94A3B8" stroke-width="1.5" />
+        ${[0, 0.25, 0.5, 0.75, 1.0, 1.25, 1.5].map(t => `<text x="${toX(t)}" y="${height - pad.bottom + 18}" fill="#94A3B8" font-size="11" text-anchor="middle">${t}s</text>`).join('')}
+        ${[0, 5, 10, 15, 20, 25, 30].map(u => `<text x="${pad.left - 10}" y="${toY(u) + 4}" fill="#94A3B8" font-size="11" text-anchor="end">${u}V</text>`).join('')}
+        <text x="${width / 2}" y="${height - 10}" fill="#94A3B8" font-size="12" font-weight="bold" text-anchor="middle">Tempo t (segundos)</text>
+        <text x="18" y="${height / 2}" fill="#94A3B8" font-size="12" font-weight="bold" transform="rotate(-90 18 ${height / 2})" text-anchor="middle">Esforço de Controle u(t) (V)</text>
+        <path d="${pathU}" fill="none" stroke="#38BDF8" stroke-width="2.8" />
+        <g transform="translate(${pad.left + 180}, ${pad.top + 60})">
+          <rect width="320" height="60" fill="rgba(15,23,42,0.85)" rx="6" stroke="#334155" />
+          <circle cx="15" cy="18" r="4" fill="#38BDF8" />
+          <text x="28" y="22" fill="#38BDF8" font-size="11" font-weight="bold">Com F(s): Pico suavizado em ${sim.maxUWithF.toFixed(1)} V (t ≈ 0.05s)</text>
+          <circle cx="15" cy="40" r="4" fill="#EF4444" />
+          <text x="28" y="44" fill="#EF4444" font-size="11">Degrau máx. linear: Δe ≤ ${(10 / sim.maxUWithF).toFixed(2)} V</text>
+        </g>
+      </svg>
+    `;
+  }
+
+  container.innerHTML = `
+    <div style="background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; padding: 16px; margin-top: 16px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 14px;">
+        <div>
+          <span style="font-size: 0.75rem; font-weight: 700; color: var(--primary); text-transform: uppercase;">
+            Simulação Numérica LTI (RK4) • Tempo Contínuo
+          </span>
+          <h4 style="margin: 2px 0 0 0; font-size: 1.1rem; color: var(--text);">
+            ${isStep ? 'Resposta Temporal ao Degrau Unitário y(t)' : 'Esforço de Controle do Atuador u(t) e Regra dos 10 V'}
+          </h4>
+        </div>
+        <div style="display: flex; gap: 8px;">
+          <button type="button" class="${isStep ? 'btn-primary' : 'btn-secondary'}" onclick="compActiveSimTab = 'step'; renderCompensatorSimulationSvg();" style="font-size: 0.82rem; padding: 6px 14px; cursor: pointer;">
+            📈 Resposta ao Degrau y(t)
+          </button>
+          <button type="button" class="${!isStep ? 'btn-primary' : 'btn-secondary'}" onclick="compActiveSimTab = 'control'; renderCompensatorSimulationSvg();" style="font-size: 0.82rem; padding: 6px 14px; cursor: pointer;">
+            ⚡ Esforço de Controle u(t)
+          </button>
+        </div>
+      </div>
+
+      <div style="overflow-x: auto; text-align: center;">
+        ${plotContent}
+      </div>
+
+      <div style="margin-top: 14px; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px;">
+        <div style="background: rgba(56,189,248,0.06); border: 1px solid rgba(56,189,248,0.2); border-radius: 8px; padding: 10px;">
+          <div style="font-size: 0.74rem; color: var(--primary); font-weight: 700;">Sobressinal com Pré-filtro</div>
+          <div style="font-size: 1.2rem; font-weight: 800; color: var(--text); margin-top: 2px;">
+            ${sim.MpWithF.toFixed(1)}% <span style="font-size: 0.78rem; color: var(--text-muted);">(vs ${sim.MpNoF.toFixed(1)}% sem F)</span>
+          </div>
+        </div>
+        <div style="background: rgba(249,115,22,0.06); border: 1px solid rgba(249,115,22,0.2); border-radius: 8px; padding: 10px;">
+          <div style="font-size: 0.74rem; color: #F97316; font-weight: 700;">Tempo de Pico (tp)</div>
+          <div style="font-size: 1.2rem; font-weight: 800; color: var(--text); margin-top: 2px;">
+            ${sim.tpWithF.toFixed(2)} s <span style="font-size: 0.78rem; color: var(--text-muted);">(vs ${sim.tpNoF.toFixed(2)} s sem F)</span>
+          </div>
+        </div>
+        <div style="background: rgba(239,68,68,0.06); border: 1px solid rgba(239,68,68,0.2); border-radius: 8px; padding: 10px;">
+          <div style="font-size: 0.74rem; color: #EF4444; font-weight: 700;">Pico de Controle u(t)</div>
+          <div style="font-size: 1.2rem; font-weight: 800; color: var(--text); margin-top: 2px;">
+            ${sim.maxUWithF.toFixed(1)} V / V <span style="font-size: 0.78rem; color: var(--text-muted);">(vs ${Kc.toFixed(1)} V inicial)</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderCompensatorScilab() {
+  const pre = document.getElementById("compScilabPre");
+  if (!pre || !compLastResult) return;
+  const r = compLastResult;
+
+  pre.textContent = `// ============================================================
+//  Projeto de Controlador por Lugar das Raízes — Aula 18
+//  Modelo: ${r.type.toUpperCase()} | Planta: ${r.plantLabel}
+//  Gerado Automaticamente pela Calculadora de Controle EEL6005
+// ============================================================
+clear; clc; xdel(winsid());
+deff("y=ev(c,x)","y=sum(c.*x.^(length(c)-1:-1:0))");
+
+// 1. Dados de Entrada
+numc = [1];
+denc = [1 3 0];
+N = ${r.N};
+C1 = 10e-6;
+sd1 = -3 + 3*%i;
+
+// 2. Deficiência de Fase
+Lsd1 = ev(numc, sd1) / ev(denc, sd1);
+ang = atan(imag(Lsd1), real(Lsd1)) * 180 / %pi;
+th = pmodulo(-ang, 360) - 180;
+if th <= 0 then error("th <= 0: P ou atraso, nao avanco PD"); end
+
+r = N + 1;
+a = -real(sd1);
+b = imag(sd1);
+ze = a / abs(sd1);
+cotm = (2*sqrt(r) - ze*(r + 1)) / (sqrt(1 - ze^2) * (r - 1));
+phimax = atan(1, cotm) * 180 / %pi;
+m = ceil(th / (0.95 * phimax));
+phi = (th / m) * %pi / 180;
+
+c = [r, -(a*(r + 1) + b*(r - 1)/tan(phi)), a^2 + b^2];
+zs = roots(poly(c($:-1:1), "x", "coeff"));
+zs = real(zs(abs(imag(zs)) < 1e-9 & real(zs) > 0));
+if isempty(zs) then error("sem raiz real positiva: aumente m ou N"); end
+zc = max(zs);
+pc = r * zc;
+
+// 3. Ganhos e Componentes
+Kc = abs(ev(denc, sd1)) / abs(ev(numc, sd1)) * (abs(sd1 + pc) / abs(sd1 + zc))^m;
+Ke = Kc^(1/m);
+Kp = Ke / r;
+Td = N / pc;
+R1 = 1 / (zc * C1);
+R2 = Kp * R1;
+C2 = 1 / (pc * R2);
+
+mprintf("=== RESULTADOS DO PROJETO ===\\n");
+mprintf("phimax=%.1f deg | m=%d | zc=%.4f | pc=%.4f\\n", phimax, m, zc, pc);
+mprintf("Kc=%.2f | Kp=%.2f | Td=%.4f s\\n", Kc, Kp, Td);
+mprintf("R1=%.2f kOhm | R2=%.2f kOhm | C2=%.2f nF\\n", R1/1e3, R2/1e3, C2*1e9);
+
+// 4. Funções em Malha Fechada e Pré-Filtro
+s = poly(0, "s");
+Ls = poly(numc($:-1:1), "s", "coeff") / poly(denc($:-1:1), "s", "coeff");
+Gc = Kc * ((s + zc) / (s + pc))^m;
+F = (zc / (s + zc))^m;
+
+T = syslin("c", Gc * Ls / (1 + Gc * Ls));
+Tf = syslin("c", F * Gc * Ls / (1 + Gc * Ls));
+U = syslin("c", Gc / (1 + Gc * Ls));
+Uf = syslin("c", F * Gc / (1 + Gc * Ls));
+
+// 5. Simulação no Tempo
+t = linspace(0, 3, 2000);
+y = csim("step", t, T);
+yf = csim("step", t, Tf);
+u = csim("step", t, U);
+uf = csim("step", t, Uf);
+
+scf(0); clf();
+plot2d(t, [y' yf'], style=[2 5]);
+xgrid();
+legend("Sem Pré-filtro F", "Com Pré-filtro F");
+xtitle("Resposta ao Degrau y(t) - EEL6005", "Tempo (s)", "Saída y(t)");
+
+scf(1); clf();
+plot2d(t, [u' uf'], style=[2 5]);
+xgrid();
+legend("Sem Pré-filtro F", "Com Pré-filtro F");
+xtitle("Esforço de Controle u(t) - Regra dos 10 V", "Tempo (s)", "Tensão u(t) (V)");
+`;
+}
+
+function copiarScriptScilabCompensador() {
+  const pre = document.getElementById("compScilabPre");
+  if (!pre) return;
+  navigator.clipboard.writeText(pre.textContent).then(() => {
+    const btn = document.getElementById("btnCopyScilabComp");
+    if (btn) {
+      const orig = btn.textContent;
+      btn.textContent = "✓ Script Copiado!";
+      setTimeout(() => { btn.textContent = orig; }, 2000);
+    }
+  });
+}
+
+window.copiarScriptScilabCompensador = copiarScriptScilabCompensador;

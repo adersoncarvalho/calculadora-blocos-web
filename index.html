@@ -26,6 +26,9 @@
           <button type="button" class="btn-shortcuts-helper" onclick="toggleShortcutsModal(true)" title="Visualizar atalhos de teclado (Pressione '?')" aria-label="Atalhos de Teclado">
             ⌨️ Atalhos (?)
           </button>
+          <button type="button" class="btn-open-guide btn-highlight-builder" onclick="abrirCompensadores()" style="background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color: #fff; font-weight: 700;" aria-label="Abrir Projetista de Compensadores (Avanço/Atraso)">
+            🎛️ Compensadores (Avanço/Atraso)
+          </button>
           <button type="button" class="btn-open-guide btn-highlight-builder" onclick="abrirConstrutorLivre()" aria-label="Criar Meu Próprio Diagrama no Construtor Livre">
             🛠️ Criar Meu Próprio Diagrama
           </button>
@@ -98,6 +101,13 @@
           <div class="step-card-title">🛠️ Construtor Livre</div>
           <div class="step-card-text">Monte qualquer diagrama arbitrário, faça conexões com a caneta e reduza passo a passo.</div>
           <div class="step-card-cta">Montar Diagrama ➔</div>
+        </div>
+
+        <div class="learning-step-card" onclick="abrirCompensadores()" role="button" tabindex="0" style="background: linear-gradient(145deg, rgba(2,132,199,0.12) 0%, rgba(15,23,42,0.6) 100%); border: 1px solid #0284c7;" aria-label="Etapa 5: Projeto de Compensadores LGR" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault(); abrirCompensadores();}">
+          <div class="step-badge" style="color: #38BDF8;">Etapa 5 • Projeto LGR</div>
+          <div class="step-card-title">🎛️ Compensadores (Avanço/Atraso)</div>
+          <div class="step-card-text">Projeto analítico passo a passo de PD Real, Atraso e Lead-Lag com gráficos, Passo 2 do professor e simulação temporal.</div>
+          <div class="step-card-cta">Projetar Compensador ➔</div>
         </div>
       </div>
     </div>
@@ -422,6 +432,124 @@
         <div id="practiceLevel1Pane" class="practice-pane"></div>
         <div id="practiceLevel2Pane" class="practice-pane" style="display: none;"></div>
         <div id="practiceLevel3Pane" class="practice-pane" style="display: none;"></div>
+      </div>
+    </div>
+
+    <!-- Aba / Página Exclusiva do Projetista de Compensadores (Avanço / Atraso / Lead-Lag) -->
+    <div class="memorial-section compensator-section" id="compensatorsSection" style="display: none;">
+      <div class="builder-header" style="margin-bottom: 16px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; width: 100%;">
+          <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+            <button type="button" class="btn-back-presets" onclick="fecharCompensadores()">
+              ⬅ Voltar à Calculadora
+            </button>
+            <div>
+              <h2 style="margin-bottom: 2px;">🎛️ Projetista de Compensadores por Lugar das Raízes (LGR)</h2>
+              <p style="font-size: 0.85rem; color: var(--text-muted); margin: 0;">
+                Metodologia Didática do Professor (EEL6005) • Avanço (PD Real), Atraso (Lag) e Avanço-Atraso (Lead-Lag)
+              </p>
+            </div>
+          </div>
+          <div>
+            <button type="button" class="btn-primary" onclick="copiarScriptScilabCompensador()" id="btnCopyScilabComp" style="padding: 8px 16px; font-weight: 700; cursor: pointer;">
+              📋 Copiar Script Scilab (Aula 18)
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card de Configuração de Parâmetros -->
+      <div style="background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; padding: 18px 20px; margin-bottom: 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 14px;">
+          <h3 style="margin: 0; font-size: 1.05rem; color: var(--text); font-weight: 700;">
+            ⚙️ Especificações e Seleção do Tipo de Controlador
+          </h3>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 0.82rem; color: var(--text-muted);">Carregar Estudo de Caso:</span>
+            <select id="compPresetSelect" onchange="carregarPresetCompensador(this.value)" style="background: var(--input-bg, #1E293B); color: var(--text); border: 1px solid var(--card-border); border-radius: 6px; padding: 6px 10px; font-size: 0.84rem; cursor: pointer;">
+              <option value="aula18">📌 Aula 18 - PD Real EEL6005 (PO=4.32%, Tp=1.047s, N=10, 1/[s(s+3)])</option>
+              <option value="exercicio_n8">⚡ Exercício Proposto N=8 (PO=4.32%, Tp=1.047s, N=8, 1/[s(s+3)])</option>
+              <option value="exercicio_n12">⚡ Exercício Proposto N=12 (PO=4.32%, Tp=1.047s, N=12, 1/[s(s+3)])</option>
+              <option value="planta_sd2">🎯 Polo sd = -2 + j2 (PO=4.32%, Tp=1.57s, N=10, 1/[s(s+3)])</option>
+              <option value="atraso_fase">⏳ Compensador por Atraso de Fase (Melhoria de Kv em 10×)</option>
+              <option value="avanco_atraso">🚀 Compensador Avanço-Atraso (Lead-Lag Completo)</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px;">
+          <div>
+            <label style="display: block; font-size: 0.78rem; font-weight: 700; color: var(--primary); margin-bottom: 5px;">Tipo de Controlador:</label>
+            <select id="compTypeSelect" onchange="recalcularCompensador()" style="width: 100%; background: var(--input-bg, #1E293B); color: var(--text); border: 1px solid var(--card-border); border-radius: 6px; padding: 8px 10px; font-size: 0.88rem; font-weight: 600;">
+              <option value="lead">1. Avanço de Fase (Lead / PD Real)</option>
+              <option value="lag">2. Atraso de Fase (Lag / PI Real)</option>
+              <option value="lead-lag">3. Avanço-Atraso (Lead-Lag / PID)</option>
+            </select>
+          </div>
+          <div>
+            <label style="display: block; font-size: 0.78rem; font-weight: 700; color: var(--text); margin-bottom: 5px;">Tempo de Pico (Tp em segundos):</label>
+            <input type="number" id="compTpInput" step="0.001" value="1.047" oninput="recalcularCompensador()" style="width: 100%; background: var(--input-bg, #1E293B); color: var(--text); border: 1px solid var(--card-border); border-radius: 6px; padding: 8px 10px; font-size: 0.88rem;" />
+          </div>
+          <div>
+            <label style="display: block; font-size: 0.78rem; font-weight: 700; color: var(--text); margin-bottom: 5px;">Sobressinal Percentual (PO%):</label>
+            <input type="number" id="compPoInput" step="0.01" value="4.32" oninput="recalcularCompensador()" style="width: 100%; background: var(--input-bg, #1E293B); color: var(--text); border: 1px solid var(--card-border); border-radius: 6px; padding: 8px 10px; font-size: 0.88rem;" />
+          </div>
+          <div>
+            <label style="display: block; font-size: 0.78rem; font-weight: 700; color: var(--text); margin-bottom: 5px;">Fator de Filtro N (8 a 12):</label>
+            <input type="number" id="compNInput" value="10" oninput="recalcularCompensador()" style="width: 100%; background: var(--input-bg, #1E293B); color: var(--text); border: 1px solid var(--card-border); border-radius: 6px; padding: 8px 10px; font-size: 0.88rem;" />
+          </div>
+          <div>
+            <label style="display: block; font-size: 0.78rem; font-weight: 700; color: var(--text); margin-bottom: 5px;">Planta no Diagrama G(s):</label>
+            <input type="text" id="compPlantInput" value="1 / [s(s+3)]" oninput="recalcularCompensador()" style="width: 100%; background: var(--input-bg, #1E293B); color: var(--text); border: 1px solid var(--card-border); border-radius: 6px; padding: 8px 10px; font-size: 0.88rem;" />
+          </div>
+        </div>
+
+        <!-- Campos de Atraso de Fase -->
+        <div id="compLagParamsRow" style="display: none; margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--card-border);">
+          <div style="display: flex; gap: 16px; flex-wrap: wrap;">
+            <div style="flex: 1; min-width: 180px;">
+              <label style="display: block; font-size: 0.76rem; color: #F97316; font-weight: 700;">Fator de Melhoria de Erro β (z_lag / p_lag):</label>
+              <input type="number" id="compBetaInput" value="10" oninput="recalcularCompensador()" style="width: 100%; background: var(--input-bg, #1E293B); color: var(--text); border: 1px solid var(--card-border); border-radius: 6px; padding: 6px 10px; font-size: 0.84rem;" />
+            </div>
+            <div style="flex: 1; min-width: 180px;">
+              <label style="display: block; font-size: 0.76rem; color: #F97316; font-weight: 700;">Zero de Atraso z_lag (rad/s, próximo da origem):</label>
+              <input type="number" id="compZLagInput" step="0.01" value="0.05" oninput="recalcularCompensador()" style="width: 100%; background: var(--input-bg, #1E293B); color: var(--text); border: 1px solid var(--card-border); border-radius: 6px; padding: 6px 10px; font-size: 0.84rem;" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Diagrama de Blocos SVG Interativo -->
+      <div id="compBlockDiagramContainer"></div>
+
+      <!-- Memorial Analítico Didático Passo a Passo -->
+      <div style="background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; padding: 20px; margin-bottom: 24px;">
+        <div style="border-bottom: 1px solid var(--card-border); padding-bottom: 12px; margin-bottom: 18px;">
+          <span style="font-size: 0.76rem; font-weight: 800; color: var(--primary); text-transform: uppercase;">
+            Memorial de Cálculo Didático Completo
+          </span>
+          <h3 style="margin: 4px 0 0 0; font-size: 1.35rem; color: var(--text);">
+            Passo a Passo da Metodologia do Lugar das Raízes (LGR)
+          </h3>
+        </div>
+
+        <div id="compMemorialContent"></div>
+      </div>
+
+      <!-- Simulação Temporal com Gráficos no Final -->
+      <div id="compSimulationContainer"></div>
+
+      <!-- Script Scilab Executável -->
+      <div style="margin-top: 24px; background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px; padding: 16px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <h4 style="margin: 0; font-size: 0.96rem; color: var(--text);">
+            💻 Script Scilab Executável (Compatível com Aula 18)
+          </h4>
+          <button type="button" class="btn-secondary" onclick="copiarScriptScilabCompensador()" style="font-size: 0.78rem; padding: 4px 10px; cursor: pointer;">
+            Copiar Script
+          </button>
+        </div>
+        <pre id="compScilabPre" style="background: #0F172A; color: #E2E8F0; padding: 12px; border-radius: 6px; font-size: 0.78rem; overflow-x: auto; max-height: 260px; border: 1px solid #1E293B;"></pre>
       </div>
     </div>
   <!-- Modal de Atalhos de Teclado e Ajuda de Acessibilidade (P4) -->
