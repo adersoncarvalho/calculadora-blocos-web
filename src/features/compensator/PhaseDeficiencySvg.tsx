@@ -10,6 +10,211 @@ interface PhaseDeficiencySvgProps {
 export const PhaseDeficiencySvg: React.FC<PhaseDeficiencySvgProps> = ({ result }) => {
   const [showCompensatorVectors, setShowCompensatorVectors] = useState(true);
 
+  // SE FOR CONTROLADOR PI (AULA 19), RENDERIZA O DIAGRAMA GEOMÉTRICO DA LEI DOS SENOS
+  if (result.type === 'pi' && result.piDetails) {
+    const pi = result.piDetails;
+    const width = 760;
+    const height = 400;
+
+    // Escala para visualização clara do triângulo (0,0) -> (-zi,0) -> sd
+    // sd.re é aprox -3 a -6, sd.im é aprox 3 a 8
+    const maxCoord = Math.max(Math.abs(result.sd.re), result.sd.im, 5);
+    const scale = 240 / maxCoord;
+    const xOrigin = 580;
+    const yOrigin = 330;
+
+    const toX = (re: number) => xOrigin + re * scale;
+    const toY = (im: number) => yOrigin - im * scale;
+
+    const oX = toX(0);
+    const oY = toY(0);
+    const sdX = toX(result.sd.re);
+    const sdY = toY(result.sd.im);
+    const ziX = toX(-pi.zi_lim);
+    const ziMaxX = toX(-pi.zi_max);
+    const dipoloX = toX(-pi.zi_dipolo);
+
+    const magSd = Math.sqrt(result.sd.re * result.sd.re + result.sd.im * result.sd.im);
+    const angle3Deg = 180 - (pi.betaDeg + pi.phiBudgetDeg);
+
+    return (
+      <div style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)', borderRadius: '12px', padding: '16px', marginTop: '12px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px', marginBottom: '12px' }}>
+          <div>
+            <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#10B981', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+              Aula 19 • Geometria do Triângulo no LGR
+            </span>
+            <h4 style={{ margin: '2px 0 0 0', fontSize: '1.1rem', color: 'var(--text)' }}>
+              Construção Geométrica pela Lei dos Senos e Regra do Dipolo
+            </h4>
+          </div>
+          <span style={{ fontSize: '0.82rem', padding: '4px 10px', background: pi.limitingFactor === 'angulo' ? 'rgba(56,189,248,0.15)' : 'rgba(249,115,22,0.15)', color: pi.limitingFactor === 'angulo' ? '#38BDF8' : '#F97316', borderRadius: '6px', fontWeight: 700 }}>
+            {pi.limitingFactor === 'angulo' ? 'Limitado pelo Orçamento de Ângulo (φ)' : 'Limitado pelo Dipolo (|s_lenta|/1.1)'}
+          </span>
+        </div>
+
+        <div style={{ overflowX: 'auto', textAlign: 'center' }}>
+          <svg
+            viewBox={`0 0 ${width} ${height}`}
+            style={{ width: '100%', maxWidth: `${width}px`, height: 'auto', background: '#0B132B', borderRadius: '8px', border: '1px solid #1E293B' }}
+          >
+            <defs>
+              <marker id="arrowPiAxis" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+                <path d="M0,0 L0,6 L8,3 z" fill="#64748B" />
+              </marker>
+              <marker id="arrowPiCyan" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto">
+                <path d="M0,0 L0,6 L9,3 z" fill="#38BDF8" />
+              </marker>
+              <marker id="arrowPiGreen" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto">
+                <path d="M0,0 L0,6 L9,3 z" fill="#10B981" />
+              </marker>
+            </defs>
+
+            {/* Eixo Real */}
+            <line x1={30} y1={oY} x2={width - 30} y2={oY} stroke="#94A3B8" strokeWidth="1.8" markerEnd="url(#arrowPiAxis)" />
+            <text x={width - 25} y={oY + 18} fill="#94A3B8" fontSize="13" fontWeight="bold">Re(s)</text>
+
+            {/* Eixo Imaginário */}
+            <line x1={oX} y1={height - 20} x2={oX} y2={30} stroke="#94A3B8" strokeWidth="1.8" markerEnd="url(#arrowPiAxis)" />
+            <text x={oX + 12} y={35} fill="#94A3B8" fontSize="13" fontWeight="bold">Im(s)</text>
+
+            {/* Triângulo Didático (Origem, -zi, sd) */}
+            <polygon
+              points={`${oX},${oY} ${ziX},${oY} ${sdX},${sdY}`}
+              fill="rgba(16, 185, 129, 0.12)"
+              stroke="#10B981"
+              strokeWidth="2"
+            />
+
+            {/* Projeções de sd */}
+            <line x1={sdX} y1={oY} x2={sdX} y2={sdY} stroke="#64748B" strokeWidth="1" strokeDasharray="3 3" />
+            <line x1={sdX} y1={sdY} x2={oX} y2={sdY} stroke="#64748B" strokeWidth="1" strokeDasharray="3 3" />
+            <text x={oX + 8} y={sdY + 4} fill="#94A3B8" fontSize="11">j{result.sd.im.toFixed(2)} (ωd)</text>
+            <text x={sdX - 10} y={oY + 16} fill="#94A3B8" fontSize="11">-{result.sigmaD.toFixed(2)} (-σd)</text>
+
+            {/* Lado 1: Origem até sd (Módulo |sd|) */}
+            <line x1={oX} y1={oY} x2={sdX + 4} y2={sdY + 4} stroke="#38BDF8" strokeWidth="2.5" markerEnd="url(#arrowPiCyan)" />
+            <text x={(oX + sdX) / 2 + 14} y={(oY + sdY) / 2 - 8} fill="#38BDF8" fontSize="12" fontWeight="bold">
+              |sd| = {magSd.toFixed(2)}
+            </text>
+
+            {/* Lado 2: -zi até sd (Módulo |sd + zi|) */}
+            <line x1={ziX} y1={oY} x2={sdX + 2} y2={sdY + 4} stroke="#A855F7" strokeWidth="2" strokeDasharray="5 3" />
+            <text x={(ziX + sdX) / 2 - 20} y={(oY + sdY) / 2 - 12} fill="#C084FC" fontSize="11" fontWeight="bold">
+              |sd + zi|
+            </text>
+
+            {/* Segmento no eixo real: zi */}
+            <line x1={oX} y1={oY} x2={ziX} y2={oY} stroke="#FBBF24" strokeWidth="4" />
+            <text x={(oX + ziX) / 2} y={oY + 18} fill="#FBBF24" fontSize="11" fontWeight="bold" textAnchor="middle">
+              zi = {pi.zi_lim.toFixed(3)}
+            </text>
+
+            {/* Polo Desejado sd (Cruz Vermelha) */}
+            <line x1={sdX - 6} y1={sdY - 6} x2={sdX + 6} y2={sdY + 6} stroke="#EF4444" strokeWidth="3" />
+            <line x1={sdX - 6} y1={sdY + 6} x2={sdX + 6} y2={sdY - 6} stroke="#EF4444" strokeWidth="3" />
+            <text x={sdX - 4} y={sdY - 12} fill="#EF4444" fontSize="13" fontWeight="bold">
+              sd = -{result.sigmaD.toFixed(2)} + j{result.sd.im.toFixed(2)}
+            </text>
+
+            {/* Polo na Origem do PI (Polo Integrador em s=0) */}
+            <line x1={oX - 6} y1={oY - 6} x2={oX + 6} y2={oY + 6} stroke="#38BDF8" strokeWidth="3" />
+            <line x1={oX - 6} y1={oY + 6} x2={oX + 6} y2={oY - 6} stroke="#38BDF8" strokeWidth="3" />
+            <text x={oX + 10} y={oY + 22} fill="#38BDF8" fontSize="11" fontWeight="bold">s = 0 (PI)</text>
+
+            {/* Zero do PI em -zi */}
+            <circle cx={ziX} cy={oY} r="5" fill="#10B981" stroke="#059669" strokeWidth="2" />
+            <text x={ziX} y={oY + 34} fill="#10B981" fontSize="11" fontWeight="bold" textAnchor="middle">
+              -zi = -{pi.zi_lim.toFixed(3)}
+            </text>
+
+            {/* Marcação de Limite do Dipolo se diferente */}
+            {Math.abs(pi.zi_dipolo - pi.zi_lim) > 0.05 && (
+              <g>
+                <line x1={dipoloX} y1={oY - 14} x2={dipoloX} y2={oY + 14} stroke="#F97316" strokeWidth="2" strokeDasharray="2 2" />
+                <text x={dipoloX} y={oY - 18} fill="#F97316" fontSize="9.5" fontWeight="bold" textAnchor="middle">
+                  Dipolo: -{pi.zi_dipolo.toFixed(3)}
+                </text>
+              </g>
+            )}
+
+            {/* Marcação de zi_max pela Lei dos Senos se diferente */}
+            {Math.abs(pi.zi_max - pi.zi_lim) > 0.05 && (
+              <g>
+                <line x1={ziMaxX} y1={oY - 14} x2={ziMaxX} y2={oY + 14} stroke="#38BDF8" strokeWidth="2" strokeDasharray="2 2" />
+                <text x={ziMaxX} y={oY - 18} fill="#38BDF8" fontSize="9.5" fontWeight="bold" textAnchor="middle">
+                  zi,max(senos): -{pi.zi_max.toFixed(3)}
+                </text>
+              </g>
+            )}
+
+            {/* Ângulo beta na origem */}
+            <path
+              d={`M ${oX - 45} ${oY} A 45 45 0 0 0 ${oX - 32} ${oY - 32}`}
+              fill="none"
+              stroke="#FBBF24"
+              strokeWidth="2"
+            />
+            <text x={oX - 68} y={oY - 18} fill="#FBBF24" fontSize="11" fontWeight="bold">β={pi.betaDeg.toFixed(1)}°</text>
+
+            {/* Ângulo phi no vértice sd */}
+            <text x={sdX + 12} y={sdY + 22} fill="#10B981" fontSize="12" fontWeight="bold">
+              φ = {pi.phiBudgetDeg}°
+            </text>
+
+            {/* Ângulo 180 - (beta + phi) no vértice -zi */}
+            <text x={ziX - 14} y={oY - 8} fill="#E2E8F0" fontSize="10">
+              {angle3Deg.toFixed(1)}°
+            </text>
+          </svg>
+        </div>
+
+        {/* Caixas Didáticas com o Memorial Passo a Passo da Aula 19 */}
+        <div style={{ marginTop: '16px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '12px' }}>
+          <div style={{ background: 'rgba(56,189,248,0.08)', border: '1px solid rgba(56,189,248,0.25)', borderRadius: '8px', padding: '12px' }}>
+            <div style={{ fontWeight: 700, color: 'var(--primary)', fontSize: '0.86rem', marginBottom: '6px' }}>
+              1. Orçamento Angular de Fase (φ)
+            </div>
+            <div style={{ fontSize: '0.82rem', color: 'var(--text)', lineHeight: '1.6' }}>
+              Erro ao degrau do P puro: <b>{(pi.eP * 100).toFixed(2)}%</b>
+              <br />
+              Critério: {pi.eP <= 0.02 ? 'eP ≤ 2% ⟹ φ = 5°' : 'eP > 2% ⟹ φ = 10°'}
+              <br />
+              Orçamento adotado: <b>φ = {pi.phiBudgetDeg}°</b>
+            </div>
+          </div>
+
+          <div style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.25)', borderRadius: '8px', padding: '12px' }}>
+            <div style={{ fontWeight: 700, color: '#10B981', fontSize: '0.86rem', marginBottom: '6px' }}>
+              2. Lei dos Senos no Triângulo
+            </div>
+            <div style={{ fontSize: '0.82rem', color: 'var(--text)', lineHeight: '1.6' }}>
+              <code>zi,max = |sd| · sen(φ) / sen(β + φ)</code>
+              <br />
+              Com |sd| = {magSd.toFixed(3)} e β = {pi.betaDeg.toFixed(1)}°:
+              <br />
+              <b><code>zi,max = {pi.zi_max.toFixed(4)} rad/s</code></b>
+            </div>
+          </div>
+
+          <div style={{ background: 'rgba(249,115,22,0.08)', border: '1px solid rgba(249,115,22,0.25)', borderRadius: '8px', padding: '12px' }}>
+            <div style={{ fontWeight: 700, color: '#F97316', fontSize: '0.86rem', marginBottom: '6px' }}>
+              3. Regra do Dipolo (|slenta| / 1,1)
+            </div>
+            <div style={{ fontSize: '0.82rem', color: 'var(--text)', lineHeight: '1.6' }}>
+              Singularidade mais lenta: <code>|slenta| = {pi.s_lenta.toFixed(2)}</code>
+              <br />
+              Limite do dipolo: <code>{pi.s_lenta.toFixed(2)} / 1.1 = {pi.zi_dipolo.toFixed(4)}</code>
+              <br />
+              <b><code>zi,escolhido = min({pi.zi_max.toFixed(3)}, {pi.zi_dipolo.toFixed(3)}) = {pi.zi_lim.toFixed(3)}</code></b>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // CASO DE COMPENSADORES LEAD / LAG / LEAD-LAG (AULA 18)
   // Escala e coordenadas SVG
   // O plano s vai de Re: [-10, 4] e Im: [-1, 5]
   // Largura SVG: 760, Altura: 420

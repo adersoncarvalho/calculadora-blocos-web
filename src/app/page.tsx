@@ -122,7 +122,8 @@ export default function HomePage() {
           explore diferentes topologias e visualize as transformações gráficas de cada etapa.
         </p>
         <div className="hero-features-row" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '14px' }}>
-          <span className="hero-feature-pill">🧪 <b>Modo de Prática</b> com 3 Níveis & Dicas</span>
+          <span className="hero-feature-pill" style={{ background: 'linear-gradient(135deg, rgba(2,132,199,0.3) 0%, rgba(3,105,161,0.3) 100%)', border: '1px solid #0284c7', cursor: 'pointer' }} onClick={() => handleSetView('compensators')}>🎛️ <b>Compensadores LGR</b> (PD Real Aula 18 &amp; PI Aula 19)</span>
+          <span className="hero-feature-pill">🧪 <b>Modo de Prática</b> com 3 Níveis &amp; Dicas</span>
           <span className="hero-feature-pill">📐 <b>Topologias</b> Canônicas e Desafios</span>
           <span className="hero-feature-pill">📝 <b>Memorial Analítico</b> em LaTeX</span>
           <span className="hero-feature-pill">🔢 <b>Cálculo de MMC</b> Passo a Passo</span>
@@ -212,7 +213,7 @@ export default function HomePage() {
             <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', lineHeight: '1.45' }}>Monte qualquer diagrama arbitrário e calcule a redução via Mason.</div>
           </div>
 
-          {/* Etapa 5 • Compensadores (Avanço / Atraso) */}
+          {/* Etapa 5 • Compensadores e Controladores LGR (Aulas 18 e 19) */}
           <div
             className="learning-step-card"
             onClick={() => handleSetView('compensators')}
@@ -220,16 +221,16 @@ export default function HomePage() {
             tabIndex={0}
             style={{
               cursor: 'pointer',
-              background: 'linear-gradient(145deg, rgba(2,132,199,0.12) 0%, rgba(15,23,42,0.6) 100%)',
-              border: '1px solid #0284c7',
+              background: 'linear-gradient(145deg, rgba(2,132,199,0.18) 0%, rgba(15,23,42,0.85) 100%)',
+              border: '1.5px solid #0284c7',
               borderRadius: '8px',
               padding: '16px'
             }}
           >
-            <div style={{ fontSize: '0.72rem', color: '#38BDF8', fontWeight: 800 }}>Etapa 5 • Projeto LGR</div>
-            <div style={{ fontWeight: 700, fontSize: '0.96rem', margin: '4px 0', color: '#F0F9FF' }}>🎛️ Compensadores (Avanço/Atraso)</div>
+            <div style={{ fontSize: '0.72rem', color: '#38BDF8', fontWeight: 800 }}>Etapa 5 • Controle Avançado LGR</div>
+            <div style={{ fontWeight: 700, fontSize: '0.96rem', margin: '4px 0', color: '#F0F9FF' }}>🎛️ Compensadores &amp; Controladores (PI / PD)</div>
             <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', lineHeight: '1.45' }}>
-              Projeto analítico passo a passo de PD Real, Atraso e Lead-Lag com gráficos e Scilab.
+              Projeto analítico completo: Avanço (PD Real Aula 18), Controlador PI para Erro Nulo (Aula 19) e Avanço-Atraso.
             </div>
           </div>
         </div>

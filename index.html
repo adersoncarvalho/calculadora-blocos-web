@@ -467,12 +467,21 @@
           <div style="display: flex; align-items: center; gap: 8px;">
             <span style="font-size: 0.82rem; color: var(--text-muted);">Carregar Estudo de Caso:</span>
             <select id="compPresetSelect" onchange="carregarPresetCompensador(this.value)" style="background: var(--input-bg, #1E293B); color: var(--text); border: 1px solid var(--card-border); border-radius: 6px; padding: 6px 10px; font-size: 0.84rem; cursor: pointer;">
-              <option value="aula18">📌 Aula 18 - PD Real EEL6005 (PO=4.32%, Tp=1.047s, N=10, 1/[s(s+3)])</option>
-              <option value="exercicio_n8">⚡ Exercício Proposto N=8 (PO=4.32%, Tp=1.047s, N=8, 1/[s(s+3)])</option>
-              <option value="exercicio_n12">⚡ Exercício Proposto N=12 (PO=4.32%, Tp=1.047s, N=12, 1/[s(s+3)])</option>
-              <option value="planta_sd2">🎯 Polo sd = -2 + j2 (PO=4.32%, Tp=1.57s, N=10, 1/[s(s+3)])</option>
-              <option value="atraso_fase">⏳ Compensador por Atraso de Fase (Melhoria de Kv em 10×)</option>
-              <option value="avanco_atraso">🚀 Compensador Avanço-Atraso (Lead-Lag Completo)</option>
+              <optgroup label="📌 AULA 19: CONTROLADOR PI PARA ERRO NULO AO DEGRAU">
+                <option value="aula19_ex1">Aula 19 - Exemplo 1: G(s) = 1/[(s+1)(s+5)], sd = -3+j3, φ=10°</option>
+                <option value="aula19_ex2">Aula 19 - Exemplo 2: G(s) = (s+3)/[(s+0.5)(s+4)(s+6)], sd = -3.97+j3.98 (Dipolo)</option>
+                <option value="aula19_prop_a">Aula 19 - Proposto A: G(s) = 1/[(s+0.1)(s+10)], sd = -5.05+j5.05, φ=5°</option>
+                <option value="aula19_prop_b_10">Aula 19 - Proposto B (φ=10°): G(s) = (s+6)/[(s+2)(s+4)(s+12)]</option>
+                <option value="aula19_prop_b_5">Aula 19 - Proposto B (φ=5°): G(s) = (s+6)/[(s+2)(s+4)(s+12)]</option>
+              </optgroup>
+              <optgroup label="📌 AULA 18: COMPENSADOR AVANÇO DE FASE (PD REAL)">
+                <option value="aula18">Aula 18 - PD Real EEL6005 (PO=4.32%, Tp=1.047s, N=10, 1/[s(s+3)])</option>
+                <option value="exercicio_n8">Exercício Proposto N=8 (PO=4.32%, Tp=1.047s, N=8, 1/[s(s+3)])</option>
+                <option value="exercicio_n12">Exercício Proposto N=12 (PO=4.32%, Tp=1.047s, N=12, 1/[s(s+3)])</option>
+                <option value="planta_sd2">Polo sd = -2 + j2 (PO=4.32%, Tp=1.57s, N=10, 1/[s(s+3)])</option>
+                <option value="atraso_fase">Compensador por Atraso de Fase (Melhoria de Kv em 10×)</option>
+                <option value="avanco_atraso">Compensador Avanço-Atraso (Lead-Lag Completo)</option>
+              </optgroup>
             </select>
           </div>
         </div>
@@ -481,7 +490,8 @@
           <div>
             <label style="display: block; font-size: 0.78rem; font-weight: 700; color: var(--primary); margin-bottom: 5px;">Tipo de Controlador:</label>
             <select id="compTypeSelect" onchange="recalcularCompensador()" style="width: 100%; background: var(--input-bg, #1E293B); color: var(--text); border: 1px solid var(--card-border); border-radius: 6px; padding: 8px 10px; font-size: 0.88rem; font-weight: 600;">
-              <option value="lead">1. Avanço de Fase (Lead / PD Real)</option>
+              <option value="pi">📌 Controlador PI para Erro Nulo ao Degrau (Aula 19 - EEL6005)</option>
+              <option value="lead">1. Avanço de Fase (Lead / PD Real - Aula 18)</option>
               <option value="lag">2. Atraso de Fase (Lag / PI Real)</option>
               <option value="lead-lag">3. Avanço-Atraso (Lead-Lag / PID)</option>
             </select>

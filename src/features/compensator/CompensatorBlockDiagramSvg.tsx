@@ -99,13 +99,17 @@ export const CompensatorBlockDiagramSvg: React.FC<CompensatorBlockDiagramSvgProp
             strokeWidth="2"
           />
           <text x={showPreFilter ? "415" : "355"} y="88" fill="#38BDF8" fontSize="12" fontWeight="bold" textAnchor="middle">
-            Controlador Gc(s) ({result.type.toUpperCase()})
+            {result.type === 'pi' ? 'Controlador PI Gc(s)' : `Controlador Gc(s) (${result.type.toUpperCase()})`}
           </text>
           <text x={showPreFilter ? "415" : "355"} y="110" fill="#F8FAFC" fontSize="11" fontWeight="bold" textAnchor="middle">
-            {result.Kc.toFixed(1)} · (s + {result.zc.toFixed(2)}) / (s + {result.pc.toFixed(1)})
+            {result.type === 'pi' && result.piDetails
+              ? `${result.Kc.toFixed(2)} · (s + ${result.piDetails.zi_lim.toFixed(3)}) / s`
+              : `${result.Kc.toFixed(1)} · (s + ${result.zc.toFixed(2)}) / (s + ${result.pc.toFixed(1)})`}
           </text>
           <text x={showPreFilter ? "415" : "355"} y="125" fill="#94A3B8" fontSize="9.5" textAnchor="middle">
-            Kp={result.Kp.toFixed(2)}, Td={result.Td.toFixed(3)}s
+            {result.type === 'pi'
+              ? `zi = ${result.zc.toFixed(3)} rad/s (Polo em s = 0)`
+              : `Kp=${result.Kp.toFixed(2)}, Td=${result.Td.toFixed(3)}s`}
           </text>
 
           {/* Linha de Controle U(s) */}

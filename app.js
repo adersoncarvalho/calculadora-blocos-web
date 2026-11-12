@@ -9132,6 +9132,70 @@ if (document.readyState === "loading") {
 // =============================================================================
 
 const COMP_PRESETS = {
+  // --- AULA 19: CONTROLADOR PI PARA ERRO NULO AO DEGRAU (EEL6005) ---
+  aula19_ex1: {
+    type: 'pi',
+    Tp: 1.047,
+    PO: 4.32,
+    N: 10,
+    forcedPhiDeg: 10,
+    plant: '1 / [(s+1)(s+5)]',
+    num: [1],
+    den: [1, 6, 5],
+    poles: [-1, -5]
+  },
+  aula19_ex2: {
+    type: 'pi',
+    Tp: 0.789,
+    PO: 4.32,
+    N: 10,
+    forcedPhiDeg: 10,
+    sdManual: { re: -3.97, im: 3.98 },
+    plant: '(s+3) / [(s+0.5)(s+4)(s+6)]',
+    num: [1, 3],
+    den: [1, 10.5, 29, 12],
+    poles: [-0.5, -4, -6],
+    zeros: [-3]
+  },
+  aula19_prop_a: {
+    type: 'pi',
+    Tp: 0.622,
+    PO: 4.32,
+    N: 10,
+    forcedPhiDeg: 5,
+    plant: '1 / [(s+0.1)(s+10)]',
+    num: [1],
+    den: [1, 10.1, 1],
+    poles: [-0.1, -10]
+  },
+  aula19_prop_b_10: {
+    type: 'pi',
+    Tp: 0.423,
+    PO: 9.35,
+    N: 10,
+    forcedPhiDeg: 10,
+    sdManual: { re: -5.57, im: 7.42 },
+    plant: '(s+6) / [(s+2)(s+4)(s+12)]',
+    num: [1, 6],
+    den: [1, 18, 80, 96],
+    poles: [-2, -4, -12],
+    zeros: [-6]
+  },
+  aula19_prop_b_5: {
+    type: 'pi',
+    Tp: 0.423,
+    PO: 9.35,
+    N: 10,
+    forcedPhiDeg: 5,
+    sdManual: { re: -5.57, im: 7.42 },
+    plant: '(s+6) / [(s+2)(s+4)(s+12)]',
+    num: [1, 6],
+    den: [1, 18, 80, 96],
+    poles: [-2, -4, -12],
+    zeros: [-6]
+  },
+
+  // --- AULA 18: COMPENSADOR AVANÇO DE FASE (PD REAL) ---
   aula18: {
     type: 'lead',
     Tp: 1.047,
