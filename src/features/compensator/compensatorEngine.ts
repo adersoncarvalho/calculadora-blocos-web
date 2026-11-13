@@ -10,6 +10,7 @@
  */
 
 export type CompensatorType = 'lead' | 'pi' | 'lag' | 'lead-lag';
+export type LeadCriterion = 'bissetriz' | 'cancelamento' | 'r_fixo' | 'erro_regime';
 
 export interface PlantConfig {
   num: number[]; // Coeficientes do numerador em s (ordem decrescente, ex: [1])
@@ -21,6 +22,7 @@ export interface PlantConfig {
 
 export interface CompensatorInputs {
   type: CompensatorType;
+  leadCriterion?: LeadCriterion;
   Tp: number; // Tempo de pico desejado (s)
   PO: number; // Sobressinal percentual desejado (%)
   N: number;  // Fator de filtro do compensador (faixa usual 8-12, padrão 10)
@@ -101,7 +103,9 @@ export interface CompensatorResult {
   phiDef: number; // Deficiência angular líquida (graus)
 
   // Passo 3: Dimensionamento de zc e pc
-  r: number; // r = N + 1
+  leadCriterion?: LeadCriterion;
+  qBissetriz?: number;
+  r: number; // r = N + 1 ou r = q^2 (Bissetriz)
   phiPerStage: number; // Ângulo por estágio (graus)
   mStages: number; // Número de estágios
   phiMax: number; // Ângulo máximo teórico de um estágio
@@ -382,10 +386,12 @@ export function calculateCompensator(inputs: CompensatorInputs): CompensatorResu
   while (argPlant > 180) argPlant -= 360;
   while (argPlant < -180) argPlant += 360;
 
-  // Ângulos individuais da planta de 2a ordem padrão
-  const theta1_prime = (Math.atan2(wd, sigmaD) * 180) / Math.PI;
-  const theta1 = 180 - theta1_prime;
-  const theta2 = 90;
+  // Ângulos individuais dos polos da planta
+  const p1 = plant.poles && plant.poles.length > 0 ? plant.poles[0] : 0;
+  const p2 = plant.poles && plant.poles.length > 1 ? plant.poles[1] : -3;
+  const theta1 = (Math.atan2(wd, sd.re - p1) * 180) / Math.PI;
+  const theta1_prime = 180 - theta1;
+  const theta2 = (Math.atan2(wd, sd.re - p2) * 180) / Math.PI;
   const thetaPlanta = -(theta1 + theta2);
 
   let phiDef = -180 - thetaPlanta;
@@ -639,36 +645,88 @@ xtitle("Resposta ao Degrau - Aula 19", "Tempo (s)", "Saida y(t)");
   }
 
   // =========================================================================
-  // MODELO: AVANÇO DE FASE / LEAD / PD REAL (AULA 18)
+  // MODELO: AVANÇO DE FASE / LEAD / PD REAL (AULAS 18 E 20)
   // =========================================================================
-  const r = N + 1;
-  const cotm = (2 * Math.sqrt(r) - zeta * (r + 1)) / (Math.sqrt(1 - zeta * zeta) * (r - 1));
-  const phiMax = (Math.atan2(1, cotm) * 180) / Math.PI;
-
-  let mStages = Math.ceil(phiDef / (0.95 * phiMax));
-  if (mStages < 1) mStages = 1;
-
-  const phiPerStage = phiDef / mStages;
-  const phiRad = (phiPerStage * Math.PI) / 180;
-  const cotPhi = 1 / Math.tan(phiRad);
-
-  const C2 = r;
-  const C1_poly = -(sigmaD * (r + 1) + wd * (r - 1) * cotPhi);
-  const C0 = sigmaD * sigmaD + wd * wd;
-
-  const delta = C1_poly * C1_poly - 4 * C2 * C0;
+  const leadCriterion: LeadCriterion = inputs.leadCriterion || 'r_fixo';
+  let r: number;
+  let phiMax = 0;
+  let mStages = 1;
+  let phiPerStage = phiDef;
+  let C2 = 0;
+  let C1_poly = 0;
+  let C0 = sigmaD * sigmaD + wd * wd;
   let rootsZc: number[] = [];
-  if (delta >= 0) {
-    const z1 = (-C1_poly + Math.sqrt(delta)) / (2 * C2);
-    const z2 = (-C1_poly - Math.sqrt(delta)) / (2 * C2);
-    rootsZc = [z1, z2].sort((a, b) => b - a);
-  } else {
-    const zCrit = -C1_poly / (2 * C2);
-    rootsZc = [zCrit, zCrit];
-  }
+  let zc = 0;
+  let pc = 0;
+  let qBissetriz: number | undefined;
 
-  const zc = rootsZc[0];
-  const pc = r * zc;
+  if (leadCriterion === 'bissetriz') {
+    // AULA 20: CRITÉRIO DA BISSETRIZ (MENOR r, MENOR Kc E MENOR CHUTE INICIAL)
+    const sq = Math.sqrt(1 - zeta * zeta);
+    const phiRad = (phiDef * Math.PI) / 180;
+    const sinPhi = Math.sin(phiRad);
+    const tanPhi = Math.tan(phiRad);
+    qBissetriz = (1 + sq / sinPhi) / (zeta + sq / tanPhi);
+    r = qBissetriz * qBissetriz;
+    const magSd = Math.sqrt(sigmaD * sigmaD + wd * wd);
+    zc = magSd / qBissetriz;
+    pc = magSd * qBissetriz;
+    rootsZc = [zc];
+    mStages = 1;
+    phiPerStage = phiDef;
+    phiMax = phiDef;
+    C2 = r;
+    C1_poly = -(sigmaD * (r + 1));
+  } else if (leadCriterion === 'cancelamento') {
+    // AULA 20: CANCELAMENTO DE POLO REAL DA PLANTA
+    let plantPoleReal = 3.0;
+    if (plant.poles && plant.poles.length > 0) {
+      const realPoles = plant.poles.filter(p => p < 0);
+      if (realPoles.length > 0) plantPoleReal = Math.abs(realPoles[0]);
+    }
+    zc = plantPoleReal;
+    const thetaZRad = Math.atan2(wd, sd.re + zc);
+    const thetaZDeg = (thetaZRad * 180) / Math.PI;
+    const thetaPDeg = thetaZDeg - phiDef;
+    const thetaPRad = (thetaPDeg * Math.PI) / 180;
+    pc = sigmaD + wd / Math.tan(thetaPRad);
+    r = pc / zc;
+    rootsZc = [zc];
+    mStages = 1;
+    phiPerStage = phiDef;
+    phiMax = phiDef;
+    C2 = r;
+    C1_poly = -(sigmaD * (r + 1));
+  } else {
+    // AULA 18: RAZÃO r = N + 1 FIXA (PD REAL CLÁSSICO)
+    r = N + 1;
+    const cotm = (2 * Math.sqrt(r) - zeta * (r + 1)) / (Math.sqrt(1 - zeta * zeta) * (r - 1));
+    phiMax = (Math.atan2(1, cotm) * 180) / Math.PI;
+
+    mStages = Math.ceil(phiDef / (0.95 * phiMax));
+    if (mStages < 1) mStages = 1;
+
+    phiPerStage = phiDef / mStages;
+    const phiRad = (phiPerStage * Math.PI) / 180;
+    const cotPhi = 1 / Math.tan(phiRad);
+
+    C2 = r;
+    C1_poly = -(sigmaD * (r + 1) + wd * (r - 1) * cotPhi);
+    C0 = sigmaD * sigmaD + wd * wd;
+
+    const delta = C1_poly * C1_poly - 4 * C2 * C0;
+    if (delta >= 0) {
+      const z1 = (-C1_poly + Math.sqrt(delta)) / (2 * C2);
+      const z2 = (-C1_poly - Math.sqrt(delta)) / (2 * C2);
+      rootsZc = [z1, z2].sort((a, b) => b - a);
+    } else {
+      const zCrit = -C1_poly / (2 * C2);
+      rootsZc = [zCrit, zCrit];
+    }
+
+    zc = rootsZc[0];
+    pc = r * zc;
+  }
 
   let zc_lag: number | undefined;
   let pc_lag: number | undefined;
@@ -760,7 +818,58 @@ xtitle("Resposta ao Degrau - Aula 19", "Tempo (s)", "Saida y(t)");
     uMax_withFilter
   };
 
-  const scilabScript = `// ============================================================
+  let scilabScript = '';
+  if (leadCriterion === 'bissetriz') {
+    scilabScript = `// ============================================================
+// Projeto de Compensador por Avanço de Fase (Bissetriz) — Aula 20
+// Gc(s) = Kc*(s+zc)/(s+pc), com r = pc/zc = q^2
+// ============================================================
+deff("y=ev(c,x)","y=sum(c.*x.^(length(c)-1:-1:0))");
+numc = [${plant.num.join(' ')}];
+denc = [${plant.den.join(' ')}];
+sd = -${sigmaD.toFixed(4)} + ${wd.toFixed(4)}*%i;
+m = 1;
+C1 = ${C1};
+
+Lsd = ev(numc, sd) / ev(denc, sd);
+ang = atan(imag(Lsd), real(Lsd)) * 180 / %pi;
+th = pmodulo(-ang, 360) - 180;
+phi = th / m * %pi / 180;
+zeta = -real(sd) / abs(sd);
+sq = sqrt(1 - zeta^2);
+
+// Passo da Bissetriz (formula analitica fechada)
+q = (1 + sq / sin(phi)) / (zeta + sq / tan(phi));
+zc = abs(sd) / q;
+pc = abs(sd) * q;
+r = q^2;
+
+Kc = abs(ev(denc, sd)) / abs(ev(numc, sd)) * (abs(sd + pc) / abs(sd + zc))^m;
+Ke = Kc^(1/m);
+Kp = Ke / r;
+
+R1 = 1 / (zc * C1);
+R2 = Kp * R1;
+C2 = 1 / (pc * R2);
+
+mprintf("zc=%.3f pc=%.3f r=%.3f Kc=%.2f Kp=%.2f\\n", zc, pc, r, Kc, Kp);
+mprintf("R1=%.1fk R2=%.1fk C2=%.1fnF\\n", R1/1e3, R2/1e3, C2*1e9);
+
+s = poly(0, "s");
+Ls = poly(numc($:-1:1), "s", "coeff") / poly(denc($:-1:1), "s", "coeff");
+Gc = Kc * (s + zc) / (s + pc);
+
+T = syslin("c", Gc * Ls / (1 + Gc * Ls));
+t = linspace(0, 6, 3000);
+y = csim("step", t, T);
+
+scf(0); clf();
+plot2d(t, y', style=2);
+xgrid();
+xtitle("Resposta ao Degrau - Avanço por Bissetriz (Aula 20)", "Tempo (s)", "Saida y(t)");
+`;
+  } else {
+    scilabScript = `// ============================================================
 //  Projeto de Controlador por Lugar das Raízes — Aula 18
 //  Modelo: ${type.toUpperCase()} | Planta: ${plant.label}
 //  Gerado Automaticamente pela Calculadora de Controle EEL6005
@@ -825,9 +934,12 @@ xgrid();
 legend(["Sem pre-filtro F(s)", "Com pre-filtro F(s)"]);
 xtitle("Resposta ao Degrau - Aula 18", "Tempo (s)", "Saida y(t)");
 `;
+  }
 
   return {
     type,
+    leadCriterion,
+    qBissetriz,
     inputs,
     zeta,
     wn,

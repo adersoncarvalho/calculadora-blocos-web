@@ -4,6 +4,7 @@ import React, { useState, useMemo } from 'react';
 import { MathView } from '@/components/MathView';
 import {
   CompensatorType,
+  LeadCriterion,
   CompensatorInputs,
   calculateCompensator,
   PlantConfig,
@@ -21,6 +22,7 @@ interface PresetItem {
   id: string;
   name: string;
   type: CompensatorType;
+  leadCriterion?: LeadCriterion;
   Tp: number;
   PO: number;
   N: number;
@@ -32,6 +34,39 @@ interface PresetItem {
 }
 
 const PRESETS: PresetItem[] = [
+  // --- AULA 20: COMPENSADOR POR AVANÇO DE FASE PELO LGR (BISSETRIZ & CANCELAMENTO) ---
+  {
+    id: 'aula20_bissetriz',
+    name: '🌟 Aula 20 - Avanço Bissetriz: 1/[s(s+3)], sd = -3+j3 (q=√2, r=2, zc=3, pc=6, Kc=18, Kp=9)',
+    type: 'lead',
+    leadCriterion: 'bissetriz',
+    Tp: 1.047,
+    PO: 4.32,
+    N: 10,
+    plant: { num: [1], den: [1, 3, 0], label: '1 / [s(s+3)]', poles: [0, -3] }
+  },
+  {
+    id: 'aula20_cancelamento',
+    name: '🌟 Aula 20 - Cancelamento de Polo Real: zc = 3, pc = 6, Kc = 18 (Malha 2ª Ordem Pura)',
+    type: 'lead',
+    leadCriterion: 'cancelamento',
+    Tp: 1.047,
+    PO: 4.32,
+    N: 10,
+    plant: { num: [1], den: [1, 3, 0], label: '1 / [s(s+3)]', poles: [0, -3] }
+  },
+  {
+    id: 'aula20_prop_sd2',
+    name: '⚡ Aula 20 - Proposto Bissetriz sd = -2+j2: θdef=18.4°, r=1.31, zc=2.472, pc=3.24, Kc=7.2',
+    type: 'lead',
+    leadCriterion: 'bissetriz',
+    Tp: 1.571,
+    PO: 4.32,
+    N: 10,
+    sdManual: { re: -2.0, im: 2.0 },
+    plant: { num: [1], den: [1, 3, 0], label: '1 / [s(s+3)]', poles: [0, -3] }
+  },
+
   // --- AULA 19: CONTROLADOR PI PARA ERRO NULO AO DEGRAU (EEL6005) ---
   {
     id: 'aula19_ex1',
@@ -90,8 +125,9 @@ const PRESETS: PresetItem[] = [
   // --- AULA 18: COMPENSADOR POR AVANÇO DE FASE (PD REAL) ---
   {
     id: 'aula18',
-    name: '📌 Aula 18 - PD Real EEL6005 (PO=4.32%, Tp=1.047s, N=10, 1/[s(s+3)])',
+    name: '📌 Aula 18 - PD Real EEL6005 (PO=4.32%, Tp=1.047s, N=10, r=11, 1/[s(s+3)])',
     type: 'lead',
+    leadCriterion: 'r_fixo',
     Tp: 1.047,
     PO: 4.32,
     N: 10,
@@ -99,8 +135,9 @@ const PRESETS: PresetItem[] = [
   },
   {
     id: 'exercicio_n8',
-    name: '⚡ Exercício Proposto N=8 (PO=4.32%, Tp=1.047s, N=8, 1/[s(s+3)])',
+    name: '⚡ Exercício Proposto N=8 (PO=4.32%, Tp=1.047s, N=8, r=9, 1/[s(s+3)])',
     type: 'lead',
+    leadCriterion: 'r_fixo',
     Tp: 1.047,
     PO: 4.32,
     N: 8,
@@ -108,8 +145,9 @@ const PRESETS: PresetItem[] = [
   },
   {
     id: 'exercicio_n12',
-    name: '⚡ Exercício Proposto N=12 (PO=4.32%, Tp=1.047s, N=12, 1/[s(s+3)])',
+    name: '⚡ Exercício Proposto N=12 (PO=4.32%, Tp=1.047s, N=12, r=13, 1/[s(s+3)])',
     type: 'lead',
+    leadCriterion: 'r_fixo',
     Tp: 1.047,
     PO: 4.32,
     N: 12,
@@ -119,6 +157,7 @@ const PRESETS: PresetItem[] = [
     id: 'planta_sd2',
     name: '🎯 Polo sd = -2 + j2 (PO=4.32%, Tp=1.57s, N=10, 1/[s(s+3)])',
     type: 'lead',
+    leadCriterion: 'r_fixo',
     Tp: 1.571,
     PO: 4.32,
     N: 10,
@@ -151,6 +190,7 @@ const PRESETS: PresetItem[] = [
 export const CompensatorSection: React.FC<CompensatorSectionProps> = ({ onBack }) => {
   // Estado das entradas
   const [compType, setCompType] = useState<CompensatorType>('lead');
+  const [leadCriterionVal, setLeadCriterionVal] = useState<LeadCriterion>('bissetriz');
   const [tpVal, setTpVal] = useState<number>(1.047);
   const [poVal, setPoVal] = useState<number>(4.32);
   const [nVal, setNVal] = useState<number>(10);
@@ -174,6 +214,7 @@ export const CompensatorSection: React.FC<CompensatorSectionProps> = ({ onBack }
     const p = PRESETS.find(item => item.id === presetId);
     if (!p) return;
     setCompType(p.type);
+    if (p.leadCriterion) setLeadCriterionVal(p.leadCriterion);
     setTpVal(p.Tp);
     setPoVal(p.PO);
     setNVal(p.N);
@@ -188,6 +229,7 @@ export const CompensatorSection: React.FC<CompensatorSectionProps> = ({ onBack }
   const currentInputs: CompensatorInputs = useMemo(() => {
     return {
       type: compType,
+      leadCriterion: compType === 'lead' ? leadCriterionVal : undefined,
       Tp: tpVal > 0 ? tpVal : 1.047,
       PO: poVal > 0 ? poVal : 4.32,
       N: nVal >= 1 ? nVal : 10,
@@ -198,7 +240,7 @@ export const CompensatorSection: React.FC<CompensatorSectionProps> = ({ onBack }
       sdManual: sdManualVal,
       R1: r1Val
     };
-  }, [compType, tpVal, poVal, nVal, currentPlant, betaLagVal, zLagVal, forcedPhiVal, sdManualVal, r1Val]);
+  }, [compType, leadCriterionVal, tpVal, poVal, nVal, currentPlant, betaLagVal, zLagVal, forcedPhiVal, sdManualVal, r1Val]);
 
   const result = useMemo(() => {
     return calculateCompensator(currentInputs);
@@ -284,11 +326,16 @@ export const CompensatorSection: React.FC<CompensatorSectionProps> = ({ onBack }
                 padding: '6px 10px',
                 fontSize: '0.84rem',
                 cursor: 'pointer',
-                maxWidth: '420px'
+                maxWidth: '440px'
               }}
               onChange={e => handleSelectPreset(e.target.value)}
-              defaultValue="aula18"
+              defaultValue="aula20_bissetriz"
             >
+              <optgroup label="🌟 AULA 20: AVANÇO DE FASE PELO LGR (BISSETRIZ & CANCELAMENTO)">
+                <option value="aula20_bissetriz">Aula 20 - Avanço Bissetriz: 1/[s(s+3)], sd = -3+j3 (q=√2, r=2, Kc=18)</option>
+                <option value="aula20_cancelamento">Aula 20 - Cancelamento de Polo: zc=3, pc=6, Kc=18 (2ª Ordem Pura)</option>
+                <option value="aula20_prop_sd2">Aula 20 - Proposto Bissetriz sd = -2+j2: θdef=18.4°, r=1.31, Kc=7.2</option>
+              </optgroup>
               <optgroup label="📌 AULA 19: CONTROLADOR PI PARA ERRO NULO AO DEGRAU">
                 <option value="aula19_ex1">Aula 19 - Exemplo 1: G(s) = 1/[(s+1)(s+5)], sd = -3+j3, φ=10°</option>
                 <option value="aula19_ex2">Aula 19 - Exemplo 2: G(s) = (s+3)/[(s+0.5)(s+4)(s+6)], sd = -3.97+j3.98 (Dipolo)</option>
@@ -296,10 +343,10 @@ export const CompensatorSection: React.FC<CompensatorSectionProps> = ({ onBack }
                 <option value="aula19_prop_b_10">Aula 19 - Proposto B (φ=10°): G(s) = (s+6)/[(s+2)(s+4)(s+12)]</option>
                 <option value="aula19_prop_b_5">Aula 19 - Proposto B (φ=5°): G(s) = (s+6)/[(s+2)(s+4)(s+12)]</option>
               </optgroup>
-              <optgroup label="📌 AULA 18: COMPENSADOR AVANÇO DE FASE (PD REAL)">
-                <option value="aula18">Aula 18 - PD Real Padrão: 1/[s(s+3)], PO=4.32%, Tp=1.047s, N=10</option>
-                <option value="exercicio_n8">Exercício Proposto N=8: 1/[s(s+3)]</option>
-                <option value="exercicio_n12">Exercício Proposto N=12: 1/[s(s+3)]</option>
+              <optgroup label="📌 AULA 18: COMPENSADOR AVANÇO DE FASE (PD REAL CLÁSSICO r=N+1)">
+                <option value="aula18">Aula 18 - PD Real Padrão: 1/[s(s+3)], PO=4.32%, Tp=1.047s, N=10, r=11</option>
+                <option value="exercicio_n8">Exercício Proposto N=8: 1/[s(s+3)], r=9</option>
+                <option value="exercicio_n12">Exercício Proposto N=12: 1/[s(s+3)], r=13</option>
                 <option value="planta_sd2">Polo sd = -2 + j2: 1/[s(s+3)], Tp=1.57s</option>
               </optgroup>
               <optgroup label="📌 OUTRAS TOPOLOGIAS LGR">
@@ -403,7 +450,31 @@ export const CompensatorSection: React.FC<CompensatorSectionProps> = ({ onBack }
           </div>
 
           {/* 5. Parâmetro Específico conforme Tipo */}
-          {compType === 'pi' ? (
+          {compType === 'lead' ? (
+            <div>
+              <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: 'var(--primary)', marginBottom: '5px' }}>
+                Critério de Avanço de Fase (Aulas 18 e 20):
+              </label>
+              <select
+                value={leadCriterionVal}
+                onChange={e => setLeadCriterionVal(e.target.value as LeadCriterion)}
+                style={{
+                  width: '100%',
+                  background: 'var(--input-bg, #1E293B)',
+                  color: 'var(--text)',
+                  border: '1px solid var(--card-border)',
+                  borderRadius: '6px',
+                  padding: '8px 10px',
+                  fontSize: '0.88rem',
+                  fontWeight: 600
+                }}
+              >
+                <option value="bissetriz">🌟 Bissetriz do Ângulo (Menor r e Kc = 18 - Aula 20)</option>
+                <option value="cancelamento">🌟 Cancelamento de Polo Real (zc = |p_planta| - Aula 20)</option>
+                <option value="r_fixo">📌 Razão r = N + 1 Fixa (PD Real Clássico - Aula 18)</option>
+              </select>
+            </div>
+          ) : compType === 'pi' ? (
             <div>
               <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: '#10B981', marginBottom: '5px' }}>
                 Orçamento de Ângulo φ:
@@ -449,6 +520,52 @@ export const CompensatorSection: React.FC<CompensatorSectionProps> = ({ onBack }
             </div>
           )}
         </div>
+
+        {/* Parâmetros Extras se Lead, PI ou Atraso */}
+        {compType === 'lead' && (
+          <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px dashed var(--card-border)', display: 'flex', gap: '16px', flexWrap: 'wrap', alignItems: 'center' }}>
+            {leadCriterionVal === 'r_fixo' ? (
+              <div style={{ flex: 1, minWidth: '220px' }}>
+                <label style={{ display: 'block', fontSize: '0.76rem', color: 'var(--primary)', fontWeight: 700 }}>
+                  Fator de Filtro N (Razão r = N + 1 = {nVal + 1}):
+                </label>
+                <input
+                  type="number"
+                  value={nVal}
+                  onChange={e => setNVal(parseInt(e.target.value, 10) || 10)}
+                  style={{
+                    width: '100%',
+                    background: 'var(--input-bg, #1E293B)',
+                    color: 'var(--text)',
+                    border: '1px solid var(--card-border)',
+                    borderRadius: '6px',
+                    padding: '6px 10px',
+                    fontSize: '0.84rem'
+                  }}
+                />
+              </div>
+            ) : leadCriterionVal === 'bissetriz' ? (
+              <div style={{ flex: 1, minWidth: '260px' }}>
+                <span style={{ fontSize: '0.82rem', color: '#10B981', background: 'rgba(16,185,129,0.1)', padding: '8px 14px', borderRadius: '8px', display: 'block', border: '1px solid rgba(16,185,129,0.3)', lineHeight: '1.5' }}>
+                  📐 <b>Critério da Bissetriz (Aula 20):</b> A razão <code>r = q² = {result.r.toFixed(3)}</code> minimiza o ganho de alta frequência <code>Kc = {result.Kc.toFixed(2)}</code> (10,5× menor que PD Real) com <code>zc·pc = |sd|² = {(result.sd.re*result.sd.re + result.sd.im*result.sd.im).toFixed(2)}</code>.
+                </span>
+              </div>
+            ) : (
+              <div style={{ flex: 1, minWidth: '260px' }}>
+                <span style={{ fontSize: '0.82rem', color: '#38BDF8', background: 'rgba(56,189,248,0.1)', padding: '8px 14px', borderRadius: '8px', display: 'block', border: '1px solid rgba(56,189,248,0.3)', lineHeight: '1.5' }}>
+                  🎯 <b>Cancelamento de Polo Real (Aula 20):</b> <code>zc = {result.zc.toFixed(3)}</code> cancela o polo da planta em malha aberta, gerando uma função de malha fechada de <b>2ª Ordem Pura</b> sem necessidade de pré-filtro!
+                </span>
+              </div>
+            )}
+            {sdManualVal && (
+              <div style={{ flex: 1, minWidth: '180px', display: 'flex', alignItems: 'center' }}>
+                <span style={{ fontSize: '0.8rem', color: '#38BDF8', background: 'rgba(56,189,248,0.1)', padding: '6px 12px', borderRadius: '6px' }}>
+                  🎯 Polo Desejado Definido no Exemplo: <b>sd = {sdManualVal.re} + j{sdManualVal.im}</b>
+                </span>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Parâmetros Extras se PI ou Atraso */}
         {compType === 'pi' && (
@@ -539,7 +656,7 @@ export const CompensatorSection: React.FC<CompensatorSectionProps> = ({ onBack }
       />
 
       {/* ========================================================================= */}
-      {/* MEMORIAL ANALÍTICO DIDÁTICO: AULA 19 (PI) OU AULA 18 (LEAD/LAG)            */}
+      {/* MEMORIAL ANALÍTICO DIDÁTICO: AULA 19 (PI), AULA 20 (AVANÇO BISSETRIZ/CANCELAMENTO) OU AULA 18 (PD REAL) */}
       {/* ========================================================================= */}
       {result.type === 'pi' && result.piDetails ? (
         /* MEMORIAL ESPECÍFICO DA AULA 19 (CONTROLADOR PI PARA ERRO NULO) */
@@ -702,6 +819,240 @@ export const CompensatorSection: React.FC<CompensatorSectionProps> = ({ onBack }
                 <div style={{ fontWeight: 700, color: '#FBBF24', fontSize: '0.84rem' }}>Proteção Anti-Windup</div>
                 <div style={{ fontSize: '0.82rem', color: 'var(--text)', marginTop: '4px', lineHeight: '1.6' }}>
                   Dois diodos Zener em antiparalelo no laço de realimentação do capacitor C para impedir saturação profunda e atraso no restabelecimento do sinal de controle.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : result.type === 'lead' && (result.leadCriterion === 'bissetriz' || result.leadCriterion === 'cancelamento') ? (
+        /* MEMORIAL ESPECÍFICO DA AULA 20 (AVANÇO DE FASE: BISSETRIZ & CANCELAMENTO) */
+        <div style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)', borderRadius: '12px', padding: '20px', marginBottom: '24px' }}>
+          <div style={{ borderBottom: '1px solid var(--card-border)', paddingBottom: '12px', marginBottom: '18px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+              <span style={{ fontSize: '0.76rem', fontWeight: 800, color: '#38BDF8', textTransform: 'uppercase' }}>
+                Memorial Didático Oficial • Aula 20 (EEL6005)
+              </span>
+              <span style={{ fontSize: '0.74rem', background: 'rgba(56,189,248,0.15)', color: '#38BDF8', padding: '4px 10px', borderRadius: '6px', fontWeight: 700 }}>
+                {result.leadCriterion === 'bissetriz' ? '📐 Critério da Bissetriz (Menor r e Menor Kc)' : '🎯 Cancelamento de Polo Real (2ª Ordem Pura)'}
+              </span>
+            </div>
+            <h2 style={{ margin: '4px 0 0 0', fontSize: '1.35rem', color: 'var(--text)' }}>
+              Compensador por Avanço de Fase pelo LGR (Grau de Liberdade da Razão r)
+            </h2>
+          </div>
+
+          {/* PASSO 0 • Grau de Liberdade de r */}
+          <div style={{ marginBottom: '22px' }}>
+            <h3 style={{ fontSize: '1.05rem', color: 'var(--primary)', margin: '0 0 6px 0' }}>
+              0. PASSO 0 – Desacoplamento da Razão r = pc / zc (Diferença Crucial da Aula 20)
+            </h3>
+            <p style={{ fontSize: '0.86rem', color: 'var(--text)', margin: '0 0 10px 0', lineHeight: '1.5' }}>
+              Na <b>Aula 18 (PD Real)</b>, a razão era fixada compulsoriamente em <code>r = N + 1 = 11</code>, o que impunha um ganho de alta frequência muito elevado (<code>Kc = 188,5</code>), extrema amplificação de ruído e rápida saturação do atuador (<code>Δe ≤ 0,053 V</code>).
+              <br />
+              Na <b>Aula 20 (Avanço de Fase Genérico)</b>, a razão <code>r = pc / zc</code> torna-se um <b>grau de liberdade de projeto</b>:
+            </p>
+            <div style={{ background: '#0F172A', padding: '12px', borderRadius: '8px', border: '1px solid #1E293B', fontSize: '0.84rem', lineHeight: '1.6' }}>
+              • <b>Critério da Bissetriz:</b> Posiciona a bissetriz do ângulo de avanço <code>ϕ</code> alinhada com a reta que une a origem ao polo desejado <code>sd</code>. Isso <b>minimiza rigorosamente a razão r</b> para a deficiência necessária (<code>r = q² = {result.r.toFixed(3)}</code>), reduzindo o ganho <code>Kc</code> para apenas <b>{result.Kc.toFixed(2)}</b> (redução de mais de 10 vezes!).
+              <br />
+              • <b>Cancelamento de Polo Real:</b> Escolhe <code>zc = |p_planta| = {result.zc.toFixed(3)}</code>, cancelando exatamente o polo em malha aberta e transformando a malha fechada em um sistema de <b>2ª Ordem Pura</b>!
+            </div>
+          </div>
+
+          {/* PASSO 1 • Polo Desejado */}
+          <div style={{ marginBottom: '22px' }}>
+            <h3 style={{ fontSize: '1.05rem', color: 'var(--primary)', margin: '0 0 6px 0' }}>
+              1. PASSO 1 – Determinação do Polo Dominante Desejado (sd)
+            </h3>
+            <div style={{ background: '#0F172A', padding: '12px', borderRadius: '8px', border: '1px solid #1E293B' }}>
+              <MathView math={`\\zeta = \\frac{-\\ln(PO / 100)}{\\sqrt{\\pi^2 + \\ln^2(PO / 100)}} = ${result.zeta.toFixed(4)} \\approx ${result.zeta.toFixed(3)}`} block />
+              <MathView math={`\\omega_n = \\frac{\\pi}{T_p \\sqrt{1 - \\zeta^2}} = ${result.wn.toFixed(3)} \\text{ rad/s}, \\quad \\sigma_d = \\zeta \\omega_n = ${result.sigmaD.toFixed(3)}, \\quad \\omega_d = ${result.wd.toFixed(3)} \\text{ rad/s}`} block />
+              <div style={{ textAlign: 'center', marginTop: '6px', fontWeight: 700, color: '#38BDF8' }}>
+                Polo Desejado: sd = -{result.sigmaD.toFixed(3)} ± j{result.wd.toFixed(3)} (|sd| = {(Math.sqrt(result.sigmaD*result.sigmaD + result.wd*result.wd)).toFixed(3)} rad/s)
+              </div>
+            </div>
+          </div>
+
+          {/* PASSO 2 • Deficiência Angular */}
+          <div style={{ marginBottom: '26px' }}>
+            <h3 style={{ fontSize: '1.05rem', color: '#EF4444', margin: '0 0 6px 0' }}>
+              2. PASSO 2 – Deficiência Angular (θdef = {result.phiDef.toFixed(2)}°)
+            </h3>
+            <p style={{ fontSize: '0.86rem', color: 'var(--text)', margin: '0 0 10px 0', lineHeight: '1.5' }}>
+              Condição de fase do LGR com a planta no ponto de teste <code>sd</code>:
+            </p>
+            <PhaseDeficiencySvg result={result} />
+            <div style={{ background: '#0F172A', padding: '12px', borderRadius: '8px', border: '1px solid #1E293B', marginTop: '12px' }}>
+              <MathView math={`\\theta_{\\text{def}} = -180^\\circ - \\angle L(s_d) = ${result.phiDef.toFixed(2)}^\\circ`} block />
+            </div>
+          </div>
+
+          {/* PASSO 3 • Dimensionamento Analítico */}
+          <div style={{ marginBottom: '22px' }}>
+            <h3 style={{ fontSize: '1.05rem', color: '#10B981', margin: '0 0 6px 0' }}>
+              3. PASSO 3 – Dimensionamento Analítico Fechado ({result.leadCriterion === 'bissetriz' ? 'Critério da Bissetriz' : 'Cancelamento de Polo'})
+            </h3>
+            {result.leadCriterion === 'bissetriz' ? (
+              <div style={{ background: '#0F172A', padding: '12px', borderRadius: '8px', border: '1px solid #1E293B' }}>
+                <p style={{ fontSize: '0.84rem', color: 'var(--text)', margin: '0 0 8px 0' }}>
+                  Fórmula analítica exata fechada para o parâmetro geométrico <code>q</code> da bissetriz:
+                </p>
+                <MathView math={`q = \\frac{1 + \\frac{\\sqrt{1 - \\zeta^2}}{\\sin \\phi}}{\\zeta + \\frac{\\sqrt{1 - \\zeta^2}}{\\tan \\phi}} = \\frac{1 + \\frac{${(Math.sqrt(1 - result.zeta*result.zeta)).toFixed(4)}}{\\sin(${result.phiDef.toFixed(1)}^\\circ)}}{${result.zeta.toFixed(4)} + \\frac{${(Math.sqrt(1 - result.zeta*result.zeta)).toFixed(4)}}{\\tan(${result.phiDef.toFixed(1)}^\\circ)}} = ${result.qBissetriz?.toFixed(4)}`} block />
+                <MathView math={`r = q^2 = (${result.qBissetriz?.toFixed(4)})^2 = ${result.r.toFixed(3)}`} block />
+                <MathView math={`z_c = \\frac{|s_d|}{q} = \\frac{${(Math.sqrt(result.sigmaD*result.sigmaD + result.wd*result.wd)).toFixed(3)}}{${result.qBissetriz?.toFixed(4)}} = ${result.zc.toFixed(4)} \\text{ rad/s}`} block />
+                <MathView math={`p_c = |s_d| \\cdot q = ${(Math.sqrt(result.sigmaD*result.sigmaD + result.wd*result.wd)).toFixed(3)} \\cdot ${result.qBissetriz?.toFixed(4)} = ${result.pc.toFixed(4)} \\text{ rad/s}`} block />
+                <div style={{ textAlign: 'center', marginTop: '6px', fontWeight: 700, color: '#10B981' }}>
+                  Propriedade da Bissetriz: zc · pc = |sd|² = {(result.zc * result.pc).toFixed(2)} = {(result.sigmaD*result.sigmaD + result.wd*result.wd).toFixed(2)}
+                </div>
+              </div>
+            ) : (
+              <div style={{ background: '#0F172A', padding: '12px', borderRadius: '8px', border: '1px solid #1E293B' }}>
+                <p style={{ fontSize: '0.84rem', color: 'var(--text)', margin: '0 0 8px 0' }}>
+                  Cancelamento exato do polo real da planta em <code>s = -{result.zc.toFixed(3)}</code>:
+                </p>
+                <MathView math={`z_c = |p_{\\text{planta}}| = ${result.zc.toFixed(3)} \\text{ rad/s}`} block />
+                <MathView math={`\\theta_p = \\angle(s_d + z_c) - \\theta_{\\text{def}} = ${result.theta1.toFixed(1)}^\\circ - ${result.phiDef.toFixed(1)}^\\circ = ${(result.theta1 - result.phiDef).toFixed(1)}^\\circ`} block />
+                <MathView math={`p_c = \\sigma_d + \\frac{\\omega_d}{\\tan(\\theta_p)} = ${result.pc.toFixed(4)} \\text{ rad/s}, \\quad r = \\frac{p_c}{z_c} = ${result.r.toFixed(3)}`} block />
+              </div>
+            )}
+          </div>
+
+          {/* PASSO 4 • Ganho Kc */}
+          <div style={{ marginBottom: '22px' }}>
+            <h3 style={{ fontSize: '1.05rem', color: 'var(--primary)', margin: '0 0 6px 0' }}>
+              4. PASSO 4 – Ganho Kc pela Condição de Magnitude do LGR
+            </h3>
+            <div style={{ background: '#0F172A', padding: '12px', borderRadius: '8px', border: '1px solid #1E293B' }}>
+              <MathView math={`K_c = \\frac{1}{|L(s_d)|} \\cdot \\frac{|s_d + p_c|}{|s_d + z_c|} = \\frac{|s_d + ${result.pc.toFixed(3)}|}{|s_d + ${result.zc.toFixed(3)}|} \\cdot |s_d| \\cdot |s_d + 3| = ${result.Kc.toFixed(2)}`} block />
+              <MathView math={`G_c(s) = ${result.Kc.toFixed(2)} \\frac{s + ${result.zc.toFixed(3)}}{s + ${result.pc.toFixed(3)}}, \\quad K_p = \\frac{K_c}{r} = \\frac{${result.Kc.toFixed(2)}}{${result.r.toFixed(3)}} = ${result.Kp.toFixed(2)}`} block />
+              <div style={{ textAlign: 'center', marginTop: '6px', color: '#38BDF8', fontWeight: 700 }}>
+                Ganho Kc = {result.Kc.toFixed(2)} (vs 188,5 da Aula 18 — redução de {(188.55 / result.Kc).toFixed(1)}× na amplificação de ruído!)
+              </div>
+            </div>
+          </div>
+
+          {/* PASSO 5 • Malha Fechada e 2ª Ordem Pura */}
+          <div style={{ marginBottom: '22px' }}>
+            <h3 style={{ fontSize: '1.05rem', color: 'var(--primary)', margin: '0 0 6px 0' }}>
+              5. PASSO 5 – Cancelamento Exato de Polo/Zero e Sistema de 2ª Ordem Pura
+            </h3>
+            <div style={{ background: '#0F172A', padding: '12px', borderRadius: '8px', border: '1px solid #1E293B' }}>
+              <p style={{ fontSize: '0.84rem', color: 'var(--text)', margin: '0 0 8px 0', lineHeight: '1.6' }}>
+                Com a planta <code>L(s) = 1/[s(s+3)]</code> e o compensador <code>Gc(s) = {result.Kc.toFixed(1)}(s+{result.zc.toFixed(1)})/(s+{result.pc.toFixed(1)})</code>:
+              </p>
+              <MathView math={`T(s) = \\frac{G_c(s) L(s)}{1 + G_c(s) L(s)} = \\frac{${result.Kc.toFixed(1)} (s + ${result.zc.toFixed(1)})}{(s + ${result.zc.toFixed(1)})(s^2 + ${(2*result.sigmaD).toFixed(1)}s + ${(result.sigmaD*result.sigmaD + result.wd*result.wd).toFixed(1)})} = \\frac{${result.Kc.toFixed(1)}}{s^2 + ${(2*result.sigmaD).toFixed(1)}s + ${(result.sigmaD*result.sigmaD + result.wd*result.wd).toFixed(1)}}`} block />
+              <div style={{ textAlign: 'center', margin: '8px 0', color: '#10B981', fontWeight: 700, fontSize: '0.9rem' }}>
+                ✨ O zero zc = {result.zc.toFixed(1)} cancela exatamente o polo rápido em -{result.zc.toFixed(1)}!
+                <br />
+                A malha fechada torna-se de 2ª Ordem Pura, tornando o pré-filtro F(s) totalmente dispensável!
+              </div>
+            </div>
+          </div>
+
+          {/* PASSO 6 • Tabela Comparativa dos 12 Parâmetros (Slide 10 e 14) */}
+          <div style={{ marginBottom: '22px' }}>
+            <h3 style={{ fontSize: '1.05rem', color: 'var(--primary)', margin: '0 0 6px 0' }}>
+              6. PASSO 6 – Tabela Comparativa de Desempenho (Aula 18 vs Aula 20)
+            </h3>
+            <div style={{ background: '#0F172A', padding: '12px', borderRadius: '8px', border: '1px solid #1E293B', overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem', textAlign: 'center' }}>
+                <thead>
+                  <tr style={{ background: '#1E293B', color: '#F8FAFC' }}>
+                    <th style={{ padding: '8px', border: '1px solid #334155' }}>Parâmetro de Projeto</th>
+                    <th style={{ padding: '8px', border: '1px solid #334155', color: '#EF4444' }}>PD Real Clássico (N=10 - Aula 18)</th>
+                    <th style={{ padding: '8px', border: '1px solid #334155', color: '#10B981' }}>Avanço Bissetriz (Aula 20)</th>
+                    <th style={{ padding: '8px', border: '1px solid #334155', color: '#38BDF8' }}>Avanço Cancelamento (Aula 20)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td style={{ padding: '7px', border: '1px solid #334155', fontWeight: 600 }}>Razão r = pc / zc</td>
+                    <td style={{ padding: '7px', border: '1px solid #334155' }}>11,00 (fixa)</td>
+                    <td style={{ padding: '7px', border: '1px solid #334155', color: '#10B981', fontWeight: 700 }}>2,00 (mínima)</td>
+                    <td style={{ padding: '7px', border: '1px solid #334155', color: '#38BDF8' }}>2,00</td>
+                  </tr>
+                  <tr>
+                    <td style={{ padding: '7px', border: '1px solid #334155', fontWeight: 600 }}>Zero zc e Polo pc (rad/s)</td>
+                    <td style={{ padding: '7px', border: '1px solid #334155' }}>5,71 e 62,85</td>
+                    <td style={{ padding: '7px', border: '1px solid #334155', color: '#10B981' }}>3,00 e 6,00</td>
+                    <td style={{ padding: '7px', border: '1px solid #334155', color: '#38BDF8' }}>3,00 e 6,00</td>
+                  </tr>
+                  <tr>
+                    <td style={{ padding: '7px', border: '1px solid #334155', fontWeight: 600 }}>Ganho Kc (alta frequência)</td>
+                    <td style={{ padding: '7px', border: '1px solid #334155', color: '#EF4444' }}>188,55</td>
+                    <td style={{ padding: '7px', border: '1px solid #334155', color: '#10B981', fontWeight: 700 }}>18,00 (10,5× menor!)</td>
+                    <td style={{ padding: '7px', border: '1px solid #334155', color: '#38BDF8', fontWeight: 700 }}>18,00</td>
+                  </tr>
+                  <tr>
+                    <td style={{ padding: '7px', border: '1px solid #334155', fontWeight: 600 }}>Ganho DC Kp</td>
+                    <td style={{ padding: '7px', border: '1px solid #334155' }}>17,14</td>
+                    <td style={{ padding: '7px', border: '1px solid #334155' }}>9,00</td>
+                    <td style={{ padding: '7px', border: '1px solid #334155' }}>9,00</td>
+                  </tr>
+                  <tr>
+                    <td style={{ padding: '7px', border: '1px solid #334155', fontWeight: 600 }}>3º Polo de Malha Fechada</td>
+                    <td style={{ padding: '7px', border: '1px solid #334155' }}>-59,85</td>
+                    <td style={{ padding: '7px', border: '1px solid #334155', color: '#10B981', fontWeight: 700 }}>Cancelado em -3</td>
+                    <td style={{ padding: '7px', border: '1px solid #334155', color: '#38BDF8', fontWeight: 700 }}>Cancelado em -3</td>
+                  </tr>
+                  <tr>
+                    <td style={{ padding: '7px', border: '1px solid #334155', fontWeight: 600 }}>Sobressinal Mp (sem F)</td>
+                    <td style={{ padding: '7px', border: '1px solid #334155', color: '#EF4444' }}>31,2% (zero distorce)</td>
+                    <td style={{ padding: '7px', border: '1px solid #334155', color: '#10B981', fontWeight: 700 }}>4,32% (2ª ordem pura)</td>
+                    <td style={{ padding: '7px', border: '1px solid #334155', color: '#38BDF8', fontWeight: 700 }}>4,32%</td>
+                  </tr>
+                  <tr>
+                    <td style={{ padding: '7px', border: '1px solid #334155', fontWeight: 600 }}>Necessidade de Pré-Filtro F(s)</td>
+                    <td style={{ padding: '7px', border: '1px solid #334155', color: '#EF4444' }}>Obrigatório (F = 5.71/(s+5.71))</td>
+                    <td style={{ padding: '7px', border: '1px solid #334155', color: '#10B981', fontWeight: 700 }}>Dispensável!</td>
+                    <td style={{ padding: '7px', border: '1px solid #334155', color: '#38BDF8', fontWeight: 700 }}>Dispensável!</td>
+                  </tr>
+                  <tr>
+                    <td style={{ padding: '7px', border: '1px solid #334155', fontWeight: 600 }}>Degrau Máx. Sem Saturar (±10V)</td>
+                    <td style={{ padding: '7px', border: '1px solid #334155', color: '#EF4444' }}>Δe ≤ 0,053 V (muito frágil)</td>
+                    <td style={{ padding: '7px', border: '1px solid #334155', color: '#10B981', fontWeight: 700 }}>Δe ≤ 0,556 V (10,5× maior!)</td>
+                    <td style={{ padding: '7px', border: '1px solid #334155', color: '#38BDF8' }}>Δe ≤ 0,556 V</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* PASSO 7 • Implementação com Amp-Op */}
+          <div style={{ marginBottom: '18px' }}>
+            <h3 style={{ fontSize: '1.05rem', color: 'var(--primary)', margin: '0 0 6px 0' }}>
+              7. PASSO 7 – Dimensionamento de Componentes Analógicos com Amp-Op
+            </h3>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '12px' }}>
+              <div style={{ background: '#0F172A', padding: '12px', borderRadius: '8px', border: '1px solid #1E293B' }}>
+                <div style={{ fontWeight: 700, color: '#10B981', fontSize: '0.84rem' }}>Componentes com C1 = 10 µF</div>
+                <div style={{ fontSize: '0.82rem', color: 'var(--text)', marginTop: '4px', lineHeight: '1.6' }}>
+                  <code>R1 = 1 / (zc · C1) = {(result.R1 / 1e3).toFixed(1)} kΩ</code>
+                  <br />
+                  <code>R2 = Kp · R1 = {(result.R2 / 1e3).toFixed(1)} kΩ</code>
+                  <br />
+                  <code>C2 = 1 / (pc · R2) = {(result.C2_circuit * 1e9).toFixed(1)} nF</code>
+                </div>
+              </div>
+
+              <div style={{ background: '#0F172A', padding: '12px', borderRadius: '8px', border: '1px solid #1E293B' }}>
+                <div style={{ fontWeight: 700, color: '#38BDF8', fontSize: '0.84rem' }}>Resposta Transitória Exata</div>
+                <div style={{ fontSize: '0.82rem', color: 'var(--text)', marginTop: '4px', lineHeight: '1.6' }}>
+                  Tempo de Pico: <code>tp = {result.inputs.Tp.toFixed(3)} s</code>
+                  <br />
+                  Sobressinal: <code>Mp = {result.inputs.PO.toFixed(2)}%</code>
+                  <br />
+                  Tempo de Acomodação (2%): <code>ts = 4 / σd = {(4 / result.sigmaD).toFixed(2)} s</code>
+                </div>
+              </div>
+
+              <div style={{ background: '#0F172A', padding: '12px', borderRadius: '8px', border: '1px solid #1E293B' }}>
+                <div style={{ fontWeight: 700, color: '#EF4444', fontSize: '0.84rem' }}>Regra dos 10 V (Saturação)</div>
+                <div style={{ fontSize: '0.82rem', color: 'var(--text)', marginTop: '4px', lineHeight: '1.6' }}>
+                  Saturação em 10 V:
+                  <br />
+                  <code>Δe ≤ 10 / {result.Kc.toFixed(1)} = {(10 / result.Kc).toFixed(3)} V</code>
+                  <br />
+                  Faixa de operação linear <b>{(188.55 / result.Kc).toFixed(1)}× superior</b> ao PD Real clássico.
                 </div>
               </div>
             </div>

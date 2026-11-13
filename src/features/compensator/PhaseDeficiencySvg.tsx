@@ -232,17 +232,20 @@ export const PhaseDeficiencySvg: React.FC<PhaseDeficiencySvgProps> = ({ result }
   const sdX = toSvgX(result.sd.re); // sd = -3 + j3 -> 520 - 150 = 370
   const sdY = toSvgY(result.sd.im); // 320 - 150 = 170
 
-  const p1X = toSvgX(0); // 520
-  const p1Y = toSvgY(0); // 320
+  const p1Val = result.inputs.plant.poles && result.inputs.plant.poles.length > 0 ? result.inputs.plant.poles[0] : 0;
+  const p2Val = result.inputs.plant.poles && result.inputs.plant.poles.length > 1 ? result.inputs.plant.poles[1] : -3;
 
-  const p2X = toSvgX(-3); // 370
-  const p2Y = toSvgY(0); // 320
+  const p1X = toSvgX(p1Val);
+  const p1Y = toSvgY(0);
+
+  const p2X = toSvgX(p2Val);
+  const p2Y = toSvgY(0);
 
   const zcX = toSvgX(-result.zc);
   const zcY = toSvgY(0);
 
-  // pc pode estar longe (ex: -62), então para visualização no gráfico limitamos a escala ou colocamos indicador visual
-  const pcDisplayRe = Math.max(-9.2, -result.pc / 6.5);
+  // pc na Aula 20 é 6 rad/s (visível diretamente), enquanto na Aula 18 é ~62.8 rad/s
+  const pcDisplayRe = result.pc <= 9.2 ? -result.pc : Math.max(-9.2, -result.pc / 6.5);
   const pcX = toSvgX(pcDisplayRe);
   const pcY = toSvgY(0);
 

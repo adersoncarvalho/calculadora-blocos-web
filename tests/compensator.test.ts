@@ -170,4 +170,82 @@ describe('Compensator Design Engine (EEL6005 / Aula 18 & Aula 19)', () => {
       expect(res.Kc).toBeCloseTo(50.46, 1);
     }
   });
+
+  // =========================================================================
+  // CASOS DE TESTE AULA 20 - COMPENSADOR POR AVANÇO DE FASE (BISSETRIZ & CANCELAMENTO)
+  // =========================================================================
+  it('Aula 20 - Exemplo Bissetriz: calcula r=2, zc=3, pc=6, Kc=18 e Kp=9 para 1/[s(s+3)]', () => {
+    const inputsAula20Bissetriz: CompensatorInputs = {
+      type: 'lead',
+      leadCriterion: 'bissetriz',
+      Tp: 1.047,
+      PO: 4.32,
+      N: 10,
+      plant: {
+        num: [1],
+        den: [1, 3, 0],
+        label: '1 / [s(s+3)]',
+        poles: [0, -3]
+      }
+    };
+
+    const res = calculateCompensator(inputsAula20Bissetriz);
+    expect(res.leadCriterion).toBe('bissetriz');
+    expect(res.phiDef).toBeCloseTo(45.0, 1);
+    expect(res.qBissetriz).toBeCloseTo(1.4142, 3);
+    expect(res.r).toBeCloseTo(2.0, 2);
+    expect(res.zc).toBeCloseTo(3.0, 2);
+    expect(res.pc).toBeCloseTo(6.0, 2);
+    expect(res.Kc).toBeCloseTo(18.0, 1);
+    expect(res.Kp).toBeCloseTo(9.0, 1);
+    expect(res.scilabScript).toContain('Avanço por Bissetriz (Aula 20)');
+  });
+
+  it('Aula 20 - Cancelamento de Polo Real: zc=3 cancela polo em -3, resultando em pc=6 e Kc=18', () => {
+    const inputsCancelamento: CompensatorInputs = {
+      type: 'lead',
+      leadCriterion: 'cancelamento',
+      Tp: 1.047,
+      PO: 4.32,
+      N: 10,
+      plant: {
+        num: [1],
+        den: [1, 3, 0],
+        label: '1 / [s(s+3)]',
+        poles: [0, -3]
+      }
+    };
+
+    const res = calculateCompensator(inputsCancelamento);
+    expect(res.leadCriterion).toBe('cancelamento');
+    expect(res.zc).toBe(3.0);
+    expect(res.pc).toBeCloseTo(6.0, 1);
+    expect(res.Kc).toBeCloseTo(18.0, 1);
+  });
+
+  it('Aula 20 - Exercício Proposto Bissetriz (sd = -2+j2): valida theta_def=18.43°, r=1.31, zc=2.472, pc=3.24, Kc=7.2', () => {
+    const inputsPropSd2: CompensatorInputs = {
+      type: 'lead',
+      leadCriterion: 'bissetriz',
+      Tp: 1.571,
+      PO: 4.32,
+      N: 10,
+      sdManual: { re: -2.0, im: 2.0 },
+      plant: {
+        num: [1],
+        den: [1, 3, 0],
+        label: '1 / [s(s+3)]',
+        poles: [0, -3]
+      }
+    };
+
+    const res = calculateCompensator(inputsPropSd2);
+    expect(res.phiDef).toBeCloseTo(18.43, 1);
+    expect(res.qBissetriz).toBeCloseTo(1.144, 2);
+    expect(res.r).toBeCloseTo(1.309, 2);
+    expect(res.zc).toBeCloseTo(2.472, 2);
+    expect(res.pc).toBeCloseTo(3.236, 1);
+    expect(res.Kc).toBeCloseTo(7.2, 1);
+    expect(res.Kp).toBeCloseTo(5.5, 1);
+  });
 });

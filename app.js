@@ -9132,6 +9132,33 @@ if (document.readyState === "loading") {
 // =============================================================================
 
 const COMP_PRESETS = {
+  // --- AULA 20: AVANÇO DE FASE (BISSETRIZ & CANCELAMENTO) ---
+  aula20_bissetriz: {
+    type: 'lead',
+    leadCriterion: 'bissetriz',
+    Tp: 1.047,
+    PO: 4.32,
+    N: 10,
+    plant: '1 / [s(s+3)]'
+  },
+  aula20_cancelamento: {
+    type: 'lead',
+    leadCriterion: 'cancelamento',
+    Tp: 1.047,
+    PO: 4.32,
+    N: 10,
+    plant: '1 / [s(s+3)]'
+  },
+  aula20_prop_sd2: {
+    type: 'lead',
+    leadCriterion: 'bissetriz',
+    Tp: 1.571,
+    PO: 4.32,
+    N: 10,
+    sdManual: { re: -2.0, im: 2.0 },
+    plant: '1 / [s(s+3)]'
+  },
+
   // --- AULA 19: CONTROLADOR PI PARA ERRO NULO AO DEGRAU (EEL6005) ---
   aula19_ex1: {
     type: 'pi',
@@ -9300,6 +9327,9 @@ function carregarPresetCompensador(presetId) {
   const p = COMP_PRESETS[presetId];
   if (!p) return;
 
+  window.currentCompPresetId = presetId;
+  window.currentLeadCriterion = p.leadCriterion || 'r_fixo';
+
   const typeEl = document.getElementById("compTypeSelect");
   if (typeEl) typeEl.value = p.type;
   const tpEl = document.getElementById("compTpInput");
@@ -9323,6 +9353,7 @@ window.carregarPresetCompensador = carregarPresetCompensador;
 
 function recalcularCompensador() {
   const type = document.getElementById("compTypeSelect") ? document.getElementById("compTypeSelect").value : 'lead';
+  const leadCriterion = window.currentLeadCriterion || 'bissetriz';
   const Tp = parseFloat(document.getElementById("compTpInput")?.value) || 1.047;
   const PO = parseFloat(document.getElementById("compPoInput")?.value) || 4.32;
   const N = parseInt(document.getElementById("compNInput")?.value, 10) || 10;
@@ -9343,34 +9374,60 @@ function recalcularCompensador() {
   const sigmaD = zeta * wn;
 
   // 2. Passo 2: Deficiência Angular
-  const theta1_prime = (Math.atan2(wd, sigmaD) * 180) / Math.PI;
-  const theta1 = 180 - theta1_prime;
-  const theta2 = 90.0;
+  const theta1 = (Math.atan2(wd, -sigmaD) * 180) / Math.PI;
+  const theta1_prime = 180 - theta1;
+  const theta2 = (Math.atan2(wd, -sigmaD - (-3)) * 180) / Math.PI;
   const thetaPlanta = -(theta1 + theta2);
   let phiDef = -180 - thetaPlanta;
   while (phiDef <= 0) phiDef += 360;
   while (phiDef > 360) phiDef -= 360;
 
   // 3. Passo 3: Dimensionamento zc e pc
-  const r = N + 1;
-  const cotm = (2 * Math.sqrt(r) - zeta * (r + 1)) / (Math.sqrt(1 - zeta * zeta) * (r - 1));
-  const phiMax = (Math.atan2(1, cotm) * 180) / Math.PI;
-  const mStages = Math.max(1, Math.ceil(phiDef / (0.95 * phiMax)));
-  const phiPerStage = phiDef / mStages;
-  const cotPhi = 1 / Math.tan((phiPerStage * Math.PI) / 180);
+  let r, zc, pc, qBissetriz;
+  let phiMax = phiDef, mStages = 1, phiPerStage = phiDef;
+  let C2 = 0, C1_poly = 0, C0 = sigmaD * sigmaD + wd * wd, delta = 0, rootsZc = [];
 
-  const C2 = r;
-  const C1_poly = -(sigmaD * (r + 1) + wd * (r - 1) * cotPhi);
-  const C0 = sigmaD * sigmaD + wd * wd;
-  const delta = C1_poly * C1_poly - 4 * C2 * C0;
-  let rootsZc = [];
-  if (delta >= 0) {
-    rootsZc = [(-C1_poly + Math.sqrt(delta)) / (2 * C2), (-C1_poly - Math.sqrt(delta)) / (2 * C2)].sort((a, b) => b - a);
+  if (leadCriterion === 'bissetriz') {
+    const sq = Math.sqrt(1 - zeta * zeta);
+    const phiRad = (phiDef * Math.PI) / 180;
+    qBissetriz = (1 + sq / Math.sin(phiRad)) / (zeta + sq / Math.tan(phiRad));
+    r = qBissetriz * qBissetriz;
+    const magSd = Math.sqrt(sigmaD * sigmaD + wd * wd);
+    zc = magSd / qBissetriz;
+    pc = magSd * qBissetriz;
+    rootsZc = [zc];
+    C2 = r;
+    C1_poly = -(sigmaD * (r + 1));
+  } else if (leadCriterion === 'cancelamento') {
+    zc = 3.0;
+    const thetaZRad = Math.atan2(wd, -sigmaD + zc);
+    const thetaZDeg = (thetaZRad * 180) / Math.PI;
+    const thetaPDeg = thetaZDeg - phiDef;
+    const thetaPRad = (thetaPDeg * Math.PI) / 180;
+    pc = sigmaD + wd / Math.tan(thetaPRad);
+    r = pc / zc;
+    rootsZc = [zc];
+    C2 = r;
+    C1_poly = -(sigmaD * (r + 1));
   } else {
-    rootsZc = [-C1_poly / (2 * C2), -C1_poly / (2 * C2)];
+    r = N + 1;
+    const cotm = (2 * Math.sqrt(r) - zeta * (r + 1)) / (Math.sqrt(1 - zeta * zeta) * (r - 1));
+    phiMax = (Math.atan2(1, cotm) * 180) / Math.PI;
+    mStages = Math.max(1, Math.ceil(phiDef / (0.95 * phiMax)));
+    phiPerStage = phiDef / mStages;
+    const cotPhi = 1 / Math.tan((phiPerStage * Math.PI) / 180);
+
+    C2 = r;
+    C1_poly = -(sigmaD * (r + 1) + wd * (r - 1) * cotPhi);
+    delta = C1_poly * C1_poly - 4 * C2 * C0;
+    if (delta >= 0) {
+      rootsZc = [(-C1_poly + Math.sqrt(delta)) / (2 * C2), (-C1_poly - Math.sqrt(delta)) / (2 * C2)].sort((a, b) => b - a);
+    } else {
+      rootsZc = [-C1_poly / (2 * C2), -C1_poly / (2 * C2)];
+    }
+    zc = rootsZc[0];
+    pc = r * zc;
   }
-  const zc = rootsZc[0];
-  const pc = r * zc;
 
   // 4. Passo 4: Ganhos
   const magZero = Math.sqrt((zc - sigmaD) * (zc - sigmaD) + wd * wd);
