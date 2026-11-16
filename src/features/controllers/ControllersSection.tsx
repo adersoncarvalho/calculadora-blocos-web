@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { MathView } from '@/components/MathView';
+import { InteractiveTimeChart, ChartSeries } from '@/components/InteractiveTimeChart';
 import {
   ControllerCategoryId,
   CONTROLLERS_THEORY,
@@ -98,57 +99,55 @@ export const ControllersSection: React.FC<ControllersSectionProps> = ({ onBack, 
     const isUncompUnstable = yUncomp.some(v => Math.abs(v) >= 1e5);
     const isCompUnstable = yComp.some(v => Math.abs(v) >= 1e5);
 
-    const buildPath = (
-      xs: number[],
-      ys: number[],
-      xMin: number,
-      xMax: number,
-      yMin: number,
-      yMax: number,
-      w: number,
-      h: number,
-      pad: number
-    ) => {
-      const spanX = Math.max(1e-6, xMax - xMin);
-      const spanY = Math.max(1e-6, yMax - yMin);
-      return xs
-        .map((xv, i) => {
-          const px = pad + ((xv - xMin) / spanX) * (w - 2 * pad);
-          const py = h - pad - ((ys[i] - yMin) / spanY) * (h - 2 * pad);
-          return `${i === 0 ? 'M' : 'L'} ${px.toFixed(1)} ${py.toFixed(1)}`;
-        })
-        .join(' ');
-    };
-
-    const w = 520;
-    const h = 220;
-    const pad = 36;
-    const xMin = t[0];
     const xMax = t[t.length - 1];
 
-    // Escala Y da saída (ignora valores explodidos se um dos ramos for instável)
-    const validOutputVals = [
-      ...r,
-      ...(isCompUnstable ? [] : yComp),
-      ...(isUncompUnstable ? [] : yUncomp)
+    const outputSeries: ChartSeries[] = [
+      { id: 'ref', label: 'Referência r(t)', values: r, color: '#94a3b8', dashed: true, strokeWidth: 1.8 }
     ];
-    let yMinOut = Math.min(...validOutputVals, 0);
-    let yMaxOut = Math.max(...validOutputVals, 1);
-    const marginOut = Math.max(0.1, (yMaxOut - yMinOut) * 0.12);
-    yMinOut -= marginOut;
-    yMaxOut += marginOut;
+    if (!isUncompUnstable) {
+      outputSeries.push({
+        id: 'uncomp',
+        label: 'Sem Controlador',
+        values: yUncomp,
+        color: '#dc2626',
+        dashed: true,
+        strokeWidth: 2
+      });
+    }
+    if (!isCompUnstable) {
+      outputSeries.push({
+        id: 'comp',
+        label: 'Com Controlador',
+        values: yComp,
+        color: '#0284c7',
+        strokeWidth: 2.5,
+        showLandmarks: true,
+        landmarkMode: 'output'
+      });
+    }
 
-    // Escala Y do erro
-    const validErrVals = [
-      0,
-      ...(isCompUnstable ? [] : eComp),
-      ...(isUncompUnstable ? [] : eUncomp)
-    ];
-    let yMinErr = Math.min(...validErrVals, 0);
-    let yMaxErr = Math.max(...validErrVals, 0.2);
-    const marginErr = Math.max(0.05, (yMaxErr - yMinErr) * 0.12);
-    yMinErr -= marginErr;
-    yMaxErr += marginErr;
+    const errorSeries: ChartSeries[] = [];
+    if (!isUncompUnstable) {
+      errorSeries.push({
+        id: 'e-uncomp',
+        label: 'Erro Sem Controlador',
+        values: eUncomp,
+        color: '#dc2626',
+        dashed: true,
+        strokeWidth: 2
+      });
+    }
+    if (!isCompUnstable) {
+      errorSeries.push({
+        id: 'e-comp',
+        label: 'Erro Com Controlador',
+        values: eComp,
+        color: '#059669',
+        strokeWidth: 2.5,
+        showLandmarks: true,
+        landmarkMode: 'error'
+      });
+    }
 
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
@@ -233,7 +232,7 @@ export const ControllersSection: React.FC<ControllersSectionProps> = ({ onBack, 
           )}
         </div>
 
-        {/* Gráficos SVG Lado a Lado */}
+        {/* Gráficos SVG Interativos Lado a Lado */}
         <div
           style={{
             display: 'grid',
@@ -241,124 +240,18 @@ export const ControllersSection: React.FC<ControllersSectionProps> = ({ onBack, 
             gap: '0.9rem'
           }}
         >
-          {/* Gráfico 1: Resposta Temporal c(t) vs r(t) */}
-          <div
-            style={{
-              background: 'var(--card-bg)',
-              border: '1px solid var(--card-border)',
-              borderRadius: '6px',
-              padding: '0.75rem'
-            }}
-          >
-            <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text)', marginBottom: '0.35rem' }}>
-              Resposta Temporal: Saída c(t) vs. Referência r(t)
-            </div>
-            <svg viewBox={`0 0 ${w} ${h}`} style={{ width: '100%', height: 'auto', display: 'block' }}>
-              {/* Grade e Eixos */}
-              <rect x={pad} y={pad} width={w - 2 * pad} height={h - 2 * pad} fill="var(--code-bg)" stroke="var(--card-border)" />
-              <line x1={pad} y1={h - pad} x2={w - pad} y2={h - pad} stroke="var(--text-muted)" strokeWidth="1" />
-              <line x1={pad} y1={pad} x2={pad} y2={h - pad} stroke="var(--text-muted)" strokeWidth="1" />
-
-              {/* Referência r(t) */}
-              <path
-                d={buildPath(t, r, xMin, xMax, yMinOut, yMaxOut, w, h, pad)}
-                fill="none"
-                stroke="var(--text-muted)"
-                strokeWidth="1.8"
-                strokeDasharray="5,4"
-              />
-              {/* Sem Controlador */}
-              {!isUncompUnstable && (
-                <path
-                  d={buildPath(t, yUncomp, xMin, xMax, yMinOut, yMaxOut, w, h, pad)}
-                  fill="none"
-                  stroke="#dc2626"
-                  strokeWidth="2"
-                  strokeDasharray="6,3"
-                />
-              )}
-              {/* Com Controlador */}
-              {!isCompUnstable && (
-                <path
-                  d={buildPath(t, yComp, xMin, xMax, yMinOut, yMaxOut, w, h, pad)}
-                  fill="none"
-                  stroke="#0284c7"
-                  strokeWidth="2.5"
-                />
-              )}
-
-              {/* Rótulos de eixo */}
-              <text x={w / 2} y={h - 8} fontSize="10" fill="var(--text-muted)" textAnchor="middle">
-                Tempo t (0 a {xMax}s)
-              </text>
-              <text x={pad - 4} y={pad + 8} fontSize="9.5" fill="var(--text-muted)" textAnchor="end">
-                {yMaxOut.toFixed(1)}
-              </text>
-              <text x={pad - 4} y={h - pad} fontSize="9.5" fill="var(--text-muted)" textAnchor="end">
-                {yMinOut.toFixed(1)}
-              </text>
-            </svg>
-            <div style={{ display: 'flex', gap: '0.85rem', flexWrap: 'wrap', fontSize: '0.72rem', marginTop: '0.35rem' }}>
-              <span style={{ color: 'var(--text-muted)' }}>--- Referência r(t)</span>
-              {!isUncompUnstable && <span style={{ color: '#dc2626', fontWeight: 600 }}>--- Sem Controlador</span>}
-              <span style={{ color: '#0284c7', fontWeight: 700 }}>━━ Com Controlador</span>
-            </div>
-          </div>
-
-          {/* Gráfico 2: Evolução do Erro e(t) = r(t) - c(t) */}
-          <div
-            style={{
-              background: 'var(--card-bg)',
-              border: '1px solid var(--card-border)',
-              borderRadius: '6px',
-              padding: '0.75rem'
-            }}
-          >
-            <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text)', marginBottom: '0.35rem' }}>
-              Erro de Rastreamento: e(t) = r(t) − c(t)
-            </div>
-            <svg viewBox={`0 0 ${w} ${h}`} style={{ width: '100%', height: 'auto', display: 'block' }}>
-              <rect x={pad} y={pad} width={w - 2 * pad} height={h - 2 * pad} fill="var(--code-bg)" stroke="var(--card-border)" />
-              {/* Linha de erro zero */}
-              <path
-                d={buildPath(t, t.map(() => 0), xMin, xMax, yMinErr, yMaxErr, w, h, pad)}
-                fill="none"
-                stroke="var(--text-muted)"
-                strokeWidth="1"
-                strokeDasharray="3,3"
-              />
-              {!isUncompUnstable && (
-                <path
-                  d={buildPath(t, eUncomp, xMin, xMax, yMinErr, yMaxErr, w, h, pad)}
-                  fill="none"
-                  stroke="#dc2626"
-                  strokeWidth="2"
-                  strokeDasharray="6,3"
-                />
-              )}
-              {!isCompUnstable && (
-                <path
-                  d={buildPath(t, eComp, xMin, xMax, yMinErr, yMaxErr, w, h, pad)}
-                  fill="none"
-                  stroke="#059669"
-                  strokeWidth="2.5"
-                />
-              )}
-              <text x={w / 2} y={h - 8} fontSize="10" fill="var(--text-muted)" textAnchor="middle">
-                Tempo t (0 a {xMax}s)
-              </text>
-              <text x={pad - 4} y={pad + 8} fontSize="9.5" fill="var(--text-muted)" textAnchor="end">
-                {yMaxErr.toFixed(2)}
-              </text>
-              <text x={pad - 4} y={h - pad} fontSize="9.5" fill="var(--text-muted)" textAnchor="end">
-                {yMinErr.toFixed(2)}
-              </text>
-            </svg>
-            <div style={{ display: 'flex', gap: '0.85rem', flexWrap: 'wrap', fontSize: '0.72rem', marginTop: '0.35rem' }}>
-              {!isUncompUnstable && <span style={{ color: '#dc2626', fontWeight: 600 }}>--- Erro Sem Controlador</span>}
-              <span style={{ color: '#059669', fontWeight: 700 }}>━━ Erro Com Controlador</span>
-            </div>
-          </div>
+          <InteractiveTimeChart
+            title="Resposta Temporal: Saída c(t) vs. Referência r(t)"
+            xValues={t}
+            series={outputSeries}
+            inputType={activeExercise.inputType}
+          />
+          <InteractiveTimeChart
+            title="Erro de Rastreamento: e(t) = r(t) − c(t)"
+            xValues={t}
+            series={errorSeries}
+            inputType={activeExercise.inputType}
+          />
         </div>
       </div>
     );

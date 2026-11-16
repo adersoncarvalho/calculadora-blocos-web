@@ -29,6 +29,7 @@ import {
 } from './symbolicMasonEngine';
 import { EquivalentDiagramRenderer } from './EquivalentDiagramRenderer';
 import { SteadyStateModuleView } from './SteadyStateModuleView';
+import { InteractiveTimeChart } from '@/components/InteractiveTimeChart';
 
 export type SplitPanelMode = 'split' | 'circuit-maximized' | 'calc-maximized';
 
@@ -488,206 +489,31 @@ export const MasonDeductionView: React.FC<MasonDeductionViewProps> = ({
     );
   };
 
-  // Renderizador SVG do gráfico de resposta ao degrau (pré-visualização Scilab)
+  // Renderizador SVG interativo do gráfico de resposta ao degrau (pré-visualização Scilab)
   const renderStepResponseChart = () => {
     const series = fullSys.scilabReport.previewSeries;
     if (!series || series.length === 0) return null;
 
-    const width = 680;
-    const height = 240;
-    const padLeft = 52;
-    const padRight = 24;
-    const padTop = 20;
-    const padBottom = 36;
-    const plotW = width - padLeft - padRight;
-    const plotH = height - padTop - padBottom;
-
-    let minY = 0;
-    let maxY = 1.2;
-    let maxT = 10;
-
-    series.forEach(s => {
-      s.t.forEach(tVal => {
-        if (tVal > maxT) maxT = tVal;
-      });
-      s.y.forEach(yVal => {
-        if (yVal < minY) minY = yVal;
-        if (yVal > maxY) maxY = yVal;
-      });
-    });
-
-    const yRange = Math.max(0.2, maxY - minY);
-    minY = minY - 0.08 * yRange;
-    maxY = maxY + 0.12 * yRange;
-
-    const mapX = (tVal: number) => padLeft + (tVal / (maxT || 1)) * plotW;
-    const mapY = (yVal: number) => padTop + plotH - ((yVal - minY) / (maxY - minY || 1)) * plotH;
-
-    const yTicks = 5;
-    const xTicks = 5;
+    const xValues = series[0].t;
+    const chartSeries = series.map((s, idx) => ({
+      id: `scilab-series-${idx}`,
+      label: `${s.label} (regime ≈ ${s.finalValue.toFixed(4)})`,
+      values: s.y,
+      color: s.color,
+      strokeWidth: 2.3,
+      showLandmarks: idx === series.length - 1 || series.length === 1,
+      landmarkMode: 'output' as const
+    }));
 
     return (
-      <div
-        style={{
-          background: 'var(--code-bg)',
-          border: '1px solid var(--card-border)',
-          borderRadius: '6px',
-          padding: '0.85rem 1rem',
-          marginBottom: '0.9rem'
-        }}
-      >
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            flexWrap: 'wrap',
-            gap: '0.5rem',
-            marginBottom: '0.6rem'
-          }}
-        >
-          <span
-            style={{
-              fontSize: '0.76rem',
-              fontWeight: 700,
-              color: 'var(--text)',
-              textTransform: 'uppercase',
-              letterSpacing: '0.04em'
-            }}
-          >
-            Pré-Visualização Numérica — Resposta ao Degrau Unitário (RK4 Equivalente a csim)
-          </span>
-          <div style={{ display: 'flex', gap: '0.85rem', flexWrap: 'wrap' }}>
-            {series.map((s, idx) => (
-              <span
-                key={idx}
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '0.35rem',
-                  fontSize: '0.75rem',
-                  color: 'var(--text)',
-                  fontWeight: 600
-                }}
-              >
-                <span
-                  style={{
-                    width: '12px',
-                    height: '3px',
-                    background: s.color,
-                    display: 'inline-block',
-                    borderRadius: '2px'
-                  }}
-                />
-                {s.label} (regime ≈ {s.finalValue.toFixed(4)})
-              </span>
-            ))}
-          </div>
-        </div>
-
-        <svg
-          viewBox={`0 0 ${width} ${height}`}
-          style={{ width: '100%', height: 'auto', maxHeight: '250px', display: 'block' }}
-        >
-          {/* Linhas de grade horizontais */}
-          {Array.from({ length: yTicks + 1 }).map((_, i) => {
-            const val = minY + (i / yTicks) * (maxY - minY);
-            const yPos = mapY(val);
-            return (
-              <g key={`hy-${i}`}>
-                <line
-                  x1={padLeft}
-                  y1={yPos}
-                  x2={width - padRight}
-                  y2={yPos}
-                  stroke="var(--card-border)"
-                  strokeDasharray="3 3"
-                  strokeWidth={1}
-                />
-                <text
-                  x={padLeft - 6}
-                  y={yPos + 4}
-                  textAnchor="end"
-                  fontSize="10"
-                  fill="var(--text-muted)"
-                >
-                  {val.toFixed(2)}
-                </text>
-              </g>
-            );
-          })}
-
-          {/* Linhas de grade verticais */}
-          {Array.from({ length: xTicks + 1 }).map((_, i) => {
-            const val = (i / xTicks) * maxT;
-            const xPos = mapX(val);
-            return (
-              <g key={`vx-${i}`}>
-                <line
-                  x1={xPos}
-                  y1={padTop}
-                  x2={xPos}
-                  y2={height - padBottom}
-                  stroke="var(--card-border)"
-                  strokeDasharray="3 3"
-                  strokeWidth={1}
-                />
-                <text
-                  x={xPos}
-                  y={height - padBottom + 15}
-                  textAnchor="middle"
-                  fontSize="10"
-                  fill="var(--text-muted)"
-                >
-                  {val.toFixed(1)}s
-                </text>
-              </g>
-            );
-          })}
-
-          {/* Eixo zero se visível */}
-          {minY <= 0 && maxY >= 0 && (
-            <line
-              x1={padLeft}
-              y1={mapY(0)}
-              x2={width - padRight}
-              y2={mapY(0)}
-              stroke="var(--text-muted)"
-              strokeWidth={1}
-            />
-          )}
-
-          {/* Curvas */}
-          {series.map((s, idx) => {
-            const pathD = s.t
-              .map(
-                (tVal, pIdx) =>
-                  `${pIdx === 0 ? 'M' : 'L'} ${mapX(tVal).toFixed(1)} ${mapY(s.y[pIdx] ?? 0).toFixed(1)}`
-              )
-              .join(' ');
-            return (
-              <path
-                key={`curve-${idx}`}
-                d={pathD}
-                fill="none"
-                stroke={s.color}
-                strokeWidth={2.2}
-              />
-            );
-          })}
-
-          {/* Rótulo eixo X */}
-          <text
-            x={padLeft + plotW / 2}
-            y={height - 4}
-            textAnchor="middle"
-            fontSize="10.5"
-            fill="var(--text-muted)"
-            fontWeight="600"
-          >
-            Tempo t (segundos)
-          </text>
-        </svg>
+      <div style={{ marginBottom: '0.9rem' }}>
+        <InteractiveTimeChart
+          title="Pré-Visualização Numérica — Resposta ao Degrau Unitário (RK4 Equivalente a csim)"
+          xValues={xValues}
+          series={chartSeries}
+          inputType="step"
+          height={250}
+        />
       </div>
     );
   };
