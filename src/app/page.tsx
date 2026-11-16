@@ -8,9 +8,9 @@ import { PracticeSection } from '@/features/practice/PracticeSection';
 import { SimulationsGallerySection } from '@/features/simulations/SimulationsGallerySection';
 import { BuilderSection } from '@/features/builder/BuilderSection';
 import { CalculatorSection } from '@/features/calculator/CalculatorSection';
-import { CompensatorSection } from '@/features/compensator/CompensatorSection';
+import { ControllersSection } from '@/features/controllers/ControllersSection';
 
-type ActiveView = 'home' | 'builder' | 'guide' | 'practice' | 'simulations' | 'compensators';
+type ActiveView = 'home' | 'builder' | 'guide' | 'practice' | 'simulations' | 'controllers';
 
 export default function HomePage() {
   const [view, setView] = useState<ActiveView>('home');
@@ -86,11 +86,12 @@ export default function HomePage() {
     );
   }
 
-  if (view === 'compensators') {
+  if (view === 'controllers') {
     return (
       <main style={{ padding: '16px 20px', minHeight: '100vh' }}>
-        <CompensatorSection
+        <ControllersSection
           onBack={() => handleSetView('home')}
+          onNavigate={v => handleSetView(v)}
         />
         <ShortcutsModal isOpen={showShortcuts} onClose={() => setShowShortcuts(false)} />
       </main>
@@ -103,11 +104,11 @@ export default function HomePage() {
       {/* Top Header Principal */}
       <Header
         onOpenShortcuts={() => setShowShortcuts(true)}
-        onOpenCompensators={() => handleSetView('compensators')}
         onOpenBuilder={() => handleSetView('builder')}
         onOpenGuide={() => handleSetView('guide')}
         onOpenPractice={() => handleSetView('practice')}
         onOpenSimulations={() => handleSetView('simulations')}
+        onOpenControllers={() => handleSetView('controllers')}
       />
 
       {/* Hero Banner Profissional */}
@@ -122,7 +123,7 @@ export default function HomePage() {
           explore diferentes topologias e visualize as transformações gráficas de cada etapa.
         </p>
         <div className="hero-features-row" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '14px' }}>
-          <span className="hero-feature-pill" style={{ background: 'linear-gradient(135deg, rgba(2,132,199,0.3) 0%, rgba(3,105,161,0.3) 100%)', border: '1px solid #0284c7', cursor: 'pointer' }} onClick={() => handleSetView('compensators')}>🎛️ <b>Compensadores LGR</b> (PD Real Aula 18 &amp; PI Aula 19)</span>
+          <span className="hero-feature-pill" style={{ background: 'linear-gradient(135deg, rgba(2,132,199,0.3) 0%, rgba(3,105,161,0.3) 100%)', border: '1px solid #0284c7', cursor: 'pointer' }} onClick={() => handleSetView('controllers')}>🎛️ <b>Controladores</b> (P, PI, PD, PID e Fase)</span>
           <span className="hero-feature-pill">🧪 <b>Modo de Prática</b> com 3 Níveis &amp; Dicas</span>
           <span className="hero-feature-pill">📐 <b>Topologias</b> Canônicas e Desafios</span>
           <span className="hero-feature-pill">📝 <b>Memorial Analítico</b> em LaTeX</span>
@@ -210,28 +211,20 @@ export default function HomePage() {
           >
             <div style={{ fontSize: '0.72rem', color: 'var(--primary)', fontWeight: 700 }}>Etapa 4 • Criação</div>
             <div style={{ fontWeight: 700, fontSize: '0.96rem', margin: '4px 0', color: 'var(--text)' }}>🛠️ Construtor Livre</div>
-            <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', lineHeight: '1.45' }}>Monte qualquer diagrama arbitrário e calcule a redução via Mason.</div>
+            <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', lineHeight: '1.45' }}>Monte qualquer diagrama arbitrário e calcule a redução algébrica completa.</div>
           </div>
 
-          {/* Etapa 5 • Compensadores e Controladores LGR (Aulas 18 e 19) */}
+          {/* Etapa 5 • Controladores */}
           <div
             className="learning-step-card"
-            onClick={() => handleSetView('compensators')}
+            onClick={() => handleSetView('controllers')}
             role="button"
             tabIndex={0}
-            style={{
-              cursor: 'pointer',
-              background: 'linear-gradient(145deg, rgba(2,132,199,0.18) 0%, rgba(15,23,42,0.85) 100%)',
-              border: '1.5px solid #0284c7',
-              borderRadius: '8px',
-              padding: '16px'
-            }}
+            style={{ cursor: 'pointer', background: 'var(--card-bg)', border: '1px solid var(--card-border)', borderRadius: '8px', padding: '16px' }}
           >
-            <div style={{ fontSize: '0.72rem', color: '#38BDF8', fontWeight: 800 }}>Etapa 5 • Controle Avançado LGR</div>
-            <div style={{ fontWeight: 700, fontSize: '0.96rem', margin: '4px 0', color: '#F0F9FF' }}>🎛️ Compensadores &amp; Controladores (PI / PD)</div>
-            <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', lineHeight: '1.45' }}>
-              Projeto analítico completo: Avanço (PD Real Aula 18), Controlador PI para Erro Nulo (Aula 19) e Avanço-Atraso.
-            </div>
+            <div style={{ fontSize: '0.72rem', color: 'var(--primary)', fontWeight: 700 }}>Etapa 5 • Projeto</div>
+            <div style={{ fontWeight: 700, fontSize: '0.96rem', margin: '4px 0', color: 'var(--text)' }}>🎛️ Controladores</div>
+            <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', lineHeight: '1.45' }}>P, PI, PD, PID e Fase (Lag/Lead) com teoria, método do professor, exercícios e simulações.</div>
           </div>
         </div>
       </div>

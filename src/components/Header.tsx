@@ -6,19 +6,19 @@ import { ThemeToggle } from './ThemeToggle';
 interface HeaderProps {
   onOpenShortcuts: () => void;
   onOpenBuilder: () => void;
-  onOpenCompensators: () => void;
   onOpenGuide: () => void;
   onOpenPractice: () => void;
   onOpenSimulations: () => void;
+  onOpenControllers: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
   onOpenShortcuts,
   onOpenBuilder,
-  onOpenCompensators,
   onOpenGuide,
   onOpenPractice,
-  onOpenSimulations
+  onOpenSimulations,
+  onOpenControllers
 }) => {
   return (
     <header id="mainPageHeader">
@@ -40,15 +40,6 @@ export const Header: React.FC<HeaderProps> = ({
             aria-label="Atalhos de Teclado"
           >
             ⌨️ Atalhos (?)
-          </button>
-          <button
-            type="button"
-            className="btn-open-guide btn-highlight-builder"
-            onClick={onOpenCompensators}
-            style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#fff', fontWeight: 700 }}
-            aria-label="Abrir Projetista de Compensadores (Avanço/Atraso)"
-          >
-            🎛️ Compensadores (Avanço/Atraso)
           </button>
           <button
             type="button"
@@ -81,6 +72,14 @@ export const Header: React.FC<HeaderProps> = ({
             aria-label="Abrir Painel com 20 Simulações Reais"
           >
             📊 20 Simulações
+          </button>
+          <button
+            type="button"
+            className="btn-open-guide btn-highlight-builder"
+            onClick={onOpenControllers}
+            aria-label="Abrir Laboratório dos 5 Controladores Principais"
+          >
+            🎛️ Controladores
           </button>
           <ThemeToggle />
         </div>
