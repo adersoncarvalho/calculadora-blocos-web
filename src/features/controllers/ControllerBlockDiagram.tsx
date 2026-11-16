@@ -4,8 +4,10 @@ import React from 'react';
 import { MathView } from '@/components/MathView';
 
 interface ControllerBlockDiagramProps {
-  controllerLabel: string;
-  controllerLatex: string;
+  title?: string;
+  showControllerBlock?: boolean;
+  controllerLabel?: string;
+  controllerLatex?: string;
   plantLatex: string;
   feedbackLatex?: string;
   inputLabel?: string;
@@ -13,8 +15,10 @@ interface ControllerBlockDiagramProps {
 }
 
 export const ControllerBlockDiagram: React.FC<ControllerBlockDiagramProps> = ({
-  controllerLabel,
-  controllerLatex,
+  title = 'Diagrama de Blocos em Malha Fechada (Referência do Exercício)',
+  showControllerBlock = true,
+  controllerLabel = '',
+  controllerLatex = '',
   plantLatex,
   feedbackLatex = 'H(s) = 1',
   inputLabel = 'R(s)',
@@ -41,12 +45,12 @@ export const ControllerBlockDiagram: React.FC<ControllerBlockDiagramProps> = ({
           marginBottom: '0.85rem'
         }}
       >
-        Diagrama de Blocos em Malha Fechada (Referência do Exercício)
+        {title}
       </div>
 
       <div
         style={{
-          minWidth: '640px',
+          minWidth: showControllerBlock ? '640px' : '420px',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
@@ -148,56 +152,60 @@ export const ControllerBlockDiagram: React.FC<ControllerBlockDiagramProps> = ({
             </svg>
           </div>
 
-          {/* Bloco do Controlador Gc(s) */}
-          <div
-            style={{
-              background: 'var(--card-bg)',
-              border: '2px solid var(--primary)',
-              borderRadius: '7px',
-              padding: '0.5rem 0.9rem',
-              minWidth: '150px',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              boxShadow: '0 2px 8px rgba(2, 132, 199, 0.12)'
-            }}
-          >
-            <span
-              style={{
-                fontSize: '0.69rem',
-                fontWeight: 700,
-                color: 'var(--primary)',
-                marginBottom: '0.25rem',
-                textAlign: 'center'
-              }}
-            >
-              {controllerLabel}
-            </span>
-            <div style={{ fontSize: '0.88rem', color: 'var(--text)' }}>
-              <MathView math={controllerLatex} inline />
-            </div>
-          </div>
+          {/* Bloco do Controlador Gc(s) e Seta U(s) (apenas quando showControllerBlock = true) */}
+          {showControllerBlock && (
+            <>
+              <div
+                style={{
+                  background: 'var(--card-bg)',
+                  border: '2px solid var(--primary)',
+                  borderRadius: '7px',
+                  padding: '0.5rem 0.9rem',
+                  minWidth: '150px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  boxShadow: '0 2px 8px rgba(2, 132, 199, 0.12)'
+                }}
+              >
+                <span
+                  style={{
+                    fontSize: '0.69rem',
+                    fontWeight: 700,
+                    color: 'var(--primary)',
+                    marginBottom: '0.25rem',
+                    textAlign: 'center'
+                  }}
+                >
+                  {controllerLabel}
+                </span>
+                <div style={{ fontSize: '0.88rem', color: 'var(--text)' }}>
+                  <MathView math={controllerLatex} inline />
+                </div>
+              </div>
 
-          {/* Seta U(s) */}
-          <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-            <span
-              style={{
-                position: 'absolute',
-                top: '-17px',
-                left: '50%',
-                transform: 'translateX(-50%)',
-                fontSize: '0.76rem',
-                fontWeight: 700,
-                color: 'var(--text-muted)'
-              }}
-            >
-              U(s)
-            </span>
-            <svg width="46" height="16" viewBox="0 0 46 16">
-              <line x1="0" y1="8" x2="38" y2="8" stroke="var(--text)" strokeWidth="2" />
-              <polygon points="37,4 45,8 37,12" fill="var(--text)" />
-            </svg>
-          </div>
+              {/* Seta U(s) */}
+              <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                <span
+                  style={{
+                    position: 'absolute',
+                    top: '-17px',
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    fontSize: '0.76rem',
+                    fontWeight: 700,
+                    color: 'var(--text-muted)'
+                  }}
+                >
+                  U(s)
+                </span>
+                <svg width="46" height="16" viewBox="0 0 46 16">
+                  <line x1="0" y1="8" x2="38" y2="8" stroke="var(--text)" strokeWidth="2" />
+                  <polygon points="37,4 45,8 37,12" fill="var(--text)" />
+                </svg>
+              </div>
+            </>
+          )}
 
           {/* Bloco da Planta G(s) */}
           <div
@@ -250,17 +258,22 @@ export const ControllerBlockDiagram: React.FC<ControllerBlockDiagramProps> = ({
         {/* Ramo de Realimentação Negativa */}
         <div
           style={{
-            width: '502px',
+            width: showControllerBlock ? '502px' : '296px',
             marginLeft: '-2px',
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center'
           }}
         >
-          <svg width="502" height="36" viewBox="0 0 502 36" style={{ overflow: 'visible' }}>
+          <svg
+            width={showControllerBlock ? 502 : 296}
+            height="36"
+            viewBox={`0 0 ${showControllerBlock ? 502 : 296} 36`}
+            style={{ overflow: 'visible' }}
+          >
             {/* Sobe até o somador (esquerda) e desce do ponto de derivação (direita) */}
             <polyline
-              points="482,-22 482,24 22,24 22,2"
+              points={`${showControllerBlock ? 482 : 276},-22 ${showControllerBlock ? 482 : 276},24 22,24 22,2`}
               fill="none"
               stroke="var(--text)"
               strokeWidth="2"

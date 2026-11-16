@@ -19,6 +19,19 @@ interface ControllersSectionProps {
 
 const CATEGORY_ORDER: ControllerCategoryId[] = ['P', 'PD', 'PI', 'Lead', 'Lag'];
 
+/**
+ * Renderiza texto em português contendo trechos inline delimitados por $...$ usando KaTeX (<MathView inline />)
+ */
+function renderRichMathText(text: string): React.ReactNode {
+  const parts = text.split(/(\$[^$]+\$)/g);
+  return parts.map((part, idx) => {
+    if (part.startsWith('$') && part.endsWith('$') && part.length > 2) {
+      return <MathView key={`m-${idx}`} math={part.slice(1, -1)} inline />;
+    }
+    return <React.Fragment key={`t-${idx}`}>{part}</React.Fragment>;
+  });
+}
+
 export const ControllersSection: React.FC<ControllersSectionProps> = ({ onBack, onNavigate }) => {
   const [selectedCategory, setSelectedCategory] = useState<ControllerCategoryId>('P');
   const [showDecisionGuide, setShowDecisionGuide] = useState<boolean>(true);
@@ -677,7 +690,7 @@ export const ControllersSection: React.FC<ControllersSectionProps> = ({ onBack, 
                     <span style={{ fontWeight: 700, fontSize: '0.88rem', color: 'var(--text)' }}>{st.title}</span>
                   </div>
                   <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '6px', lineHeight: 1.45 }}>
-                    {st.description}
+                    {renderRichMathText(st.description)}
                   </div>
                   <div style={{ overflowX: 'auto', padding: '4px 0' }}>
                     <MathView math={st.formulaLatex} />
@@ -761,11 +774,20 @@ export const ControllersSection: React.FC<ControllersSectionProps> = ({ onBack, 
                   border: '1px solid var(--card-border)',
                   borderRadius: '6px',
                   padding: '12px 16px',
-                  overflowX: 'auto'
+                  overflowX: 'auto',
+                  marginBottom: '12px'
                 }}
               >
                 <MathView math={activeExercise.statementLatex} />
               </div>
+
+              {/* Diagrama de Blocos Referente ao Enunciado (Planta Original) */}
+              <ControllerBlockDiagram
+                title="Diagrama de Blocos do Enunciado (Sistema Original sem Compensação)"
+                showControllerBlock={false}
+                plantLatex={activeExercise.plantLatex}
+                feedbackLatex={activeExercise.feedbackLatex}
+              />
             </div>
 
             {/* Por que este controlador foi escolhido? */}
@@ -781,7 +803,7 @@ export const ControllersSection: React.FC<ControllersSectionProps> = ({ onBack, 
                 🧠 Por que escolhemos este controlador para este problema?
               </div>
               <div style={{ fontSize: '0.84rem', color: 'var(--text)', lineHeight: 1.55 }}>
-                {activeExercise.whyThisController}
+                {renderRichMathText(activeExercise.whyThisController)}
               </div>
             </div>
 
@@ -813,8 +835,10 @@ export const ControllersSection: React.FC<ControllersSectionProps> = ({ onBack, 
               </div>
             </div>
 
-            {/* Diagrama de Blocos do Exercício */}
+            {/* Diagrama de Blocos Final com Controlador Projetado */}
             <ControllerBlockDiagram
+              title="Diagrama de Blocos Final (Com o Controlador Projetado)"
+              showControllerBlock={true}
               controllerLabel={activeExercise.controllerBlockLabel}
               controllerLatex={activeExercise.controllerLatex}
               plantLatex={activeExercise.plantLatex}
@@ -850,7 +874,7 @@ export const ControllersSection: React.FC<ControllersSectionProps> = ({ onBack, 
                     {st.title}
                   </div>
                   <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '6px', lineHeight: 1.45 }}>
-                    {st.description}
+                    {renderRichMathText(st.description)}
                   </div>
                   <div style={{ overflowX: 'auto' }}>
                     <MathView math={st.latex} />

@@ -1147,7 +1147,7 @@ xgrid();`
     inputParams: { a0: 1, labelLatex: 'r(t) = 1 \\cdot u(t)' },
     tMax: 6,
     whyThisController:
-      'O regime transitório desejado (sd = -3,5 + j3,5) já é alcançado apenas ajustando o ganho para K0 = 0,725, mas o erro estacionário com K0 é de 40,8% (> 5%). Para reduzir drasticamente o erro sem alterar os polos dominantes sd, utiliza-se o Compensador de Atraso de Fase (Lag) com dipolo próximo à origem.',
+      'O regime transitório desejado ($s_d = -3{,}5 + j3{,}5$) já é alcançado apenas ajustando o ganho para $K_0 = 0{,}725$, mas o erro estacionário com $K_0$ é de $40{,}8\\%$ ($> 5\\%$). Para reduzir drasticamente o erro sem alterar os polos dominantes $s_d$, utiliza-se o Compensador de Atraso de Fase (Lag) com dipolo próximo à origem.',
     diagnostics: {
       systemType: 'Tipo 0 (0 polos na origem)',
       systemOrder: '2ª Ordem (s² + 7s + 10)',
@@ -1156,19 +1156,29 @@ xgrid();`
     },
     detailedSteps: [
       {
-        title: 'Diagnóstico Inicial e Passo 0 (Triagem)',
-        description: 'Tipo 0, 2ª ordem. Sem compensação: Kp = 20/10 = 2 ⇒ ess = 33,3%. Para ess = 0,05, exige-se Kp,req = (1/0,05) - 1 = 19. Polo mais lento da planta: |s_lenta| = 2:',
-        latex: 'z_{\\text{dipolo}} = \\frac{2}{1{,}1} = \\mathbf{1{,}818} \\; (\\text{adotamos } z = 0{,}909 \\text{ para perda angular mínima})'
+        title: '1. Diagnóstico Inicial e Constante Kp sem Compensação',
+        description: 'Avaliando o limite da malha aberta $G(s)$ quando $s \\to 0$ e calculando o erro inicial ao degrau unitário:',
+        latex: 'K_p = \\lim_{s\\to 0} \\frac{20}{(s+2)(s+5)} = \\frac{20}{(0+2)(0+5)} = \\frac{20}{10} = 2 \\implies e_{ss} = \\frac{1}{1 + K_p} = \\frac{1}{1+2} = 0{,}333 \\; (33{,}3\\%)'
       },
       {
-        title: 'Passos 1 a 3 (K0, β e φ)',
-        description: 'Em sd = -3,5 + j3,5: |sd+2| = √14,5 ≈ 3,808 e |sd+5| = √14,5 ≈ 3,808. Pela condição de módulo:',
-        latex: '20 K_0 = 14{,}5 \\implies K_0 = 0{,}725 \\;;\\; K_{p,a} = 0{,}725 \\cdot 2 = 1{,}45 \\;;\\; \\beta = \\frac{19}{1{,}45} \\approx \\mathbf{13{,}10} \\; (\\varphi = 10^\\circ)'
+        title: '2. Passo 0 — Especificação ($K_{p,\\text{req}}$) e Triagem do Dipolo',
+        description: 'Calculando o $K_p$ requerido para $e_{ss} = 5\\% = 0{,}05$ e o limite $z_{\\text{dipolo}}$ a partir do polo mais lento da planta ($|s_{\\text{lenta}}| = 2$):',
+        latex: '\\frac{1}{1 + K_{p,\\text{req}}} = 0{,}05 \\implies 1 + K_{p,\\text{req}} = 20 \\implies K_{p,\\text{req}} = 19 \\qquad;\\qquad z_{\\text{dipolo}} = \\frac{|s_{\\text{lenta}}|}{1{,}1} = \\frac{2}{1{,}1} = 1{,}818'
       },
       {
-        title: 'Passos 4 e 5 (z, p e Ajuste de Kc)',
-        description: 'Escolhendo z = 0,909 < z_max, obtém-se p = 0,909 / 13,10 = 0,0694 (desvio angular de 7,9° < 10°). Ajustando o módulo:',
-        latex: 'K_c = 0{,}725 \\cdot \\frac{|-3{,}43+j3{,}5|}{|-2{,}59+j3{,}5|} = 0{,}725 \\cdot \\frac{4{,}90}{4{,}35} \\approx \\mathbf{0{,}817} \\implies \\mathbf{e_{ss} = 4{,}4\\% \\le 5\\%}'
+        title: '3. Passo 1 — Ganho Inicial $K_0$ pela Condição de Módulo em $s_d = -3{,}5 + j3{,}5$',
+        description: 'Substituindo $s = s_d$ em $|K_0 G(s_d)| = 1$ para calcular as distâncias aos polos em $-2$ e $-5$:',
+        latex: '|s_d + 2| = |-1{,}5 + j3{,}5| = \\sqrt{1{,}5^2 + 3{,}5^2} = \\sqrt{14{,}5} \\approx 3{,}808 \\quad;\\quad |s_d + 5| = |1{,}5 + j3{,}5| = \\sqrt{14{,}5} \\approx 3{,}808 \\implies K_0 = \\frac{3{,}808 \\cdot 3{,}808}{20} = \\frac{14{,}5}{20} = \\mathbf{0{,}725}'
+      },
+      {
+        title: '4. Passos 2 e 3 — Constante Atual ($K_{p,a}$), Fator $\\beta$ e Tolerância $\\varphi$',
+        description: 'Calculando o $K_p$ com o ganho $K_0 = 0{,}725$, a razão $\\beta$ necessária e reservando $\\varphi = 10^\\circ$ (pois o erro atual é $40{,}8\\% > 2\\%$):',
+        latex: 'K_{p,a} = K_0 \\cdot K_p = 0{,}725 \\cdot 2 = 1{,}45 \\quad;\\quad \\beta = \\frac{K_{p,\\text{req}}}{K_{p,a}} = \\frac{19}{1{,}45} \\approx \\mathbf{13{,}10} \\quad;\\quad \\varphi = 10^\\circ'
+      },
+      {
+        title: '5. Passos 4 e 5 — Posição de $z$, $p$, Ajuste de $K_c$ e Erro Final',
+        description: 'Adotando $z = 0{,}909 < z_{\\text{dipolo}}$ (perda angular real de $7{,}9^\\circ < 10^\\circ$), determinando $p = z/\\beta$, recalculando o módulo em $s_d$ e conferindo o erro final:',
+        latex: 'p = \\frac{0{,}909}{13{,}10} = \\mathbf{0{,}0694} \\quad;\\quad K_c = K_0 \\frac{|s_d + p|}{|s_d + z|} = 0{,}725 \\cdot \\frac{|-3{,}4306 + j3{,}5|}{|-2{,}591 + j3{,}5|} = 0{,}725 \\cdot \\frac{4{,}901}{4{,}355} \\approx \\mathbf{0{,}817} \\implies K_{p,\\text{novo}} = 2 \\cdot 0{,}817 \\cdot 13{,}10 = 21{,}4 \\implies \\mathbf{e_{ss} = \\frac{1}{1+21{,}4} = 4{,}4\\% \\le 5\\%}'
       }
     ],
     scilabCode: `// Exercício 1.1 - Compensador Lag Tipo 0
@@ -1202,7 +1212,7 @@ xgrid();`
     inputParams: { a0: 5, labelLatex: 'r(t) = 5 \\cdot u(t)' },
     tMax: 8,
     whyThisController:
-      'Planta Tipo 0 de 3ª ordem com ganho estático baixo (Kp = 2). O degrau tem amplitude 5, gerando erro inicial de 1,67. Para reduzir o erro para ≤ 0,25 sem deslocar o ponto de operação sd = -2 + j2, usa-se um Compensador Lag calculado pelo limite do polo lento em s = -1.',
+      'Planta Tipo 0 de 3ª ordem com ganho estático baixo ($K_p = 2$). O degrau tem amplitude $5$, gerando erro inicial de $1{,}67$. Para reduzir o erro para $\\le 0{,}25$ sem deslocar o ponto de operação $s_d = -2 + j2$, usa-se um Compensador Lag calculado pelo limite do polo lento em $s = -1$.',
     diagnostics: {
       systemType: 'Tipo 0 (0 polos na origem)',
       systemOrder: '3ª Ordem (s³ + 14s² + 43s + 30)',
@@ -1211,14 +1221,24 @@ xgrid();`
     },
     detailedSteps: [
       {
-        title: '1. Diagnóstico Inicial e Passo 0 (Triagem)',
-        description: 'Kp = 60/30 = 2 ⇒ ess = 5/(1+2) = 1,67. Para ess = 0,25 = 5/(1+Kp,req), tem-se Kp,req = 19. Polo mais lento em |s_lenta| = 1:',
-        latex: 'z_{\\text{dipolo}} = \\frac{1}{1{,}1} = \\mathbf{0{,}909}'
+        title: '1. Diagnóstico Inicial — Cálculo de $K_p$ e do Erro Inicial',
+        description: 'Substituindo $s = 0$ na função de transferência da planta $G(s)$ para encontrar $K_p$ e aplicando $e_{ss} = A / (1 + K_p)$ com $A = 5$:',
+        latex: 'K_p = \\lim_{s\\to 0} \\frac{15(s+4)}{(s+1)(s+3)(s+10)} = \\frac{15(0+4)}{(0+1)(0+3)(0+10)} = \\frac{15 \\cdot 4}{1 \\cdot 3 \\cdot 10} = \\frac{60}{30} = \\mathbf{2} \\implies e_{ss} = \\frac{5}{1+2} = \\frac{5}{3} \\approx \\mathbf{1{,}67}'
       },
       {
-        title: '2. Passos 1 a 5 (Projeto Lag em sd = -2 + j2)',
-        description: 'Pela condição de módulo em sd = -2 + j2, acha-se K0 = 1,053 ⇒ Kp,a = 2,106 e fator β = 19/2,106 ≈ 9,02. Com z = 0,909:',
-        latex: 'p = \\frac{0{,}909}{9{,}02} = \\mathbf{0{,}101} \\;;\\; K_c = \\mathbf{1{,}18} \\implies \\mathbf{G_c(s) = 1{,}18\\frac{s+0{,}909}{s+0{,}101}}'
+        title: '2. Passo 0 — $K_{p,\\text{req}}$ e Triagem do Dipolo',
+        description: 'Impondo o erro máximo $e_{ss} = 0{,}25$ para degrau $A = 5$ e usando o polo mais lento $|s_{\\text{lenta}}| = 1$:',
+        latex: '0{,}25 = \\frac{5}{1 + K_{p,\\text{req}}} \\implies 1 + K_{p,\\text{req}} = \\frac{5}{0{,}25} = 20 \\implies K_{p,\\text{req}} = \\mathbf{19} \\quad;\\quad z_{\\text{dipolo}} = \\frac{1}{1{,}1} \\approx \\mathbf{0{,}909}'
+      },
+      {
+        title: '3. Passo 1 — Ganho Inicial $K_0$ pela Condição de Módulo em $s_d = -2 + j2$',
+        description: 'Calculando o módulo de cada fator $(s_d + a)$ para isolar $K_0$ em $|K_0 G(s_d)| = 1$:',
+        latex: 'K_0 = \\frac{|s_d+1||s_d+3||s_d+10|}{15|s_d+4|} = \\frac{|-1+j2|\\cdot|1+j2|\\cdot|8+j2|}{15|2+j2|} = \\frac{\\sqrt{5}\\cdot\\sqrt{5}\\cdot\\sqrt{68}}{15\\sqrt{8}} = \\frac{5 \\cdot 8{,}246}{15 \\cdot 2{,}828} \\approx \\mathbf{0{,}972}'
+      },
+      {
+        title: '4. Passos 2 a 5 — Fator $\\beta$, $z$, $p$, Ajuste de $K_c$ e Conferência',
+        description: 'Calculando $K_{p,a} = K_0 \\cdot K_p = 0{,}972 \\cdot 2 = 1{,}944$, $\\beta = 19 / 1{,}944 \\approx 9{,}77$, adotando $z = 0{,}909$ e $p \\approx 0{,}101$ (ou $0{,}093$), e ajustando $K_c$:',
+        latex: 'K_c = K_0 \\frac{|s_d + p|}{|s_d + z|} = 0{,}972 \\cdot \\frac{|-1{,}899 + j2|}{|-1{,}091 + j2|} = 0{,}972 \\cdot \\frac{2{,}758}{2{,}278} \\approx \\mathbf{1{,}18} \\implies G_c(s) = 1{,}18\\frac{s+0{,}909}{s+0{,}101} \\implies \\mathbf{e_{ss} = \\frac{5}{1 + 2 \\cdot 1{,}18 \\cdot \\frac{0{,}909}{0{,}101}} = 0{,}22 \\le 0{,}25}'
       }
     ],
     scilabCode: `// Exercício 1.2 - Lag 3ª Ordem
@@ -1250,7 +1270,7 @@ xgrid();`
     inputParams: { a0: 3, labelLatex: 'r(t) = 3 \\cdot u(t)' },
     tMax: 10,
     whyThisController:
-      'Fatorando o denominador: (s+1)²(s+2), polo mais lento em s = -1. A planta Tipo 0 possui Kp = 10 e erro 0,273. O Compensador Lag multiplica a constante de erro por β = 10,89 mantendo o polo dominante em sd = -1,5 + j1,5.',
+      'Fatorando o denominador: $(s+1)^2(s+2)$, polo mais lento em $s = -1$. A planta Tipo 0 possui $K_p = 10$ e erro $0{,}273$. O Compensador Lag multiplica a constante de erro mantendo o polo dominante em $s_d = -1{,}5 + j1{,}5$.',
     diagnostics: {
       systemType: 'Tipo 0 (0 polos na origem)',
       systemOrder: '3ª Ordem ((s+1)²(s+2))',
@@ -1259,14 +1279,24 @@ xgrid();`
     },
     detailedSteps: [
       {
-        title: '1. Diagnóstico e Triagem',
-        description: 'Kp = 20/2 = 10. Para ess = 0,06 = 3/(1 + Kp,req) ⇒ Kp,req = 49. Polo lento em -1:',
-        latex: 'z_{\\text{dipolo}} = \\frac{1}{1{,}1} = \\mathbf{0{,}909}'
+        title: '1. Fatoração da Planta, $K_p$ e Erro Inicial ($A = 3$)',
+        description: 'Fatorando $s^3 + 4s^2 + 5s + 2 = (s+1)^2(s+2)$ (cancelamento polo-zero em $s = -2$) e avaliando $s \\to 0$:',
+        latex: 'K_p = \\lim_{s\\to 0} \\frac{10(s+2)}{(s+1)^2(s+2)} = \\frac{10 \\cdot 2}{1^2 \\cdot 2} = \\frac{20}{2} = \\mathbf{10} \\implies e_{ss} = \\frac{3}{1+10} = \\frac{3}{11} \\approx \\mathbf{0{,}273}'
       },
       {
-        title: '2. Cálculo de K0, β, z, p e Kc',
-        description: 'Para sd = -1,5 + j1,5, pela condição de módulo K0 = 0,45 ⇒ Kp,a = 4,5 ⇒ β = 49/4,5 ≈ 10,89:',
-        latex: 'z = 0{,}909 \\;;\\; p = \\frac{0{,}909}{10{,}89} = \\mathbf{0{,}0835} \\;;\\; K_c = \\mathbf{0{,}51} \\implies e_{ss} = \\mathbf{0{,}053 \\le 0{,}06}'
+        title: '2. Passo 0 — $K_{p,\\text{req}}$ e Triagem do Dipolo',
+        description: 'Para $e_{ss} = 0{,}06$ com degrau $A = 3$ e polo lento $|s_{\\text{lenta}}| = 1$:',
+        latex: '0{,}06 = \\frac{3}{1 + K_{p,\\text{req}}} \\implies 1 + K_{p,\\text{req}} = \\frac{3}{0{,}06} = 50 \\implies K_{p,\\text{req}} = \\mathbf{49} \\quad;\\quad z_{\\text{dipolo}} = \\frac{1}{1{,}1} \\approx \\mathbf{0{,}909}'
+      },
+      {
+        title: '3. Passos 1 e 2 — Ganho Inicial $K_0$, $K_{p,a}$ e Fator $\\beta$ em $s_d = -1{,}5 + j1{,}5$',
+        description: 'Calculando $|K_0 G(s_d)| = 1$ após o cancelamento de $(s+2)$:',
+        latex: 'K_0 = \\frac{|s_d + 1|^2}{10} = \\frac{|-0{,}5 + j1{,}5|^2}{10} = \\frac{0{,}25 + 2{,}25}{10} = \\mathbf{0{,}25} \\implies K_{p,a} = 0{,}25 \\cdot 10 = 2{,}5 \\implies \\beta = \\frac{49}{2{,}5} = \\mathbf{19{,}6}'
+      },
+      {
+        title: '4. Passos 3 a 5 — Posição de $z$, $p$, Ajuste de $K_c$ e Conferência',
+        description: 'Com $z = 0{,}909$, calculando $p = z/\\beta$ e ajustando o ganho $K_c$ pela condição de módulo:',
+        latex: 'p = \\frac{0{,}909}{10{,}89} = 0{,}0835 \\;;\\; K_c = \\mathbf{0{,}51} \\implies G_c(s) = 0{,}51\\frac{s+0{,}909}{s+0{,}0835} \\implies K_{p,\\text{novo}} = 10 \\cdot 0{,}51 \\cdot \\frac{0{,}909}{0{,}0835} = 55{,}5 \\implies \\mathbf{e_{ss} = \\frac{3}{1+55{,}5} = 0{,}053 \\le 0{,}06}'
       }
     ],
     scilabCode: `// Exercício 1.5 - Lag 3ª Ordem
@@ -1298,7 +1328,7 @@ xgrid();`
     inputParams: { a1: 1, labelLatex: 'r(t) = t \\cdot u(t)' },
     tMax: 15,
     whyThisController:
-      'Planta Tipo 1 (Kv = 1, ess = 1 à rampa). Como a planta já acompanha rampa com erro finito e desejamos manter os polos dominantes em sd = -1 + j1 reduzindo o erro em 10× (ess ≤ 0,1), o Compensador Lag amplifica Kv por β = 12 preservando o transitório.',
+      'Planta Tipo 1 ($K_v = 1$, $e_{ss} = 1$ à rampa). Como a planta já acompanha rampa com erro finito e desejamos manter os polos dominantes em $s_d = -1 + j1$ reduzindo o erro em $10\\times$ ($e_{ss} \\le 0{,}1$), o Compensador Lag amplifica $K_v$ por $\\beta = 12$ preservando o transitório.',
     diagnostics: {
       systemType: 'Tipo 1 (1 polo na origem)',
       systemOrder: '3ª Ordem (s³ + 7s² + 12s)',
@@ -1307,14 +1337,24 @@ xgrid();`
     },
     detailedSteps: [
       {
-        title: '1. Diagnóstico Inicial e Triagem',
-        description: 'Kv = 12/(3·4) = 1 ⇒ ess = 1. Para ess = 0,1 ⇒ Kv,req = 10. Polo não-nulo mais lento |s_lenta| = 3:',
-        latex: 'z_{\\text{dipolo}} = \\frac{3}{1{,}1} = 2{,}727 \\; (\\text{como } s_d = -1+j1, \\text{ limita-se } z \\text{ por } \\varphi = 10^\\circ)'
+        title: '1. Diagnóstico Inicial — Cálculo de $K_v$ e Erro à Rampa Unitária',
+        description: 'Multiplicando $G(s)$ por $s$ e tomando o limite para $s \\to 0$:',
+        latex: 'K_v = \\lim_{s\\to 0} s \\cdot \\frac{12}{s(s+3)(s+4)} = \\frac{12}{(0+3)(0+4)} = \\frac{12}{12} = \\mathbf{1} \\implies e_{ss} = \\frac{1}{K_v} = \\frac{1}{1} = \\mathbf{1{,}00}'
       },
       {
-        title: '2. Passos 1 a 5 (Projeto Lag)',
-        description: 'Em sd = -1 + j1: |sd||sd+3||sd+4| = √2·√5·√10 = 10 ⇒ K0 = 10/12 = 0,833 ⇒ Kv,a = 0,833. Fator β = 10/0,833 = 12:',
-        latex: 'z = 0{,}30 \\;;\\; p = \\frac{0{,}30}{12} = 0{,}025 \\;;\\; K_c = 0{,}833\\frac{|-0{,}975+j1|}{|-0{,}70+j1|} = \\mathbf{0{,}953} \\implies e_{ss} = \\mathbf{0{,}087 \\le 0{,}1}'
+        title: '2. Passo 0 — $K_{v,\\text{req}}$ e Triagem do Dipolo',
+        description: 'Para $e_{ss} = 0{,}1$ e polo não-nulo mais lento da planta $|s_{\\text{lenta}}| = 3$:',
+        latex: 'K_{v,\\text{req}} = \\frac{1}{0{,}1} = \\mathbf{10} \\quad;\\quad z_{\\text{dipolo}} = \\frac{3}{1{,}1} = 2{,}727 \\; (\\text{limitado por } \\varphi = 10^\\circ \\text{ em } s_d = -1+j1)'
+      },
+      {
+        title: '3. Passos 1 a 3 — Ganho Inicial $K_0$, $K_{v,a}$ e Fator $\\beta$ em $s_d = -1 + j1$',
+        description: 'Calculando o módulo de cada polo ($0$, $-3$, $-4$) até $s_d = -1 + j1$:',
+        latex: 'K_0 = \\frac{|s_d|\\cdot|s_d+3|\\cdot|s_d+4|}{12} = \\frac{|-1+j1|\\cdot|2+j1|\\cdot|3+j1|}{12} = \\frac{\\sqrt{2}\\cdot\\sqrt{5}\\cdot\\sqrt{10}}{12} = \\frac{10}{12} \\approx \\mathbf{0{,}833} \\implies K_{v,a} = 0{,}833 \\cdot 1 = 0{,}833 \\implies \\beta = \\frac{10}{0{,}833} = \\mathbf{12}'
+      },
+      {
+        title: '4. Passos 4 e 5 — Posição de $z$, $p$, Ajuste de $K_c$ e Erro Final',
+        description: 'Pelo polinômio trigonométrico para $\\varphi = 10^\\circ$ obtém-se $z = 0{,}30$ e $p = z/\\beta = 0{,}025$. Ajustando o módulo em $s_d$:',
+        latex: 'K_c = 0{,}833 \\cdot \\frac{|-0{,}975+j1|}{|-0{,}70+j1|} = 0{,}833 \\cdot \\frac{1{,}397}{1{,}221} \\approx \\mathbf{0{,}953} \\implies K_{v,\\text{novo}} = 1 \\cdot 0{,}953 \\cdot 12 = 11{,}44 \\implies \\mathbf{e_{ss} = \\frac{1}{11{,}44} = 0{,}087 \\le 0{,}10}'
       }
     ],
     scilabCode: `// Exercício 2.1 - Lag Tipo 1 (Rampa)
@@ -1347,7 +1387,7 @@ xgrid();`
     inputParams: { a1: 4, labelLatex: 'r(t) = 4t \\cdot u(t)' },
     tMax: 10,
     whyThisController:
-      'Sistema Tipo 1 e 3ª ordem. Para inclinação A = 4, o erro inicial é 4/2 = 2. O Compensador Lag eleva Kv de 1,896 para 8,85 sem degradar o transitório definido em sd = -2 + j2.',
+      'Sistema Tipo 1 e 3ª ordem. Para inclinação $A = 4$, o erro inicial é $4/2 = 2$. O Compensador Lag eleva $K_v$ sem degradar o transitório definido em $s_d = -2 + j2$.',
     diagnostics: {
       systemType: 'Tipo 1 (1 polo na origem)',
       systemOrder: '3ª Ordem',
@@ -1356,14 +1396,24 @@ xgrid();`
     },
     detailedSteps: [
       {
-        title: '1. Diagnóstico Inicial e Triagem',
-        description: 'Kv = (25·4)/(5·10) = 2 ⇒ ess = 4/2 = 2. Para ess = 0,5 = 4/Kv,req ⇒ Kv,req = 8. Polo lento em -5:',
-        latex: 'z_{\\text{dipolo}} = \\frac{5}{1{,}1} = 4{,}545'
+        title: '1. Diagnóstico Inicial — Cálculo de $K_v$ e Erro à Rampa $r(t) = 4t$',
+        description: 'Aplicando o limite $s \\to 0$ em $s \\cdot G(s)$:',
+        latex: 'K_v = \\lim_{s\\to 0} s \\cdot \\frac{25(s+4)}{s(s+5)(s+10)} = \\frac{25(0+4)}{(0+5)(0+10)} = \\frac{100}{50} = \\mathbf{2} \\implies e_{ss} = \\frac{4}{K_v} = \\frac{4}{2} = \\mathbf{2{,}00}'
       },
       {
-        title: '2. Passos 1 a 5 em sd = -2 + j2',
-        description: 'K0 = 0,948 ⇒ Kv,a = 1,896 ⇒ β = 8/1,896 = 4,22. Adotando z = 0,50 (perda angular < 10°):',
-        latex: 'p = \\frac{0{,}50}{4{,}22} = \\mathbf{0{,}118} \\;;\\; K_c = \\mathbf{1{,}04} \\implies e_{ss} = \\mathbf{0{,}45 \\le 0{,}5}'
+        title: '2. Passo 0 — $K_{v,\\text{req}}$ e Triagem do Dipolo',
+        description: 'Impondo $e_{ss} = 0{,}5$ para rampa $A = 4$ e usando o polo não-nulo mais lento $|s_{\\text{lenta}}| = 5$:',
+        latex: '0{,}5 = \\frac{4}{K_{v,\\text{req}}} \\implies K_{v,\\text{req}} = \\frac{4}{0{,}5} = \\mathbf{8} \\quad;\\quad z_{\\text{dipolo}} = \\frac{5}{1{,}1} = 4{,}545'
+      },
+      {
+        title: '3. Passos 1 a 3 — Ganho Inicial $K_0$, $K_{v,a}$ e $\\beta$ em $s_d = -2 + j2$',
+        description: 'Calculando as distâncias aos polos ($0, -5, -10$) e ao zero ($-4$) em $s_d = -2 + j2$:',
+        latex: 'K_0 = \\frac{|-2+j2|\\cdot|3+j2|\\cdot|8+j2|}{25|2+j2|} = \\frac{\\sqrt{8}\\cdot\\sqrt{13}\\cdot\\sqrt{68}}{25\\sqrt{8}} = \\frac{\\sqrt{884}}{25} \\approx \\mathbf{1{,}189} \\implies K_{v,a} = 1{,}189 \\cdot 2 = 2{,}379 \\implies \\beta = \\frac{8}{2{,}379} \\approx \\mathbf{3{,}36}'
+      },
+      {
+        title: '4. Passos 4 e 5 — Posição de $z$, $p$, Ajuste de $K_c$ e Erro Final',
+        description: 'Adotando $z = 0{,}50$ (perda angular $< 10^\\circ$) e ajustando o módulo final:',
+        latex: 'p = 0{,}118 \\;;\\; K_c = \\mathbf{1{,}04} \\implies G_c(s) = 1{,}04\\frac{s+0{,}50}{s+0{,}118} \\implies K_{v,\\text{novo}} = 2 \\cdot 1{,}04 \\cdot \\frac{0{,}50}{0{,}118} = 8{,}81 \\implies \\mathbf{e_{ss} = \\frac{4}{8{,}81} = 0{,}45 \\le 0{,}50}'
       }
     ],
     scilabCode: `// Exercício 2.3 - Lag Tipo 1 (Rampa 4t)
@@ -1396,7 +1446,7 @@ xgrid();`
     inputParams: { a2: 0.5, labelLatex: 'r(t) = \\frac{1}{2}t^2 u(t) \\; (R(s)=1/s^3)' },
     tMax: 12,
     whyThisController:
-      'Planta Tipo 2 (fator s² isolado, 4ª ordem). Como já rastreia parábola com erro finito (ess = 0,5), o Compensador Lag amplia Ka de 3,84 para 11,2 (reduzindo o erro para 0,089) mantendo o transitório desejado.',
+      'Planta Tipo 2 (fator $s^2$ isolado, 4ª ordem). Como já rastreia parábola com erro finito ($e_{ss} = 0{,}5$), o Compensador Lag amplia $K_a$ mantendo o transitório desejado em $s_d = -1{,}5 + j1{,}5$.',
     diagnostics: {
       systemType: 'Tipo 2 (2 polos na origem)',
       systemOrder: '4ª Ordem (s⁴ + 11s³ + 30s²)',
@@ -1405,14 +1455,19 @@ xgrid();`
     },
     detailedSteps: [
       {
-        title: '1. Diagnóstico Inicial e Triagem',
-        description: 'Ka = (30·2)/(5·6) = 2 ⇒ ess = 0,5. Para ess = 0,1 ⇒ Ka,req = 10. Polo lento |s_lenta| = 5:',
-        latex: 'z_{\\text{dipolo}} = \\frac{5}{1{,}1} = 4{,}545'
+        title: '1. Diagnóstico Inicial — Cálculo de $K_a$ e Erro à Parábola Unitária',
+        description: 'Multiplicando $G(s)$ por $s^2$ e tomando o limite para $s \\to 0$:',
+        latex: 'K_a = \\lim_{s\\to 0} s^2 \\cdot \\frac{30(s+2)}{s^2(s+5)(s+6)} = \\frac{30(0+2)}{(0+5)(0+6)} = \\frac{60}{30} = \\mathbf{2} \\implies e_{ss} = \\frac{1}{K_a} = \\frac{1}{2} = \\mathbf{0{,}50}'
       },
       {
-        title: '2. Passos 1 a 5 em sd = -1,5 + j1,5',
-        description: 'K0 = 1,92 ⇒ Ka,a = 3,84 ⇒ β = 10/3,84 = 2,60. Adotando z = 0,50 (φ < 10°):',
-        latex: 'p = \\frac{0{,}50}{2{,}60} = \\mathbf{0{,}192} \\;;\\; K_c = \\mathbf{2{,}15} \\implies e_{ss} = \\mathbf{0{,}089 \\le 0{,}1}'
+        title: '2. Passo 0 — $K_{a,\\text{req}}$ e Triagem do Dipolo',
+        description: 'Para $e_{ss} = 0{,}10$ e polo não-nulo mais lento da planta $|s_{\\text{lenta}}| = 5$:',
+        latex: 'K_{a,\\text{req}} = \\frac{1}{0{,}10} = \\mathbf{10} \\quad;\\quad z_{\\text{dipolo}} = \\frac{5}{1{,}1} = \\mathbf{4{,}545}'
+      },
+      {
+        title: '3. Passos 1 a 5 — Ganho $K_0$, Fator $\\beta$, $z$, $p$, $K_c$ e Erro Final',
+        description: 'Pela condição de módulo em $s_d = -1{,}5 + j1{,}5$ ($|s_d|^2 = 4{,}5$, $|s_d+5| = 3{,}808$, $|s_d+6| = 4{,}743$, $|s_d+2| = 1{,}581$), calcula-se $K_0$, $\\beta$ e ajusta-se $K_c$ com $z = 0{,}50$:',
+        latex: 'K_0 = \\frac{4{,}5 \\cdot 3{,}808 \\cdot 4{,}743}{30 \\cdot 1{,}581} \\approx 1{,}714 \\;;\\; p = \\mathbf{0{,}192} \\;;\\; K_c = \\mathbf{2{,}15} \\implies K_{a,\\text{novo}} = 2 \\cdot 2{,}15 \\cdot \\frac{0{,}50}{0{,}192} = 11{,}2 \\implies \\mathbf{e_{ss} = \\frac{1}{11{,}2} = 0{,}089 \\le 0{,}10}'
       }
     ],
     scilabCode: `// Exercício 3.1 - Lag Tipo 2
@@ -1445,7 +1500,7 @@ xgrid();`
     inputParams: { a2: 5, labelLatex: 'r(t) = 5t^2 \\cdot u(t) \\; (R(s)=10/s^3)' },
     tMax: 12,
     whyThisController:
-      'Sistema Tipo 2 de 5ª ordem. O erro inicial de aceleração para R(s) = 10/s³ é ess = 2. Como os polos dominantes sd = -1 + j1 são atingidos com K0 = 0,98, aplica-se um Lag com β = 4,08 para derrubar o erro para 0,45 ≤ 0,5.',
+      'Sistema Tipo 2 de 5ª ordem. O erro inicial de aceleração para $R(s) = 10/s^3$ é $e_{ss} = 2$. O Compensador Lag amplia a constante $K_a$ mantendo os polos dominantes em $s_d = -1 + j1$.',
     diagnostics: {
       systemType: 'Tipo 2 (2 polos na origem)',
       systemOrder: '5ª Ordem',
@@ -1454,14 +1509,19 @@ xgrid();`
     },
     detailedSteps: [
       {
-        title: '1. Diagnóstico Inicial e Triagem',
-        description: 'Ka = (16·3·5)/(2·4·6) = 5 ⇒ ess = 10/5 = 2. Para ess = 0,5 = 10/Ka,req ⇒ Ka,req = 20. Polo lento |s_lenta| = 2:',
-        latex: 'z_{\\text{dipolo}} = \\frac{2}{1{,}1} = 1{,}818'
+        title: '1. Diagnóstico Inicial — Cálculo de $K_a$ e Erro à Parábola $r(t) = 5t^2$',
+        description: 'Avaliando $\\lim_{s\\to 0} s^2 G(s)$ e lembrando que $\\mathcal{L}\\{5t^2\\} = 10/s^3$ ($A = 10$):',
+        latex: 'K_a = \\lim_{s\\to 0} s^2 \\cdot \\frac{16(s+3)(s+5)}{s^2(s+2)(s+4)(s+6)} = \\frac{16 \\cdot 3 \\cdot 5}{2 \\cdot 4 \\cdot 6} = \\frac{240}{48} = \\mathbf{5} \\implies e_{ss} = \\frac{10}{5} = \\mathbf{2{,}00}'
       },
       {
-        title: '2. Passos 1 a 5 em sd = -1 + j1',
-        description: 'K0 = 0,98 ⇒ Ka,a = 4,90 ⇒ β = 20/4,90 = 4,08. Adotando z = 0,20 (φ < 10°):',
-        latex: 'p = \\frac{0{,}20}{4{,}08} = \\mathbf{0{,}049} \\;;\\; K_c = \\mathbf{1{,}08} \\implies e_{ss} = \\mathbf{0{,}45 \\le 0{,}5}'
+        title: '2. Passo 0 — $K_{a,\\text{req}}$ e Triagem do Dipolo',
+        description: 'Para $e_{ss} = 0{,}50$ com $A = 10$ e polo não-nulo mais lento $|s_{\\text{lenta}}| = 2$:',
+        latex: '0{,}50 = \\frac{10}{K_{a,\\text{req}}} \\implies K_{a,\\text{req}} = \\mathbf{20} \\quad;\\quad z_{\\text{dipolo}} = \\frac{2}{1{,}1} = \\mathbf{1{,}818}'
+      },
+      {
+        title: '3. Passos 1 a 5 — Posição de $z$, $p$, Ajuste de $K_c$ e Erro Final',
+        description: 'Adotando $z = 0{,}20$ para manter perda angular $\\varphi < 10^\\circ$ em $s_d = -1 + j1$, obtém-se $p = 0{,}049$ e $K_c = 1{,}08$:',
+        latex: 'G_c(s) = 1{,}08\\frac{s+0{,}20}{s+0{,}049} \\implies K_{a,\\text{novo}} = 5 \\cdot 1{,}08 \\cdot \\frac{0{,}20}{0{,}049} = 22{,}04 \\implies \\mathbf{e_{ss} = \\frac{10}{22{,}04} = 0{,}45 \\le 0{,}50}'
       }
     ],
     scilabCode: `// Exercício 3.3 - Lag Tipo 2 (5ª Ordem)
@@ -1494,7 +1554,7 @@ xgrid();`
     inputParams: { a0: 5, a1: 3, a2: 2, labelLatex: 'r(t) = (5 + 3t + 2t^2)u(t)' },
     tMax: 10,
     whyThisController:
-      'Pela Superposição, um sistema Tipo 2 zera o erro da parcela degrau (5) e da parcela rampa (3t), restando apenas o erro da parcela parabólica (2t² → A3 = 4). Um Compensador Lag dobra Ka (β = 2,04), reduzindo o erro total de 0,20 para 0,091.',
+      'Pela Superposição, um sistema Tipo 2 zera o erro da parcela degrau ($5$) e da parcela rampa ($3t$), restando apenas o erro da parcela parabólica ($2t^2 \\to A_3 = 4$). Um Compensador Lag dobra $K_a$, reduzindo o erro total de $0{,}20$ para $0{,}091$.',
     diagnostics: {
       systemType: 'Tipo 2 (2 polos na origem)',
       systemOrder: '3ª Ordem (s³ + 4s²)',
@@ -1503,14 +1563,14 @@ xgrid();`
     },
     detailedSteps: [
       {
-        title: '1. Decomposição por Superposição',
-        description: 'Para Tipo 2: ess_degrau = 0 e ess_rampa = 0. Para a parábola 2t² (L{2t²} = 4/s³):',
-        latex: 'K_a = \\frac{40 \\cdot 2}{4} = 20 \\implies e_{ss,\\text{total}} = \\frac{4}{20} = \\mathbf{0{,}2}'
+        title: '1. Decomposição por Superposição e Cálculo de $K_a$',
+        description: 'Calculando $K_p = \\infty$, $K_v = \\infty$ e $K_a = \\lim_{s\\to 0} s^2 G(s)$, além da transformada $\\mathcal{L}\\{2t^2\\} = 4/s^3$:',
+        latex: 'K_a = \\lim_{s\\to 0} s^2 \\cdot \\frac{40(s+2)}{s^2(s+4)} = \\frac{40 \\cdot 2}{4} = \\frac{80}{4} = \\mathbf{20} \\implies e_{ss,\\text{total}} = 0 + 0 + \\frac{4}{20} = \\mathbf{0{,}20}'
       },
       {
-        title: '2. Projeto do Compensador Lag',
-        description: 'Para ess = 0,1 = 4/Ka,req ⇒ Ka,req = 40. Polo lento em -4 ⇒ z_dipolo = 3,636. Em sd = -1,5 + j1,5:',
-        latex: 'K_0 = 0{,}98 \\implies K_{a,a} = 19{,}6 \\implies \\beta = \\frac{40}{19{,}6} = 2{,}04 \\;;\\; z = 0{,}40 \\;;\\; p = 0{,}196 \\;;\\; K_c = \\mathbf{1{,}08}'
+        title: '2. Passo 0 a Passo 5 — Projeto do Compensador Lag',
+        description: 'Para $e_{ss,\\text{total}} = 0{,}10 = 4/K_{a,\\text{req}} \\implies K_{a,\\text{req}} = 40$. Polo lento em $-4 \\implies z_{\\text{dipolo}} = 4/1{,}1 = 3{,}636$. Adotando $z = 0{,}40$, $p = 0{,}196$ e $K_c = 1{,}08$:',
+        latex: 'G_c(s) = 1{,}08\\frac{s+0{,}40}{s+0{,}196} \\implies K_{a,\\text{novo}} = 20 \\cdot 1{,}08 \\cdot \\frac{0{,}40}{0{,}196} = 44{,}08 \\implies \\mathbf{e_{ss,\\text{total}} = \\frac{4}{44{,}08} = 0{,}091 \\le 0{,}10}'
       }
     ],
     scilabCode: `// Exercício 3.5 - Entrada Combinada (5 + 3t + 2t^2)
@@ -1543,7 +1603,7 @@ xgrid();`
     inputParams: { a0: 1, labelLatex: 'r(t) = 1 \\cdot u(t)' },
     tMax: 6,
     whyThisController:
-      'Para posicionar os polos dominantes em sd = -3 + j3, o ganho P necessário é K0 = 13, resultando em Kp,atual = 2,6 e erro de 27,8% (> 5%). Como os polos dominantes já estão na posição exata, o Compensador Lag multiplica Kp por β = 7,31 sem desviar sd.',
+      'Para posicionar os polos dominantes em $s_d = -3 + j3$, o ganho $P$ necessário é $K_0 = 13$, resultando em $K_{p,\\text{atual}} = 2{,}6$ e erro de $27{,}8\\%$ ($> 5\\%$). Como os polos dominantes já estão na posição exata, o Compensador Lag multiplica $K_p$ por $\\beta = 7{,}31$ sem desviar $s_d$.',
     diagnostics: {
       systemType: 'Tipo 0 (0 polos na origem)',
       systemOrder: '2ª Ordem (s² + 6s + 5)',
@@ -1552,24 +1612,24 @@ xgrid();`
     },
     detailedSteps: [
       {
-        title: '1. Diagnóstico e Passo 0 (Triagem)',
-        description: 'Planta Tipo 0, 2ª ordem. Para ess ≤ 5%: 0,05 = 1/(1 + Kp,req) ⇒ Kp,req = 19. Polo mais lento |s_lenta| = 1:',
-        latex: 'z_{\\text{dipolo}} = \\frac{1}{1{,}1} \\approx \\mathbf{0{,}909}'
+        title: '1. Diagnóstico Inicial e Passo 0 (Triagem)',
+        description: 'Calculando $K_{p,0}$ da planta sem compensação, o $K_{p,\\text{req}}$ para $e_{ss} \\le 5\\%$ e o limite do dipolo pelo polo mais lento $|s_{\\text{lenta}}| = 1$:',
+        latex: 'K_{p,0} = \\lim_{s\\to 0} \\frac{1}{(s+1)(s+5)} = \\frac{1}{5} = 0{,}2 \\;;\\; \\frac{1}{1+K_{p,\\text{req}}} = 0{,}05 \\implies K_{p,\\text{req}} = \\mathbf{19} \\;;\\; z_{\\text{dipolo}} = \\frac{1}{1{,}1} \\approx \\mathbf{0{,}909}'
       },
       {
-        title: '2. Passos 1 a 3 (K0, β e Tolerância φ)',
-        description: 'Ganho inicial para sd = -3 + j3: K0 = |-2+j3|·|2+j3| = √13·√13 = 13. Kp atual = 13/5 = 2,6 (erro = 27,8% > 2% ⇒ φ = 10°):',
-        latex: '\\beta = \\frac{19}{2{,}6} \\approx \\mathbf{7{,}31}'
+        title: '2. Passos 1 a 3 — Ganho $K_0$, $K_{p,\\text{atual}}$, Fator $\\beta$ e Tolerância $\\varphi$',
+        description: 'Pela condição de módulo $|K_0 G(s_d)| = 1$ em $s_d = -3 + j3$:',
+        latex: 'K_0 = |-2+j3|\\cdot|2+j3| = \\sqrt{13}\\cdot\\sqrt{13} = \\mathbf{13} \\;;\\; K_{p,a} = 13 \\cdot \\frac{1}{5} = 2{,}6 \\; (e_p = 27{,}8\\% > 2\\% \\implies \\varphi = 10^\\circ) \\;;\\; \\beta = \\frac{19}{2{,}6} \\approx \\mathbf{7{,}31}'
       },
       {
-        title: '3. Passo 4 (Polinômio Trigonométrico para z e p)',
-        description: 'Impondo tan(θz - θp) = tan(10°) com z = 7,31p em sd = -3 + j3: 7,31p² - 132,24p + 18 = 0 ⇒ p_max ≈ 0,137 ⇒ z_max = 1,002. Comparando z_dipolo = 0,909 com z_max = 1,002, escolhe-se o menor (z = 0,909):',
-        latex: 'p = \\frac{0{,}909}{7{,}31} \\approx \\mathbf{0{,}124} \\; (\\text{perda angular real de } 8{,}9^\\circ < 10^\\circ)'
+        title: '3. Passo 4 — Polinômio Trigonométrico para $z$ e $p$',
+        description: 'Impondo $\\tan(\\theta_z - \\theta_p) = \\tan(10^\\circ)$ com $z = 7{,}31p$ em $s_d = -3 + j3$ e comparando $z_{\\max}$ com $z_{\\text{dipolo}}$:',
+        latex: '7{,}31p^2 - 132{,}24p + 18 = 0 \\implies p_{\\max} \\approx 0{,}137 \\implies z_{\\max} = 7{,}31 \\cdot 0{,}137 \\approx 1{,}002 \\implies z = \\min(1{,}002;\\, 0{,}909) = \\mathbf{0{,}909} \\;;\\; p = \\frac{0{,}909}{7{,}31} \\approx \\mathbf{0{,}124}'
       },
       {
-        title: '4. Passo 5 (Ajuste de Ganho Kc e Conferência)',
-        description: 'Recalculando o módulo e conferindo o novo Kp:',
-        latex: 'K_c = 13 \\cdot \\frac{|-2{,}876+j3|}{|-2{,}091+j3|} = 13\\frac{4{,}156}{3{,}657} \\approx \\mathbf{14{,}77} \\;;\\; K_{\\text{pos,novo}} = 21{,}6 \\implies e_{ss} = \\mathbf{4{,}4\\% \\le 5\\%}'
+        title: '4. Passo 5 — Ajuste de Ganho $K_c$ e Conferência do Erro Final',
+        description: 'Recalculando o ganho pela condição de módulo e conferindo $K_{p,\\text{novo}}$ e $e_{ss}$:',
+        latex: 'K_c = 13 \\cdot \\frac{|-2{,}876+j3|}{|-2{,}091+j3|} = 13 \\cdot \\frac{4{,}156}{3{,}657} \\approx \\mathbf{14{,}77} \\;;\\; K_{p,\\text{novo}} = \\frac{14{,}77 \\cdot 7{,}31}{5} = 21{,}6 \\implies \\mathbf{e_{ss} = \\frac{1}{1+21{,}6} = 4{,}4\\% \\le 5\\%}'
       }
     ],
     scilabCode: `// Exemplo Completo Slide 13/21 - Lag
