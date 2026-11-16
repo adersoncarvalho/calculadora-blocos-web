@@ -17,6 +17,23 @@ export default function HomePage() {
   const [showCanonicalModels, setShowCanonicalModels] = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
 
+  // Sincroniza visualização inicial com ?view=... da URL (mantém aba ao dar Ctrl+F5 e permite abrir em nova guia)
+  useEffect(() => {
+    const syncFromUrl = () => {
+      const params = new URLSearchParams(window.location.search);
+      const qView = params.get('view') as ActiveView | null;
+      const valid: ActiveView[] = ['home', 'builder', 'guide', 'practice', 'simulations', 'controllers'];
+      if (qView && valid.includes(qView)) {
+        setView(qView);
+      } else {
+        setView('home');
+      }
+    };
+    syncFromUrl();
+    window.addEventListener('popstate', syncFromUrl);
+    return () => window.removeEventListener('popstate', syncFromUrl);
+  }, []);
+
   // Escuta tecla '?' para atalhos e 'Esc' para fechar modais ou voltar
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -30,10 +47,14 @@ export default function HomePage() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  // Transições com scroll para o topo para abrir telas dedicadas
+  // Transições com scroll para o topo e atualização da URL
   const handleSetView = (newView: ActiveView) => {
     setView(newView);
     if (typeof window !== 'undefined') {
+      const targetUrl = newView === 'home' ? '/' : `/?view=${newView}`;
+      if (window.location.pathname + window.location.search !== targetUrl) {
+        window.history.pushState(null, '', targetUrl);
+      }
       window.scrollTo({ top: 0, behavior: 'instant' });
     }
   };
@@ -123,7 +144,19 @@ export default function HomePage() {
           explore diferentes topologias e visualize as transformações gráficas de cada etapa.
         </p>
         <div className="hero-features-row" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '14px' }}>
-          <span className="hero-feature-pill" style={{ background: 'linear-gradient(135deg, rgba(2,132,199,0.3) 0%, rgba(3,105,161,0.3) 100%)', border: '1px solid #0284c7', cursor: 'pointer' }} onClick={() => handleSetView('controllers')}>🎛️ <b>Controladores</b> (P, PD, PI, Avanço e Atraso)</span>
+          <a
+            href="/?view=controllers"
+            className="hero-feature-pill"
+            style={{ background: 'linear-gradient(135deg, rgba(2,132,199,0.3) 0%, rgba(3,105,161,0.3) 100%)', border: '1px solid #0284c7', cursor: 'pointer', textDecoration: 'none', color: 'inherit' }}
+            onClick={e => {
+              if (!e.ctrlKey && !e.metaKey && !e.shiftKey && e.button === 0) {
+                e.preventDefault();
+                handleSetView('controllers');
+              }
+            }}
+          >
+            🎛️ <b>Controladores</b> (P, PD, PI, Avanço e Atraso)
+          </a>
           <span className="hero-feature-pill">🧪 <b>Modo de Prática</b> com 3 Níveis &amp; Dicas</span>
           <span className="hero-feature-pill">📐 <b>Topologias</b> Canônicas e Desafios</span>
           <span className="hero-feature-pill">📝 <b>Memorial Analítico</b> em LaTeX</span>
@@ -149,17 +182,21 @@ export default function HomePage() {
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: '14px' }}>
           {/* Etapa 1 • Teoria */}
-          <div
+          <a
+            href="/?view=guide"
             className="learning-step-card"
-            onClick={() => handleSetView('guide')}
-            role="button"
-            tabIndex={0}
-            style={{ cursor: 'pointer', background: 'var(--card-bg)', border: '1px solid var(--card-border)', borderRadius: '8px', padding: '16px' }}
+            onClick={e => {
+              if (!e.ctrlKey && !e.metaKey && !e.shiftKey && e.button === 0) {
+                e.preventDefault();
+                handleSetView('guide');
+              }
+            }}
+            style={{ cursor: 'pointer', background: 'var(--card-bg)', border: '1px solid var(--card-border)', borderRadius: '8px', padding: '16px', textDecoration: 'none', display: 'block' }}
           >
             <div style={{ fontSize: '0.72rem', color: 'var(--primary)', fontWeight: 700 }}>Etapa 1 • Teoria</div>
             <div style={{ fontWeight: 700, fontSize: '0.96rem', margin: '4px 0', color: 'var(--text)' }}>📚 Fundamentos & Regras</div>
             <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', lineHeight: '1.45' }}>Estude premissas de isolamento, equações nodais e regras de blocos.</div>
-          </div>
+          </a>
 
           {/* Etapa 2 • Modelos (Abre a calculadora de topologias canônicas abaixo) */}
           <div
@@ -189,43 +226,55 @@ export default function HomePage() {
           </div>
 
           {/* Etapa 3 • Prática */}
-          <div
+          <a
+            href="/?view=practice"
             className="learning-step-card"
-            onClick={() => handleSetView('practice')}
-            role="button"
-            tabIndex={0}
-            style={{ cursor: 'pointer', background: 'var(--card-bg)', border: '1px solid var(--card-border)', borderRadius: '8px', padding: '16px' }}
+            onClick={e => {
+              if (!e.ctrlKey && !e.metaKey && !e.shiftKey && e.button === 0) {
+                e.preventDefault();
+                handleSetView('practice');
+              }
+            }}
+            style={{ cursor: 'pointer', background: 'var(--card-bg)', border: '1px solid var(--card-border)', borderRadius: '8px', padding: '16px', textDecoration: 'none', display: 'block' }}
           >
             <div style={{ fontSize: '0.72rem', color: 'var(--primary)', fontWeight: 700 }}>Etapa 3 • Prática</div>
             <div style={{ fontWeight: 700, fontSize: '0.96rem', margin: '4px 0', color: 'var(--text)' }}>🧪 Laboratório Interativo</div>
             <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', lineHeight: '1.45' }}>Exercícios em 3 níveis com verificador de equivalência algébrica real.</div>
-          </div>
+          </a>
 
           {/* Etapa 4 • Criação */}
-          <div
+          <a
+            href="/?view=builder"
             className="learning-step-card"
-            onClick={() => handleSetView('builder')}
-            role="button"
-            tabIndex={0}
-            style={{ cursor: 'pointer', background: 'var(--card-bg)', border: '1px solid var(--card-border)', borderRadius: '8px', padding: '16px' }}
+            onClick={e => {
+              if (!e.ctrlKey && !e.metaKey && !e.shiftKey && e.button === 0) {
+                e.preventDefault();
+                handleSetView('builder');
+              }
+            }}
+            style={{ cursor: 'pointer', background: 'var(--card-bg)', border: '1px solid var(--card-border)', borderRadius: '8px', padding: '16px', textDecoration: 'none', display: 'block' }}
           >
             <div style={{ fontSize: '0.72rem', color: 'var(--primary)', fontWeight: 700 }}>Etapa 4 • Criação</div>
             <div style={{ fontWeight: 700, fontSize: '0.96rem', margin: '4px 0', color: 'var(--text)' }}>🛠️ Construtor Livre</div>
             <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', lineHeight: '1.45' }}>Monte qualquer diagrama arbitrário e calcule a redução algébrica completa.</div>
-          </div>
+          </a>
 
           {/* Etapa 5 • Controladores */}
-          <div
+          <a
+            href="/?view=controllers"
             className="learning-step-card"
-            onClick={() => handleSetView('controllers')}
-            role="button"
-            tabIndex={0}
-            style={{ cursor: 'pointer', background: 'var(--card-bg)', border: '1px solid var(--card-border)', borderRadius: '8px', padding: '16px' }}
+            onClick={e => {
+              if (!e.ctrlKey && !e.metaKey && !e.shiftKey && e.button === 0) {
+                e.preventDefault();
+                handleSetView('controllers');
+              }
+            }}
+            style={{ cursor: 'pointer', background: 'var(--card-bg)', border: '1px solid var(--card-border)', borderRadius: '8px', padding: '16px', textDecoration: 'none', display: 'block' }}
           >
             <div style={{ fontSize: '0.72rem', color: 'var(--primary)', fontWeight: 700 }}>Etapa 5 • Projeto</div>
             <div style={{ fontWeight: 700, fontSize: '0.96rem', margin: '4px 0', color: 'var(--text)' }}>🎛️ Controladores</div>
             <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', lineHeight: '1.45' }}>P, PD, PI, Avanço de Fase e Atraso de Fase separados com teoria, método do professor, exercícios e simulações.</div>
-          </div>
+          </a>
         </div>
       </div>
 

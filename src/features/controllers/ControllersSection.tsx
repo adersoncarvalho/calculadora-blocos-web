@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { MathView } from '@/components/MathView';
 import { InteractiveTimeChart, ChartSeries } from '@/components/InteractiveTimeChart';
 import {
@@ -73,18 +73,54 @@ export const ControllersSection: React.FC<ControllersSectionProps> = ({ onBack, 
     CONTROLLER_EXERCISES[0].id
   );
 
+  // Restaura controlador e exercício da URL ao recarregar (Ctrl+F5)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const ctrlParam = params.get('ctrl') as ControllerCategoryId | null;
+    const exParam = params.get('ex');
+    if (ctrlParam && CATEGORY_ORDER.includes(ctrlParam)) {
+      setSelectedCategory(ctrlParam);
+      if (exParam && CONTROLLER_EXERCISES.some(e => e.id === exParam && e.controllerId === ctrlParam)) {
+        setSelectedExerciseId(exParam);
+      } else {
+        const firstEx = CONTROLLER_EXERCISES.find(e => e.controllerId === ctrlParam);
+        if (firstEx) setSelectedExerciseId(firstEx.id);
+      }
+    } else if (exParam && CONTROLLER_EXERCISES.some(e => e.id === exParam)) {
+      const found = CONTROLLER_EXERCISES.find(e => e.id === exParam)!;
+      setSelectedCategory(found.controllerId);
+      setSelectedExerciseId(found.id);
+    }
+  }, []);
+
   // Garante que o exercício selecionado pertença sempre à categoria atual
   const activeExercise: ControllerExercise = useMemo(() => {
     const found = exercisesForCategory.find(e => e.id === selectedExerciseId);
     return found || exercisesForCategory[0];
   }, [exercisesForCategory, selectedExerciseId]);
 
+  const updateUrlParams = (cat: ControllerCategoryId, exId: string) => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      params.set('view', 'controllers');
+      params.set('ctrl', cat);
+      params.set('ex', exId);
+      window.history.replaceState(null, '', `/?${params.toString()}`);
+    }
+  };
+
   const handleSelectCategory = (cat: ControllerCategoryId) => {
     setSelectedCategory(cat);
     const firstEx = CONTROLLER_EXERCISES.find(e => e.controllerId === cat);
     if (firstEx) {
       setSelectedExerciseId(firstEx.id);
+      updateUrlParams(cat, firstEx.id);
     }
+  };
+
+  const handleSelectExercise = (exId: string) => {
+    setSelectedExerciseId(exId);
+    updateUrlParams(selectedCategory, exId);
   };
 
   const theory = CONTROLLERS_THEORY[selectedCategory];
@@ -756,7 +792,7 @@ export const ControllersSection: React.FC<ControllersSectionProps> = ({ onBack, 
                   <button
                     key={ex.id}
                     type="button"
-                    onClick={() => setSelectedExerciseId(ex.id)}
+                    onClick={() => handleSelectExercise(ex.id)}
                     style={{
                       padding: '8px 13px',
                       borderRadius: '6px',

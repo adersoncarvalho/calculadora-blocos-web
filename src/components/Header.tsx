@@ -41,46 +41,76 @@ export const Header: React.FC<HeaderProps> = ({
           >
             ⌨️ Atalhos (?)
           </button>
-          <button
-            type="button"
+          <a
+            href="/?view=builder"
             className="btn-open-guide"
-            onClick={onOpenBuilder}
+            style={{ textDecoration: 'none' }}
+            onClick={e => {
+              if (!e.ctrlKey && !e.metaKey && !e.shiftKey && e.button === 0) {
+                e.preventDefault();
+                onOpenBuilder();
+              }
+            }}
             aria-label="Criar Meu Próprio Diagrama no Construtor Livre"
           >
             🛠️ Construtor Livre
-          </button>
-          <button
-            type="button"
+          </a>
+          <a
+            href="/?view=guide"
             className="btn-open-guide"
-            onClick={onOpenGuide}
+            style={{ textDecoration: 'none' }}
+            onClick={e => {
+              if (!e.ctrlKey && !e.metaKey && !e.shiftKey && e.button === 0) {
+                e.preventDefault();
+                onOpenGuide();
+              }
+            }}
             aria-label="Abrir Guia Didático Completo"
           >
             📖 Guia Didático
-          </button>
-          <button
-            type="button"
+          </a>
+          <a
+            href="/?view=practice"
             className="btn-open-guide btn-practice-trigger"
-            onClick={onOpenPractice}
+            style={{ textDecoration: 'none' }}
+            onClick={e => {
+              if (!e.ctrlKey && !e.metaKey && !e.shiftKey && e.button === 0) {
+                e.preventDefault();
+                onOpenPractice();
+              }
+            }}
             aria-label="Abrir Modo de Prática com 3 Níveis"
           >
             🧪 Modo de Prática
-          </button>
-          <button
-            type="button"
+          </a>
+          <a
+            href="/?view=simulations"
             className="btn-open-guide"
-            onClick={onOpenSimulations}
+            style={{ textDecoration: 'none' }}
+            onClick={e => {
+              if (!e.ctrlKey && !e.metaKey && !e.shiftKey && e.button === 0) {
+                e.preventDefault();
+                onOpenSimulations();
+              }
+            }}
             aria-label="Abrir Painel com 20 Simulações Reais"
           >
             📊 20 Simulações
-          </button>
-          <button
-            type="button"
+          </a>
+          <a
+            href="/?view=controllers"
             className="btn-open-guide btn-highlight-builder"
-            onClick={onOpenControllers}
+            style={{ textDecoration: 'none' }}
+            onClick={e => {
+              if (!e.ctrlKey && !e.metaKey && !e.shiftKey && e.button === 0) {
+                e.preventDefault();
+                onOpenControllers();
+              }
+            }}
             aria-label="Abrir Laboratório dos 5 Controladores Principais"
           >
             🎛️ Controladores
-          </button>
+          </a>
           <ThemeToggle />
         </div>
       </div>
