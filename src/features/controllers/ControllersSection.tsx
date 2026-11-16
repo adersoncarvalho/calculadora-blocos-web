@@ -20,6 +20,7 @@ const CATEGORY_ORDER: ControllerCategoryId[] = ['P', 'PD', 'PI', 'Lead', 'Lag'];
 
 export const ControllersSection: React.FC<ControllersSectionProps> = ({ onBack, onNavigate }) => {
   const [selectedCategory, setSelectedCategory] = useState<ControllerCategoryId>('P');
+  const [showDecisionGuide, setShowDecisionGuide] = useState<boolean>(true);
   const [showTheory, setShowTheory] = useState<boolean>(true);
   const [showMethod, setShowMethod] = useState<boolean>(true);
   const [copiedScilab, setCopiedScilab] = useState<boolean>(false);
@@ -411,6 +412,158 @@ export const ControllersSection: React.FC<ControllersSectionProps> = ({ onBack, 
           </button>
         )}
       </div>
+
+      {/* GUIA TEÓRICO GERAL: COMO ESCOLHER O CONTROLADOR IDEAL */}
+      <section
+        style={{
+          background: 'var(--card-bg)',
+          border: '1px solid var(--card-border)',
+          borderRadius: '10px',
+          marginBottom: '20px',
+          overflow: 'hidden'
+        }}
+      >
+        <button
+          type="button"
+          onClick={() => setShowDecisionGuide(p => !p)}
+          style={{
+            width: '100%',
+            padding: '14px 18px',
+            background: 'none',
+            border: 'none',
+            borderBottom: showDecisionGuide ? '1px solid var(--card-border)' : 'none',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            cursor: 'pointer',
+            textAlign: 'left'
+          }}
+        >
+          <div>
+            <span style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--primary)', textTransform: 'uppercase' }}>
+              Teoria Geral de Projeto (EEL6005)
+            </span>
+            <div style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--text)', marginTop: '2px' }}>
+              🧭 Como Escolher o Controlador Ideal? — Guia de Decisão Rápida
+            </div>
+          </div>
+          <span style={{ color: 'var(--text-muted)', fontSize: '0.82rem', fontWeight: 600 }}>
+            {showDecisionGuide ? '▲ Recolher Guia' : '▼ Expandir Guia'}
+          </span>
+        </button>
+
+        {showDecisionGuide && (
+          <div style={{ padding: '18px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text)', lineHeight: 1.55 }}>
+              Antes de sair calculando, todo projeto de controle começa por uma pergunta fundamental:{' '}
+              <strong>o que o sistema precisa melhorar?</strong> O defeito está no{' '}
+              <span style={{ color: 'var(--primary)', fontWeight: 700 }}>Regime Transitório</span> (lento, oscilatório, sobressinal %OS alto, Ts longo)
+              ou no <span style={{ color: 'var(--success)', fontWeight: 700 }}>Regime Permanente</span> (erro estacionário e_ss alto ou infinito)?
+            </p>
+
+            {/* Tabela Comparativa de Decisão */}
+            <div style={{ overflowX: 'auto' }}>
+              <table
+                style={{
+                  width: '100%',
+                  borderCollapse: 'collapse',
+                  fontSize: '0.79rem',
+                  textAlign: 'left'
+                }}
+              >
+                <thead>
+                  <tr style={{ background: 'var(--code-bg)', borderBottom: '2px solid var(--card-border)' }}>
+                    <th style={{ padding: '8px 10px', color: 'var(--text)' }}>Controlador</th>
+                    <th style={{ padding: '8px 10px', color: 'var(--text)' }}>Altera o Tipo?</th>
+                    <th style={{ padding: '8px 10px', color: 'var(--text)' }}>Foco Principal</th>
+                    <th style={{ padding: '8px 10px', color: 'var(--text)' }}>Quando é a Melhor Escolha?</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr style={{ borderBottom: '1px solid var(--card-border)' }}>
+                    <td style={{ padding: '8px 10px', fontWeight: 700, color: '#0284c7' }}>Proporcional (P)</td>
+                    <td style={{ padding: '8px 10px' }}>Não</td>
+                    <td style={{ padding: '8px 10px' }}>Ganho estático K</td>
+                    <td style={{ padding: '8px 10px', color: 'var(--text-muted)' }}>
+                      Quando o Tipo atual já atende à entrada e basta ajustar K para atingir um erro finito aceitável (sem violar a estabilidade).
+                    </td>
+                  </tr>
+                  <tr style={{ borderBottom: '1px solid var(--card-border)', background: 'var(--code-bg)' }}>
+                    <td style={{ padding: '8px 10px', fontWeight: 700, color: '#d97706' }}>PD / PD Real</td>
+                    <td style={{ padding: '8px 10px' }}>Não</td>
+                    <td style={{ padding: '8px 10px' }}>Transitório (%OS, Ts)</td>
+                    <td style={{ padding: '8px 10px', color: 'var(--text-muted)' }}>
+                      Quando o sistema é lento ou oscilatório e o erro estacionário já é aceitável. Adiciona zero que puxa o LGR para a esquerda.
+                    </td>
+                  </tr>
+                  <tr style={{ borderBottom: '1px solid var(--card-border)' }}>
+                    <td style={{ padding: '8px 10px', fontWeight: 700, color: '#059669' }}>PI</td>
+                    <td style={{ padding: '8px 10px', fontWeight: 700, color: 'var(--success)' }}>Sim (+1)</td>
+                    <td style={{ padding: '8px 10px' }}>Zerar erro / Mudar Tipo</td>
+                    <td style={{ padding: '8px 10px', color: 'var(--text-muted)' }}>
+                      Quando se precisa <strong>ZERAR</strong> um erro finito (ex.: Tipo 0 ao degrau) ou transformar erro ∞ em finito (ex.: Tipo 0 à rampa).
+                    </td>
+                  </tr>
+                  <tr style={{ borderBottom: '1px solid var(--card-border)', background: 'var(--code-bg)' }}>
+                    <td style={{ padding: '8px 10px', fontWeight: 700, color: '#7c3aed' }}>Avanço de Fase (Lead)</td>
+                    <td style={{ padding: '8px 10px' }}>Não</td>
+                    <td style={{ padding: '8px 10px' }}>Transitório (Tp, Ts, %OS)</td>
+                    <td style={{ padding: '8px 10px', color: 'var(--text-muted)' }}>
+                      Quando se precisa acelerar o transitório como no PD, mas usando compensador real (z &lt; p) com ganho limitado em alta frequência para evitar ruído.
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style={{ padding: '8px 10px', fontWeight: 700, color: '#dc2626' }}>Atraso de Fase (Lag)</td>
+                    <td style={{ padding: '8px 10px' }}>Não</td>
+                    <td style={{ padding: '8px 10px' }}>Erro Permanente (β = z/p)</td>
+                    <td style={{ padding: '8px 10px', color: 'var(--text-muted)' }}>
+                      Quando o transitório (polos dominantes sd) JÁ é satisfatório com ganho K0, mas o erro estacionário finito ainda está acima do limite permitido.
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            {/* Dúvidas Clássicas de Prova */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(290px, 1fr))', gap: '12px' }}>
+              <div
+                style={{
+                  background: 'var(--code-bg)',
+                  borderLeft: '4px solid #059669',
+                  borderRadius: '6px',
+                  padding: '10px 14px'
+                }}
+              >
+                <div style={{ fontSize: '0.8rem', fontWeight: 800, color: '#059669', marginBottom: '4px' }}>
+                  🤔 Dúvida Clássica: Escolho PI ou Atraso de Fase (Lag)?
+                </div>
+                <div style={{ fontSize: '0.78rem', color: 'var(--text)', lineHeight: 1.5 }}>
+                  • Use <strong>PI</strong> se o objetivo for <strong>zerar completamente</strong> o erro ao degrau (ou tornar finito um erro que era infinito). O PI adiciona um polo na origem (s = 0), elevando o Tipo do sistema.<br />
+                  • Use <strong>Atraso (Lag)</strong> se o erro já for finito (ex.: 33%) e você só precisar reduzi-lo (ex.: para ≤ 5%) <strong>sem mudar o Tipo</strong> e mantendo os polos dominantes sd intactos.
+                </div>
+              </div>
+
+              <div
+                style={{
+                  background: 'var(--code-bg)',
+                  borderLeft: '4px solid #7c3aed',
+                  borderRadius: '6px',
+                  padding: '10px 14px'
+                }}
+              >
+                <div style={{ fontSize: '0.8rem', fontWeight: 800, color: '#7c3aed', marginBottom: '4px' }}>
+                  🤔 Dúvida Clássica: Escolho PD ou Avanço de Fase (Lead)?
+                </div>
+                <div style={{ fontSize: '0.78rem', color: 'var(--text)', lineHeight: 1.5 }}>
+                  • Ambos melhoram o transitório fornecendo avanço de fase positivo.<br />
+                  • Use <strong>PD</strong> quando o projeto aceita um zero puro ideal (ou PD Real com N fixo).<br />
+                  • Use <strong>Avanço (Lead)</strong> quando precisar de flexibilidade na razão r = p/z (método da Bissetriz ou Cancelamento) para obter polos rápidos com <strong>menor ganho Kc</strong> e menor amplificação de ruído.
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </section>
 
       {/* Seletor dos 5 Controladores Principais */}
       <div
