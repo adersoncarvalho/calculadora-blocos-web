@@ -16,7 +16,7 @@ interface ControllersSectionProps {
   onNavigate?: (view: 'builder' | 'guide' | 'practice' | 'simulations') => void;
 }
 
-const CATEGORY_ORDER: ControllerCategoryId[] = ['P', 'PI', 'PD', 'PID', 'Fase'];
+const CATEGORY_ORDER: ControllerCategoryId[] = ['P', 'PD', 'PI', 'Lead', 'Lag'];
 
 export const ControllersSection: React.FC<ControllersSectionProps> = ({ onBack, onNavigate }) => {
   const [selectedCategory, setSelectedCategory] = useState<ControllerCategoryId>('P');

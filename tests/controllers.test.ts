@@ -5,10 +5,10 @@ import {
   simulateControllerExercise
 } from '../src/features/controllers/controllersData';
 
-describe('Laboratório dos 5 Controladores Principais (P, PI, PD, PID, Fase)', () => {
-  it('1. Deve conter exatamente os 5 controladores principais com teoria e roteiro padrão do professor', () => {
+describe('Laboratório dos 5 Controladores Principais (P, PD, PI, Avanço/Lead, Atraso/Lag)', () => {
+  it('1. Deve conter exatamente os 5 controladores separados com teoria e roteiro padrão do professor', () => {
     const keys = Object.keys(CONTROLLERS_THEORY);
-    expect(keys).toEqual(['P', 'PI', 'PD', 'PID', 'Fase']);
+    expect(keys).toEqual(['P', 'PI', 'PD', 'Lead', 'Lag']);
     for (const k of keys) {
       const th = CONTROLLERS_THEORY[k as keyof typeof CONTROLLERS_THEORY];
       expect(th.professorMethodSteps.length).toBeGreaterThanOrEqual(3);
@@ -17,7 +17,7 @@ describe('Laboratório dos 5 Controladores Principais (P, PI, PD, PID, Fase)', (
   });
 
   it('2. Cada um dos 5 controladores deve possuir exercícios dos slides e propostos', () => {
-    for (const cat of ['P', 'PI', 'PD', 'PID', 'Fase'] as const) {
+    for (const cat of ['P', 'PD', 'PI', 'Lead', 'Lag'] as const) {
       const exs = CONTROLLER_EXERCISES.filter(e => e.controllerId === cat);
       expect(exs.length).toBeGreaterThanOrEqual(2);
     }
@@ -61,9 +61,11 @@ describe('Laboratório dos 5 Controladores Principais (P, PI, PD, PID, Fase)', (
     expect(simPd.overshootComp!).toBeGreaterThan(12);
     expect(simPd.overshootComp!).toBeLessThan(20);
 
-    // PID Slide LGR: erro nulo ao degrau
-    const simPid = simulateControllerExercise(byId('pid-ex-slide'))!;
-    expect(Math.abs(simPid.essComp)).toBeLessThan(0.01);
+    // Lead Aula 20 Bissetriz: erro nulo ao degrau e %OS ~ 4.32%
+    const simLeadAula20 = simulateControllerExercise(byId('lead-ex-aula20-bissetriz'))!;
+    expect(Math.abs(simLeadAula20.essComp)).toBeLessThan(0.01);
+    expect(simLeadAula20.overshootComp!).toBeGreaterThan(2);
+    expect(simLeadAula20.overshootComp!).toBeLessThan(7);
 
     // Lead Proposto: erro nulo ao degrau e %OS ~ 16.3%
     const simLead = simulateControllerExercise(byId('fase-ex-lead-proposto'))!;

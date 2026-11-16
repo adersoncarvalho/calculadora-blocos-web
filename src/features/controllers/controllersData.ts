@@ -16,7 +16,7 @@ import {
 } from '@/core/algebra/polynomial';
 import { RatFunc, ratMul, ratSimplify } from '@/core/algebra/rational';
 
-export type ControllerCategoryId = 'P' | 'PI' | 'PD' | 'PID' | 'Fase';
+export type ControllerCategoryId = 'P' | 'PD' | 'PI' | 'Lead' | 'Lag';
 
 export interface ProfessorMethodStep {
   step: string;
@@ -227,121 +227,114 @@ export const CONTROLLERS_THEORY: Record<ControllerCategoryId, ControllerTheory> 
     ]
   },
 
-  PID: {
-    id: 'PID',
-    shortName: 'PID',
-    fullName: 'Controlador Proporcional-Integral-Derivativo (PID)',
+  Lead: {
+    id: 'Lead',
+    shortName: 'Avanço (Lead)',
+    fullName: 'Controlador por Avanço de Fase (Lead)',
     badgeColor: '#7c3aed',
-    transferFunctionLatex: 'G_c(s) = K_p + \\frac{K_i}{s} + K_d s = K_c \\frac{(s + z_1)(s + z_2)}{s}',
+    transferFunctionLatex: 'G_c(s) = K_c \\frac{s + z}{s + p} \\quad (z < p)',
     summary:
-      'Reúne as três ações fundamentais: um polo na origem (1/s) e dois zeros (z1 para o transitório e z2 próximo à origem para o regime permanente).',
+      'Rede de primeira ordem onde o zero está mais próximo da origem do que o polo (z < p). Adiciona avanço de fase positivo ao LGR para melhorar a resposta transitória sem amplificar ruído como um derivador ideal.',
     transientEffect:
-      'A parcela PD fornece velocidade, amortecimento e estabilidade, posicionando os polos dominantes em sd sem perda de desempenho.',
+      'Desloca o Lugar Geométrico das Raízes (LGR) para a esquerda, reduzindo o tempo de pico Tp, diminuindo o tempo de acomodação Ts e aumentando o amortecimento e a estabilidade.',
     steadyStateEffect:
-      'A parcela PI adiciona 1 polo na origem (eleva o Tipo em +1), garantindo erro estacionário nulo ao degrau (ou finito/nulo conforme o novo Tipo).',
+      'Não altera o Tipo do sistema. Melhora moderadamente o erro em regime permanente pelo aumento de ganho em malha fechada.',
     whenToChoose: [
-      'Quando o sistema precisa simultaneamente melhorar muito o regime transitório (%OS, Ts) E eliminar/reduzir drasticamente o erro em regime permanente.',
-      'Quando apenas o PD não zera o erro e apenas o PI degrada a velocidade ou estabilidade da resposta.'
+      'Quando o desempenho transitório (%OS, Tp, Ts) precisa ser melhorado e o LGR original não passa pelos polos dominantes desejados sd.',
+      'Quando se busca acelerar a resposta e aumentar a margem de estabilidade com filtro real em alta frequência (razão r = p/z ajustável, ex.: Bissetriz ou Cancelamento).'
     ],
-    professorMethodTitle: 'Roteiro Padrão — Projeto do Controlador PID via LGR',
+    professorMethodTitle: 'Roteiro Padrão — Controlador por Avanço de Fase (LGR)',
     professorMethodSteps: [
       {
         step: 'Passo 1',
-        title: 'Especificar os Polos Dominantes sd',
+        title: 'Determinar os Polos Dominantes Desejados (sd)',
         description:
-          'Calcular sd = -σd + jωd a partir dos requisitos transitórios (%OS e Ts ou Tp).',
-        formulaLatex: 's_d = -\\sigma_d + j\\omega_d'
+          'A partir dos requisitos de sobressinal (%OS) e tempo de pico (Tp) ou acomodação (Ts), calcular ζ, ωn e sd = -σd + jωd.',
+        formulaLatex: '\\zeta = \\frac{-\\ln(\\%OS/100)}{\\sqrt{\\pi^2 + \\ln^2(\\%OS/100)}} \\;;\\; \\omega_d = \\frac{\\pi}{T_p} \\;;\\; s_d = -\\sigma_d + j\\omega_d'
       },
       {
         step: 'Passo 2',
-        title: 'Inserir a Parcela Integradora (1/s) e o Zero Lento z2 (PI)',
+        title: 'Calcular a Deficiência Angular (φ)',
         description:
-          'Fixar o polo na origem s = 0 e escolher um zero z2 bem próximo da origem (ex.: 0,1 a 0,5) ou cancelar um polo da planta com z1.',
-        formulaLatex: 'G_{PI}(s) = \\frac{s + z_2}{s}'
+          'Avaliar a fase de G(sd) no ponto desejado. A diferença para ±180° é o ângulo positivo φ que o controlador de avanço deve fornecer.',
+        formulaLatex: '\\phi = 180^\\circ - \\angle G(s_d)'
       },
       {
         step: 'Passo 3',
-        title: 'Calcular o Zero Derivativo z1 pela Condição de Ângulo',
+        title: 'Posicionar Zero (z) e Polo (p) — Bissetriz ou Cancelamento',
         description:
-          'Considerando a planta + integrador + zero z2, calcular a deficiência angular em sd e posicionar z1 para fechar 180°.',
-        formulaLatex: '\\angle(s_d + z_1) = 180^\\circ - \\angle\\left(\\frac{s_d + z_2}{s_d} G(s_d)\\right)'
+          'Escolher o critério de projeto: (a) Cancelamento de um polo lento da planta com z; ou (b) Método da Bissetriz dividindo o ângulo φ simetricamente para minimizar o ganho Kc.',
+        formulaLatex: '\\angle(s_d + z) - \\angle(s_d + p) = \\phi \\quad (z < p)'
       },
       {
         step: 'Passo 4',
-        title: 'Calcular o Ganho Kc pela Condição de Módulo e Expandir Kp, Ki, Kd',
+        title: 'Ajustar o Ganho Kc pela Condição de Módulo',
         description:
-          'Impor |Gc(sd)·G(sd)| = 1 para achar Kc e expandir os ganhos paralelos do PID.',
-        formulaLatex: 'K_c = \\frac{|s_d|}{|s_d + z_1||s_d + z_2||G(s_d)|} \\;;\\; K_p = K_c(z_1+z_2) \\;;\\; K_i = K_c z_1 z_2 \\;;\\; K_d = K_c'
+          'Impor |Gc(sd)·G(sd)| = 1 para determinar o ganho Kc e validar a resposta em malha fechada.',
+        formulaLatex: 'K_c = \\frac{|s_d + p|}{|s_d + z| \\cdot |G(s_d)|}'
       }
     ]
   },
 
-  Fase: {
-    id: 'Fase',
-    shortName: 'Lag / Lead',
-    fullName: 'Controlador por Atraso (Lag) e Avanço (Lead) de Fase',
+  Lag: {
+    id: 'Lag',
+    shortName: 'Atraso (Lag)',
+    fullName: 'Controlador por Atraso de Fase (Lag)',
     badgeColor: '#dc2626',
-    transferFunctionLatex: 'G_c(s) = K_c \\frac{s + z}{s + p} \\quad (\\text{Lag: } p < z \\;;\\; \\text{Lead: } z < p)',
+    transferFunctionLatex: 'G_c(s) = K_c \\frac{s + z}{s + p} \\quad (p < z)',
     summary:
-      'Redes de primeira ordem (um polo e um zero reais). O Atraso de Fase (Lag) melhora o erro estacionário sem alterar o Tipo; o Avanço de Fase (Lead) melhora o transitório sem usar derivador puro.',
+      'Rede de primeira ordem com polo e zero formando um dipolo próximo à origem (p < z). Amplifica o ganho estático pelo fator β = z/p sem desviar os polos dominantes sd.',
     transientEffect:
-      'Lag (p < z): dipolo próximo da origem preserva os polos dominantes sd intactos (perda angular ≤ 10°). Lead (z < p): adiciona fase positiva, acelerando a resposta e aumentando a margem de estabilidade.',
+      'Preserva o comportamento transitório (polos dominantes sd permanecem intactos com perda angular ≤ 10°), evitando criação de cauda lenta quando z ≤ z_dipolo.',
     steadyStateEffect:
-      'Lag (p < z): multiplica a constante estática Kp, Kv ou Ka pelo fator β = z/p > 1, reduzindo drasticamente ess. Lead (z < p): efeito menor no erro estático, focado no transitório.',
+      'Não altera o Tipo do sistema, mas multiplica as constantes de erro estático (Kp, Kv ou Ka) pelo fator β = z/p > 1, reduzindo drasticamente o erro estacionário.',
     whenToChoose: [
-      'Atraso de Fase (Lag): quando o transitório (polos dominantes sd) JÁ está satisfatório com ganho K0, mas o erro em regime permanente é alto.',
-      'Avanço de Fase (Lead): quando se deseja melhorar o transitório (como no PD), mas com filtro real s+p para evitar amplificação de ruído de alta frequência.'
+      'Quando o transitório (polos dominantes sd) JÁ está satisfatório com ganho inicial K0, mas o erro em regime permanente está acima do especificado.',
+      'Quando não é necessário mudar o Tipo do sistema (diferente do PI), bastando amplificar o ganho DC em baixas frequências.'
     ],
-    professorMethodTitle: 'Roteiro Padrão do Professor — Atraso (Lag) em 6 Passos & Avanço (Lead)',
+    professorMethodTitle: 'Roteiro Padrão do Professor — Controlador por Atraso de Fase (Lag)',
     professorMethodSteps: [
       {
-        step: 'Passo 0 (Lag)',
+        step: 'Passo 0',
         title: 'Especificação e Triagem do Dipolo',
         description:
           'Calcular Kreq a partir do erro estacionário desejado e determinar o limite do dipolo usando o polo não-nulo mais lento da planta (para não criar cauda lenta).',
         formulaLatex: 'z_{\\text{dipolo}} = \\frac{|s_{\\text{lenta}}|}{1{,}1}'
       },
       {
-        step: 'Passo 1 (Lag)',
+        step: 'Passo 1',
         title: 'Ganho Inicial K0 pela Condição de Módulo',
         description:
           'Calcular o ganho K0 que coloca os polos dominantes da planta sem compensador exatamente no ponto desejado sd = -σd + jωd.',
         formulaLatex: '|K_0 G(s_d)| = 1 \\implies K_0 = \\frac{1}{|G(s_d)|}'
       },
       {
-        step: 'Passo 2 (Lag)',
+        step: 'Passo 2',
         title: 'Constante Atual e Fator β',
         description:
           'Calcular a constante de erro atual (Kp,a, Kv,a ou Ka,a) usando K0 e obter a razão de amplificação necessária β = z/p.',
         formulaLatex: '\\beta = \\frac{K_{\\text{req}}}{K_{\\text{atual}}}'
       },
       {
-        step: 'Passo 3 (Lag)',
+        step: 'Passo 3',
         title: 'Erro Atual e Reserva de Tolerância Angular φ',
         description:
           'Se o erro atual com K0 for elevado (> 2%), reservar tolerância angular φ = 10° (ou φ = 5° para ajustes finos).',
         formulaLatex: '\\varphi = 10^\\circ \\quad (\\text{ou } 5^\\circ)'
       },
       {
-        step: 'Passo 4 (Lag)',
+        step: 'Passo 4',
         title: 'Posição de z e p pelo Polinômio Trigonométrico',
         description:
           'Resolver tan(θz - θp) = tan(φ) com z = β·p no ponto sd = -σd + jωd. Comparar z_max = β·p_max com z_dipolo e escolher o MENOR valor para z; depois calcular p = z/β.',
         formulaLatex: '\\frac{\\frac{\\omega_d}{\\sigma_d - \\beta p} - \\frac{\\omega_d}{\\sigma_d - p}}{1 + \\frac{\\omega_d^2}{(\\sigma_d - \\beta p)(\\sigma_d - p)}} = \\tan(\\varphi) \\;;\\; z = \\min(z_{\\max}, z_{\\text{dipolo}}) \\;;\\; p = \\frac{z}{\\beta}'
       },
       {
-        step: 'Passo 5 (Lag)',
+        step: 'Passo 5',
         title: 'Ajuste Final de Ganho Kc e Conferência',
         description:
           'Recalcular o ganho Kc pela condição de módulo incluindo o compensador e conferir se o erro final atende à especificação.',
         formulaLatex: 'K_c = K_0 \\frac{|s_d + p|}{|s_d + z|} \\implies e_{ss,\\text{final}} \\le e_{ss,\\text{req}}'
-      },
-      {
-        step: 'Lead (Avanço)',
-        title: 'Projeto de Avanço de Fase (z < p)',
-        description:
-          'Calcular deficiência angular φ = 180° - ∠G(sd), fixar zero z (ex.: cancelando polo lento da planta), achar polo p tal que ∠(sd+z) - ∠(sd+p) = φ e ajustar Kc = |sd+p| / (|sd+z|·|G(sd)|).',
-        formulaLatex: 'G_c(s) = K_c \\frac{s+z}{s+p}, \\quad z < p'
       }
     ]
   }
@@ -1134,129 +1127,11 @@ xgrid();`
   },
 
   // ---------------------------------------------------------------------------
-  // CONTROLADOR PROPORCIONAL-INTEGRAL-DERIVATIVO (PID)
-  // ---------------------------------------------------------------------------
-  {
-    id: 'pid-ex-slide',
-    controllerId: 'PID',
-    badge: 'Slide LGR • Completo',
-    title: 'Exemplo Clássico — Projeto de Controlador PID via LGR',
-    source: 'Slides EEL6005 — Controlador PID',
-    statementLatex:
-      '\\text{Dada a planta Tipo 0 } G(s) = \\frac{1}{(s+2)(s+4)}, \\text{ projete um controlador PID para garantir erro nulo ao degrau } (e_{ss} = 0) \\text{ e resposta transitória com } \\zeta = 0{,}5 \\text{ e } \\omega_n = 8\\text{ rad/s } (s_d = -4 + j6{,}928).',
-    plantExpr: '1/((s+2)*(s+4))',
-    plantLatex: '\\frac{1}{(s+2)(s+4)}',
-    controllerExpr: '6*(s+4)*(s+10.67)/s',
-    controllerLatex: 'G_c(s) = 6\\frac{(s+4)(s+10{,}67)}{s} = 88 + \\frac{256}{s} + 6s',
-    controllerBlockLabel: 'Controlador PID',
-    inputType: 'step',
-    inputParams: { a0: 1, labelLatex: 'r(t) = 1 \\cdot u(t)' },
-    tMax: 2.5,
-    whyThisController:
-      'A planta é Tipo 0 (tem erro estacionário ao degrau) e seus polos naturais (-2 e -4) são mais lentos que a especificação desejável (ωn = 8 rad/s). O PID combina a ação integradora (1/s) para zerar o erro permanente com dois zeros que moldam exatamente o transitório desejado.',
-    diagnostics: {
-      systemType: 'Tipo 0 → Tipo 1',
-      systemOrder: '2ª Ordem (após cancelamento do polo em -4)',
-      initialErrorLatex: 'e_{ss,(G_c=1)} = \\frac{1}{1+0{,}125} = 88{,}9\\%',
-      finalErrorLatex: 'e_{ss,(PID)} = 0\\% \\; (s_d = -4 \\pm j6{,}928)'
-    },
-    detailedSteps: [
-      {
-        title: '1. Estrutura do PID e Cancelamento Estratégico',
-        description: 'Escrevendo Gc(s) = Kc·(s+z1)(s+z2)/s, escolhe-se z1 = 4 para cancelar o polo da planta em s = -4:',
-        latex: 'G_c(s)G(s) = K_c \\frac{s+z_2}{s(s+2)}'
-      },
-      {
-        title: '2. Igualar ao Polinômio Desejado (ζ = 0,5 e ωn = 8)',
-        description: 'O polinômio característico desejado é s² + 2ζωn·s + ωn² = s² + 8s + 64:',
-        latex: 's(s+2) + K_c(s+z_2) = s^2 + (2+K_c)s + K_c z_2 \\equiv s^2 + 8s + 64'
-      },
-      {
-        title: '3. Determinar Kc e z2',
-        description: 'Igualando termo a termo:',
-        latex: '2 + K_c = 8 \\implies \\mathbf{K_c = 6} \\quad ; \\quad 6 z_2 = 64 \\implies \\mathbf{z_2 = 10{,}67}'
-      },
-      {
-        title: '4. Expansão nos Ganhos Kp, Ki, Kd',
-        description: 'Expandindo 6(s+4)(s+10,67)/s:',
-        latex: '\\mathbf{G_c(s) = 88 + \\frac{256}{s} + 6s}'
-      }
-    ],
-    scilabCode: `// Exemplo Clássico - Controlador PID
-s = poly(0, 's');
-G = syslin('c', 1, (s+2)*(s+4));
-Gc = syslin('c', 6*(s+4)*(s+10.67), s);
-T_sem = G / (1 + G);
-T_com = (Gc*G) / (1 + Gc*G);
-t = 0:0.005:2.5;
-y_sem = csim('step', t, T_sem);
-y_com = csim('step', t, T_com);
-plot(t, y_sem, 'r--', t, y_com, 'b-', 'LineWidth', 2);
-legend(["Sem PID (ess=88.9%)", "Com PID (ess=0%, Ts=1s)"]);
-xgrid();`
-  },
-  {
-    id: 'pid-ex-proposto',
-    controllerId: 'PID',
-    badge: 'Proposto • Planta Tipo 1',
-    title: 'Exercício Proposto — PID para Erro Nulo à Rampa e Transitório Rápido',
-    source: 'Exercícios Propostos — Controle PID',
-    statementLatex:
-      '\\text{Dada a planta } G(s) = \\frac{10}{s(s+3)(s+6)}, \\text{ projete um controlador PID para anular o erro estacionário à rampa } (e_{ss,\\text{rampa}} = 0) \\text{ e posicionar os polos dominantes em } s_d = -3 + j4.',
-    plantExpr: '10/(s*(s+3)*(s+6))',
-    plantLatex: '\\frac{10}{s(s+3)(s+6)}',
-    controllerExpr: '2.64*(s+2.659)*(s+0.5)/s',
-    controllerLatex: 'G_c(s) = 2{,}64\\frac{(s+2{,}659)(s+0{,}5)}{s} = 8{,}34 + \\frac{3{,}51}{s} + 2{,}64s',
-    controllerBlockLabel: 'Controlador PID (Tipo 1 -> Tipo 2)',
-    inputType: 'ramp',
-    inputParams: { a1: 1, labelLatex: 'r(t) = t \\cdot u(t)' },
-    tMax: 6,
-    whyThisController:
-      'Como a planta já é Tipo 1, um controlador PD não zeraria o erro à rampa (apenas ajustaria Kv finito). O PID adiciona o integrador 1/s (elevando para Tipo 2, logo ess_rampa = 0) enquanto o par de zeros garante estabilidade e polos dominantes rápidos em sd = -3 + j4.',
-    diagnostics: {
-      systemType: 'Tipo 1 → Tipo 2',
-      systemOrder: '3ª Ordem → 4ª Ordem',
-      initialErrorLatex: 'e_{ss,(G_c=1)} = \\frac{1}{10/18} = 1{,}80',
-      finalErrorLatex: 'e_{ss,(PID)} = 0 \\; (K_v = \\infty)'
-    },
-    detailedSteps: [
-      {
-        title: '1. Soma dos Ângulos em sd = -3 + j4 (com Integrador 1/s e z2 = 0,5)',
-        description: 'Calculando a contribuição angular dos polos (0, 0, -3, -6) e do zero lento z2 = 0,5:',
-        latex: '\\sum\\theta_p = 2(126{,}87^\\circ) + 90^\\circ + 53{,}13^\\circ = 396{,}87^\\circ \\;;\\; \\theta_{z_2} = 122{,}00^\\circ'
-      },
-      {
-        title: '2. Posição do Zero Derivativo z1 pela Condição de Ângulo',
-        description: 'Ângulo faltante: 396,87° - 122,00° - 180° = 94,87°:',
-        latex: 'z_1 = 3 + \\frac{4}{\\tan(94{,}87^\\circ)} = 3 - 0{,}341 = \\mathbf{2{,}659}'
-      },
-      {
-        title: '3. Cálculo de Kc e Ganhos Paralelos',
-        description: 'Pela condição de módulo |Gc(sd)·G(sd)| = 1:',
-        latex: 'K_c = \\frac{25 \\cdot 4 \\cdot 5}{10 \\cdot 4{,}717 \\cdot 4{,}015} = \\mathbf{2{,}64} \\implies \\mathbf{G_c(s) = 8{,}34 + \\frac{3{,}51}{s} + 2{,}64s}'
-      }
-    ],
-    scilabCode: `// Proposto PID - Erro Nulo à Rampa
-s = poly(0, 's');
-G = syslin('c', 10, s*(s+3)*(s+6));
-Gc = syslin('c', 2.64*(s+2.659)*(s+0.5), s);
-T_sem = G / (1 + G);
-T_com = (Gc*G) / (1 + Gc*G);
-t = 0:0.01:6;
-r = t;
-y_sem = csim(r, t, T_sem);
-y_com = csim(r, t, T_com);
-plot(t, r, 'k:', t, y_sem, 'r--', t, y_com, 'b-', 'LineWidth', 2);
-legend(["Rampa r(t)=t", "Sem PID (ess=1.8)", "Com PID (ess -> 0)"]);
-xgrid();`
-  },
-
-  // ---------------------------------------------------------------------------
   // CONTROLADORES POR ATRASO E AVANÇO DE FASE (LAG & LEAD)
   // ---------------------------------------------------------------------------
   {
     id: 'fase-ex-1-1',
-    controllerId: 'Fase',
+    controllerId: 'Lag',
     subType: 'Lag',
     badge: 'Ex. 1.1 • Lag Tipo 0',
     title: 'Exercício 1.1 — Tipo 0 com Projeto de Compensador Lag',
@@ -1311,7 +1186,7 @@ xgrid();`
   },
   {
     id: 'fase-ex-1-2',
-    controllerId: 'Fase',
+    controllerId: 'Lag',
     subType: 'Lag',
     badge: 'Ex. 1.2 • Lag 3ª Ordem',
     title: 'Exercício 1.2 — Tipo 0 (3ª Ordem) com Compensador Lag',
@@ -1359,7 +1234,7 @@ xgrid();`
   },
   {
     id: 'fase-ex-1-5',
-    controllerId: 'Fase',
+    controllerId: 'Lag',
     subType: 'Lag',
     badge: 'Ex. 1.5 • Lag 3ª Ordem',
     title: 'Exercício 1.5 — Tipo 0 (3ª Ordem) com Compensador Lag',
@@ -1407,7 +1282,7 @@ xgrid();`
   },
   {
     id: 'fase-ex-2-1',
-    controllerId: 'Fase',
+    controllerId: 'Lag',
     subType: 'Lag',
     badge: 'Ex. 2.1 • Lag Tipo 1',
     title: 'Exercício 2.1 — Tipo 1 com Projeto de Compensador Lag',
@@ -1456,7 +1331,7 @@ xgrid();`
   },
   {
     id: 'fase-ex-2-3',
-    controllerId: 'Fase',
+    controllerId: 'Lag',
     subType: 'Lag',
     badge: 'Ex. 2.3 • Lag Tipo 1',
     title: 'Exercício 2.3 — Tipo 1 com Compensador Lag para Rampa',
@@ -1505,7 +1380,7 @@ xgrid();`
   },
   {
     id: 'fase-ex-3-1',
-    controllerId: 'Fase',
+    controllerId: 'Lag',
     subType: 'Lag',
     badge: 'Ex. 3.1 • Lag Tipo 2',
     title: 'Exercício 3.1 — Tipo 2 com Projeto de Compensador Lag',
@@ -1554,7 +1429,7 @@ xgrid();`
   },
   {
     id: 'fase-ex-3-3',
-    controllerId: 'Fase',
+    controllerId: 'Lag',
     subType: 'Lag',
     badge: 'Ex. 3.3 • Lag 5ª Ordem',
     title: 'Exercício 3.3 — Tipo 2 (5ª Ordem) com Compensador Lag',
@@ -1603,7 +1478,7 @@ xgrid();`
   },
   {
     id: 'fase-ex-3-5',
-    controllerId: 'Fase',
+    controllerId: 'Lag',
     subType: 'Lag',
     badge: 'Ex. 3.5 • Entrada Combinada',
     title: 'Exercício 3.5 — Tipo 2 com Entrada Combinada e Compensador Lag',
@@ -1652,7 +1527,7 @@ xgrid();`
   },
   {
     id: 'fase-slide-13-21',
-    controllerId: 'Fase',
+    controllerId: 'Lag',
     subType: 'Lag',
     badge: 'Slide 13/21 • Passo a Passo Completo',
     title: 'Exemplo Completo do Slide 13/21 — Projeto Lag Detalhado',
@@ -1710,7 +1585,7 @@ xgrid();`
   },
   {
     id: 'fase-ex-lead-proposto',
-    controllerId: 'Fase',
+    controllerId: 'Lead',
     subType: 'Lead',
     badge: 'Proposto • Avanço (Lead)',
     title: 'Exercício Proposto — Compensador por Avanço de Fase (Lead)',
@@ -1759,6 +1634,59 @@ y_sem = csim('step', t, G/(1+G));
 y_com = csim('step', t, (Gc*G)/(1+Gc*G));
 plot(t, y_sem, 'r--', t, y_com, 'b-', 'LineWidth', 2);
 legend(["Sem Lead (Oscilatório, Ts=4s)", "Com Lead (Ts=1.33s)"]);
+xgrid();`
+  },
+  {
+    id: 'lead-ex-aula20-bissetriz',
+    controllerId: 'Lead',
+    subType: 'Lead',
+    badge: 'Aula 20 • Avanço Bissetriz',
+    title: 'Exemplo Clássico de Slide (Aula 20) — Avanço de Fase pela Bissetriz',
+    source: 'Slides EEL6005 — Aula Avanço de Fase LGR',
+    statementLatex:
+      '\\text{Dada a planta } G(s) = \\frac{1}{s(s+3)}, \\text{ projete um controlador por avanço de fase } G_c(s) = K_c\\frac{s+z}{s+p} \\text{ para posicionar os polos dominantes em } s_d = -3 + j3 \\; (\\zeta = 0{,}707, T_p = 1{,}047\\text{ s}).',
+    plantExpr: '1/(s*(s+3))',
+    plantLatex: '\\frac{1}{s(s+3)}',
+    controllerExpr: '18*(s+3)/(s+6)',
+    controllerLatex: 'G_c(s) = 18\\frac{s+3}{s+6}',
+    controllerBlockLabel: 'Controlador Avanço (Lead)',
+    inputType: 'step',
+    inputParams: { a0: 1, labelLatex: 'r(t) = 1 \\cdot u(t)' },
+    tMax: 4,
+    whyThisController:
+      'A planta sem compensação possui parte real dos polos limitada em σ = -1,5. Para deslocar os polos dominantes para sd = -3 + j3 mantendo ganho Kc moderado (18, muito menor que o PD Real r=11 que exigiria Kc=188,5), aplica-se o Controlador por Avanço de Fase (Lead).',
+    diagnostics: {
+      systemType: 'Tipo 1 (1 polo na origem)',
+      systemOrder: '2ª Ordem (após cancelamento de s+3)',
+      initialErrorLatex: 'T_p(\\text{sem Lead}) \\text{ lento } (\\sigma = -1{,}5)',
+      finalErrorLatex: 's_d = -3 \\pm j3 \\; (\\%OS = 4{,}32\\%, e_{ss} = 0)'
+    },
+    detailedSteps: [
+      {
+        title: '1. Deficiência Angular em sd = -3 + j3',
+        description: 'Ângulos dos polos em s = 0 e s = -3:',
+        latex: '\\angle s_d = 135^\\circ \\;;\\; \\angle(s_d+3) = 90^\\circ \\implies \\phi = (135^\\circ + 90^\\circ) - 180^\\circ = \\mathbf{45^\\circ}'
+      },
+      {
+        title: '2. Posição do Zero e Polo (z = 3, p = 6)',
+        description: 'Cancelando o polo em -3 (z = 3 contribui +90°) e fornecendo +45° pelo polo em -6 (∠(-3+j3+6) = ∠(3+j3) = 45°):',
+        latex: 'z = \\mathbf{3} \\;;\\; p = 3 + \\frac{3}{\\tan(45^\\circ)} = \\mathbf{6}'
+      },
+      {
+        title: '3. Cálculo do Ganho Kc pela Condição de Módulo',
+        description: 'Impondo |Gc(sd)·G(sd)| = 1:',
+        latex: 'K_c = |s_d| \\cdot |s_d + 6| = \\sqrt{18} \\cdot \\sqrt{18} = \\mathbf{18} \\implies \\mathbf{G_c(s) = 18\\frac{s+3}{s+6}}'
+      }
+    ],
+    scilabCode: `// Aula 20 - Avanço de Fase (Lead)
+s = poly(0, 's');
+G = syslin('c', 1, s*(s+3));
+Gc = syslin('c', 18*(s+3), s+6);
+t = 0:0.01:4;
+y_sem = csim('step', t, G/(1+G));
+y_com = csim('step', t, (Gc*G)/(1+Gc*G));
+plot(t, y_sem, 'r--', t, y_com, 'b-', 'LineWidth', 2);
+legend(["Sem Lead (Lento)", "Com Lead: 18(s+3)/(s+6)"]);
 xgrid();`
   }
 ];
