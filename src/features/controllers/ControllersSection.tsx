@@ -687,7 +687,7 @@ export const ControllersSection: React.FC<ControllersSectionProps> = ({ onBack, 
                     >
                       {st.step}
                     </span>
-                    <span style={{ fontWeight: 700, fontSize: '0.88rem', color: 'var(--text)' }}>{st.title}</span>
+                    <span style={{ fontWeight: 700, fontSize: '0.88rem', color: 'var(--text)' }}>{renderRichMathText(st.title)}</span>
                   </div>
                   <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '6px', lineHeight: 1.45 }}>
                     {renderRichMathText(st.description)}
@@ -871,7 +871,7 @@ export const ControllersSection: React.FC<ControllersSectionProps> = ({ onBack, 
                   }}
                 >
                   <div style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--text)', marginBottom: '3px' }}>
-                    {st.title}
+                    {renderRichMathText(st.title)}
                   </div>
                   <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '6px', lineHeight: 1.45 }}>
                     {renderRichMathText(st.description)}
