@@ -32,6 +32,31 @@ function renderRichMathText(text: string): React.ReactNode {
   });
 }
 
+/**
+ * Quebra múltiplas equações separadas por ";" (\;;\;, \quad;\quad, \qquad;\qquad ou " ; ")
+ * em linhas verticais distintas para leitura limpa, sem rolagem apertada.
+ */
+function renderStackedMath(latex: string): React.ReactNode {
+  const lines = latex
+    .split(/\\qquad;\s*\\qquad|\\quad;\s*\\quad|\\;;\\;|\\;\s*;\s*\\;|\s+;\s+/g)
+    .map(s => s.trim())
+    .filter(Boolean);
+
+  if (lines.length <= 1) {
+    return <MathView math={latex} />;
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'flex-start', width: '100%' }}>
+      {lines.map((line, i) => (
+        <div key={`math-line-${i}`} style={{ width: '100%', overflowX: 'auto' }}>
+          <MathView math={line} />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export const ControllersSection: React.FC<ControllersSectionProps> = ({ onBack, onNavigate }) => {
   const [selectedCategory, setSelectedCategory] = useState<ControllerCategoryId>('P');
   const [showDecisionGuide, setShowDecisionGuide] = useState<boolean>(true);
@@ -671,7 +696,9 @@ export const ControllersSection: React.FC<ControllersSectionProps> = ({ onBack, 
                     background: 'var(--code-bg)',
                     border: '1px solid var(--card-border)',
                     borderRadius: '6px',
-                    padding: '12px 14px'
+                    padding: '12px 14px',
+                    height: 'auto',
+                    minHeight: 'fit-content'
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
@@ -692,8 +719,8 @@ export const ControllersSection: React.FC<ControllersSectionProps> = ({ onBack, 
                   <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '6px', lineHeight: 1.45 }}>
                     {renderRichMathText(st.description)}
                   </div>
-                  <div style={{ overflowX: 'auto', padding: '4px 0' }}>
-                    <MathView math={st.formulaLatex} />
+                  <div style={{ padding: '4px 0', height: 'auto' }}>
+                    {renderStackedMath(st.formulaLatex)}
                   </div>
                 </div>
               ))}
@@ -867,7 +894,9 @@ export const ControllersSection: React.FC<ControllersSectionProps> = ({ onBack, 
                     background: 'var(--card-bg)',
                     border: '1px solid var(--card-border)',
                     borderRadius: '6px',
-                    padding: '10px 14px'
+                    padding: '10px 14px',
+                    height: 'auto',
+                    minHeight: 'fit-content'
                   }}
                 >
                   <div style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--text)', marginBottom: '3px' }}>
@@ -876,8 +905,8 @@ export const ControllersSection: React.FC<ControllersSectionProps> = ({ onBack, 
                   <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '6px', lineHeight: 1.45 }}>
                     {renderRichMathText(st.description)}
                   </div>
-                  <div style={{ overflowX: 'auto' }}>
-                    <MathView math={st.latex} />
+                  <div style={{ padding: '4px 0', height: 'auto' }}>
+                    {renderStackedMath(st.latex)}
                   </div>
                 </div>
               ))}
