@@ -183,13 +183,18 @@ export const SPlaneChart: React.FC<SPlaneChartProps> = ({
           {/* Grade e Valores dos Eixos Re(s) e jω */}
           {computed.reTicks.map(v => {
             const tx = toX(v);
+            const nearRealMarker = computed.points.some(
+              p => Math.abs(p.im) <= 0.05 && Math.abs(toX(p.re) - tx) < 16
+            );
             return (
               <g key={`rx-${v}`}>
                 <line x1={tx} y1={padT} x2={tx} y2={padT + plotH} stroke="rgba(148, 163, 184, 0.12)" strokeWidth="1" />
                 <line x1={tx} y1={zeroY - 3} x2={tx} y2={zeroY + 3} stroke="rgba(148, 163, 184, 0.5)" strokeWidth="1" />
-                <text x={tx} y={zeroY + 13} textAnchor="middle" fontSize="9.5" fill="#94a3b8">
-                  {v}
-                </text>
+                {!nearRealMarker && (
+                  <text x={tx} y={zeroY + 13} textAnchor="middle" fontSize="9.5" fill="#94a3b8">
+                    {v}
+                  </text>
+                )}
               </g>
             );
           })}
@@ -245,18 +250,108 @@ export const SPlaneChart: React.FC<SPlaneChartProps> = ({
             );
           })}
 
-          {/* Polos e Zeros interativos com valores visíveis */}
-          {computed.points.map((pt, idx) => {
-            if (pt.re < computed.minRe || pt.re > computed.maxRe || pt.im < computed.minIm || pt.im > computed.maxIm) return null;
-            const cx = toX(pt.re);
-            const cy = toY(pt.im);
-            const isHovered = hoveredIdx === idx;
-            const coordText = fmtComplex(pt.re, pt.im);
-            const isUpper = pt.im > 0.05;
-            const isLower = pt.im < -0.05;
-            const labelY = isUpper ? cy - 8 : isLower ? cy + 15 : pt.kind === 'cl-pole' ? cy - 9 : cy + 16;
+          {/* Polos e Zeros interativos com valores visíveis e sem sobreposição */}
+          {(() => {
+            const placedBoxes: { x1: number; x2: number; y: number }[] = [];
+            const placeLabel = (
+              idealX: number,
+              idealY: number,
+              anchor: 'start' | 'middle' | 'end',
+              text: string,
+              dir: -1 | 1
+            ) => {
+              const w = text.length * 5.6 + 6;
+              const x1 = anchor === 'middle' ? idealX - w / 2 : anchor === 'end' ? idealX - w : idealX;
+              const x2 = x1 + w;
+              let y = idealY;
+              for (let attempt = 0; attempt < 4; attempt++) {
+                const collides = placedBoxes.some(b => x1 < b.x2 && x2 > b.x1 && Math.abs(y - b.y) < 12);
+                if (!collides) break;
+                y += dir * 13;
+              }
+              placedBoxes.push({ x1, x2, y });
+              return { x: idealX, y, shifted: Math.abs(y - idealY) > 1 };
+            };
 
-            if (pt.kind === 'ol-pole') {
+            return computed.points.map((pt, idx) => {
+              if (pt.re < computed.minRe || pt.re > computed.maxRe || pt.im < computed.minIm || pt.im > computed.maxIm) return null;
+              const cx = toX(pt.re);
+              const cy = toY(pt.im);
+              const isHovered = hoveredIdx === idx;
+              const coordText = fmtComplex(pt.re, pt.im);
+              const isUpper = pt.im > 0.05;
+              const isLower = pt.im < -0.05;
+
+              if (pt.kind === 'ol-pole') {
+                const idealY = isUpper ? cy - 9 : cy + 16;
+                const dir: -1 | 1 = isUpper ? -1 : 1;
+                const pos = placeLabel(cx, idealY, 'middle', coordText, dir);
+                return (
+                  <g
+                    key={`pt-${idx}`}
+                    style={{ cursor: 'pointer' }}
+                    onMouseEnter={() => setHoveredIdx(idx)}
+                    onMouseLeave={() => setHoveredIdx(null)}
+                  >
+                    <circle cx={cx} cy={cy} r={10} fill="transparent" />
+                    {pos.shifted && <line x1={cx} y1={cy} x2={pos.x} y2={pos.y - dir * 4} stroke="rgba(252,165,165,0.45)" strokeWidth="1" />}
+                    <line x1={cx - 4.5} y1={cy - 4.5} x2={cx + 4.5} y2={cy + 4.5} stroke="#ef4444" strokeWidth={isHovered ? 3 : 2.2} />
+                    <line x1={cx - 4.5} y1={cy + 4.5} x2={cx + 4.5} y2={cy - 4.5} stroke="#ef4444" strokeWidth={isHovered ? 3 : 2.2} />
+                    <text
+                      x={pos.x}
+                      y={pos.y}
+                      textAnchor="middle"
+                      fontSize="9.5"
+                      fontWeight="700"
+                      fill="#fca5a5"
+                      stroke="#0f172a"
+                      strokeWidth="3"
+                      style={{ paintOrder: 'stroke' }}
+                    >
+                      {coordText}
+                    </text>
+                  </g>
+                );
+              }
+
+              if (pt.kind === 'ol-zero') {
+                const idealY = isLower ? cy + 16 : cy - 10;
+                const dir: -1 | 1 = isLower ? 1 : -1;
+                const pos = placeLabel(cx, idealY, 'middle', coordText, dir);
+                return (
+                  <g
+                    key={`pt-${idx}`}
+                    style={{ cursor: 'pointer' }}
+                    onMouseEnter={() => setHoveredIdx(idx)}
+                    onMouseLeave={() => setHoveredIdx(null)}
+                  >
+                    <circle cx={cx} cy={cy} r={10} fill="transparent" />
+                    {pos.shifted && <line x1={cx} y1={cy} x2={pos.x} y2={pos.y - dir * 4} stroke="rgba(147,197,253,0.45)" strokeWidth="1" />}
+                    <circle cx={cx} cy={cy} r={isHovered ? 6 : 4.8} fill="none" stroke="#3b82f6" strokeWidth="2.2" />
+                    <text
+                      x={pos.x}
+                      y={pos.y}
+                      textAnchor="middle"
+                      fontSize="9.5"
+                      fontWeight="700"
+                      fill="#93c5fd"
+                      stroke="#0f172a"
+                      strokeWidth="3"
+                      style={{ paintOrder: 'stroke' }}
+                    >
+                      {coordText}
+                    </text>
+                  </g>
+                );
+              }
+
+              const clIsComplex = Math.abs(pt.im) > 0.05;
+              const clX = clIsComplex ? (pt.re <= 0 ? cx - 8 : cx + 8) : cx;
+              const clY = clIsComplex ? cy + 3 : cy - 10;
+              const clAnchor: 'start' | 'middle' | 'end' = clIsComplex ? (pt.re <= 0 ? 'end' : 'start') : 'middle';
+              const dir: -1 | 1 = clIsComplex ? (pt.im >= 0 ? -1 : 1) : -1;
+              const pos = placeLabel(clX, clY, clAnchor, coordText, dir);
+
               return (
                 <g
                   key={`pt-${idx}`}
@@ -265,62 +360,25 @@ export const SPlaneChart: React.FC<SPlaneChartProps> = ({
                   onMouseLeave={() => setHoveredIdx(null)}
                 >
                   <circle cx={cx} cy={cy} r={10} fill="transparent" />
-                  <line x1={cx - 4.5} y1={cy - 4.5} x2={cx + 4.5} y2={cy + 4.5} stroke="#ef4444" strokeWidth={isHovered ? 3 : 2.2} />
-                  <line x1={cx - 4.5} y1={cy + 4.5} x2={cx + 4.5} y2={cy - 4.5} stroke="#ef4444" strokeWidth={isHovered ? 3 : 2.2} />
-                  <text x={cx} y={labelY} textAnchor="middle" fontSize="9.5" fontWeight="700" fill="#fca5a5">
+                  {pos.shifted && <line x1={cx} y1={cy} x2={pos.x} y2={pos.y + 4} stroke="rgba(110,231,183,0.45)" strokeWidth="1" />}
+                  <circle cx={cx} cy={cy} r={isHovered ? 6 : 4.5} fill="#10b981" stroke="#ffffff" strokeWidth="1.2" />
+                  <text
+                    x={pos.x}
+                    y={pos.y}
+                    textAnchor={clAnchor}
+                    fontSize="9.5"
+                    fontWeight="700"
+                    fill="#6ee7b7"
+                    stroke="#0f172a"
+                    strokeWidth="3"
+                    style={{ paintOrder: 'stroke' }}
+                  >
                     {coordText}
                   </text>
                 </g>
               );
-            }
-
-            if (pt.kind === 'ol-zero') {
-              return (
-                <g
-                  key={`pt-${idx}`}
-                  style={{ cursor: 'pointer' }}
-                  onMouseEnter={() => setHoveredIdx(idx)}
-                  onMouseLeave={() => setHoveredIdx(null)}
-                >
-                  <circle cx={cx} cy={cy} r={10} fill="transparent" />
-                  <circle cx={cx} cy={cy} r={isHovered ? 6 : 4.8} fill="none" stroke="#3b82f6" strokeWidth="2.2" />
-                  <text x={cx} y={cy - 9} textAnchor="middle" fontSize="9.5" fontWeight="700" fill="#93c5fd">
-                    {coordText}
-                  </text>
-                </g>
-              );
-            }
-
-            const clIsComplex = Math.abs(pt.im) > 0.05;
-            const clX = clIsComplex ? (pt.re <= 0 ? cx - 8 : cx + 8) : cx;
-            const clY = clIsComplex ? cy + 3 : cy - 10;
-            const clAnchor = clIsComplex ? (pt.re <= 0 ? 'end' : 'start') : 'middle';
-
-            return (
-              <g
-                key={`pt-${idx}`}
-                style={{ cursor: 'pointer' }}
-                onMouseEnter={() => setHoveredIdx(idx)}
-                onMouseLeave={() => setHoveredIdx(null)}
-              >
-                <circle cx={cx} cy={cy} r={10} fill="transparent" />
-                <circle cx={cx} cy={cy} r={isHovered ? 6 : 4.5} fill="#10b981" stroke="#ffffff" strokeWidth="1.2" />
-                <text
-                  x={clX}
-                  y={clY}
-                  textAnchor={clAnchor}
-                  fontSize="9.5"
-                  fontWeight="700"
-                  fill="#6ee7b7"
-                  stroke="#0f172a"
-                  strokeWidth="3"
-                  style={{ paintOrder: 'stroke' }}
-                >
-                  {coordText}
-                </text>
-              </g>
-            );
-          })}
+            });
+          })()}
 
           {/* Rótulos dos eixos */}
           <text x={padL + plotW - 4} y={zeroY - 6} textAnchor="end" fontSize="10" fill="#94a3b8">
