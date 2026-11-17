@@ -15,6 +15,7 @@ type ActiveView = 'home' | 'builder' | 'guide' | 'practice' | 'simulations' | 'c
 export default function HomePage() {
   const [view, setView] = useState<ActiveView>('home');
   const [showCanonicalModels, setShowCanonicalModels] = useState(false);
+  const [showPlatformOverview, setShowPlatformOverview] = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
 
   // Sincroniza visualização inicial com ?view=... da URL (mantém aba ao dar Ctrl+F5 e permite abrir em nova guia)
@@ -140,38 +141,79 @@ export default function HomePage() {
       <GlobalNavbar activeView={view} onNavigate={handleSetView} onOpenShortcuts={() => setShowShortcuts(true)} />
       <main style={{ padding: '16px 20px', minHeight: '100vh' }}>
 
-      {/* Hero Banner Profissional */}
-      <section className="hero-banner" id="heroBanner" style={{ marginTop: '16px' }}>
-        <div className="hero-eyebrow">⚡ Engenharia de Controle & Automação • Domínio de Laplace</div>
-        <h1 className="hero-title" style={{ fontSize: '1.9rem', fontWeight: 800, margin: '8px 0 12px 0' }}>
-          Calculadora e Laboratório de Redução em Diagrama de Blocos
-        </h1>
-        <p className="hero-desc" style={{ fontSize: '0.94rem', lineHeight: '1.55', color: 'var(--text-muted)' }}>
-          Ambiente analítico interativo para modelagem e redução passo a passo de diagramas de blocos no domínio de Laplace.
-          Obtenha a função de transferência equivalente T(s) = C(s)/R(s), acompanhe o memorial de cálculo em LaTeX,
-          explore diferentes topologias e visualize as transformações gráficas de cada etapa.
-        </p>
-        <div className="hero-features-row" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '14px' }}>
-          <a
-            href="/?view=controllers"
-            className="hero-feature-pill"
-            style={{ background: 'linear-gradient(135deg, rgba(2,132,199,0.3) 0%, rgba(3,105,161,0.3) 100%)', border: '1px solid #0284c7', cursor: 'pointer', textDecoration: 'none', color: 'inherit' }}
-            onClick={e => {
-              if (!e.ctrlKey && !e.metaKey && !e.shiftKey && e.button === 0) {
-                e.preventDefault();
-                handleSetView('controllers');
-              }
+      {/* Banner Recolhível: fechado por padrão para o usuário escolher direto o que deseja abrir */}
+      <section className="hero-banner" id="heroBanner" style={{ marginTop: '12px', padding: showPlatformOverview ? undefined : '14px 18px' }}>
+        <div
+          onClick={() => setShowPlatformOverview(prev => !prev)}
+          role="button"
+          tabIndex={0}
+          onKeyDown={e => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              setShowPlatformOverview(prev => !prev);
+            }
+          }}
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            gap: '12px',
+            flexWrap: 'wrap',
+            cursor: 'pointer'
+          }}
+        >
+          <div>
+            <div className="hero-eyebrow">⚡ Engenharia de Controle &amp; Automação • Domínio de Laplace</div>
+            <h1 className="hero-title" style={{ fontSize: '1.35rem', fontWeight: 800, margin: '4px 0 0 0' }}>
+              Calculadora e Laboratório de Redução em Diagrama de Blocos
+            </h1>
+          </div>
+          <span
+            style={{
+              fontSize: '0.78rem',
+              fontWeight: 700,
+              color: 'var(--primary)',
+              padding: '5px 11px',
+              borderRadius: '6px',
+              background: 'rgba(56, 189, 248, 0.1)',
+              border: '1px solid rgba(56, 189, 248, 0.25)',
+              whiteSpace: 'nowrap'
             }}
           >
-            🎛️ <b>Controladores</b> (P, PD, PI, Avanço e Atraso)
-          </a>
-          <span className="hero-feature-pill">🧪 <b>Modo de Prática</b> com 3 Níveis &amp; Dicas</span>
-          <span className="hero-feature-pill">📐 <b>Topologias</b> Canônicas e Desafios</span>
-          <span className="hero-feature-pill">📝 <b>Memorial Analítico</b> em LaTeX</span>
-          <span className="hero-feature-pill">🔢 <b>Cálculo de MMC</b> Passo a Passo</span>
-          <span className="hero-feature-pill">💻 <b>Exportação de Scripts</b> para Scilab</span>
-          <span className="hero-feature-pill">📚 <b>Guia Didático</b> com Teoria e Regras</span>
+            {showPlatformOverview ? '▲ Recolher descrição' : '▼ Ver recursos da plataforma'}
+          </span>
         </div>
+
+        {showPlatformOverview && (
+          <div style={{ marginTop: '12px' }}>
+            <p className="hero-desc" style={{ fontSize: '0.94rem', lineHeight: '1.55', color: 'var(--text-muted)', margin: 0 }}>
+              Ambiente analítico interativo para modelagem e redução passo a passo de diagramas de blocos no domínio de Laplace.
+              Obtenha a função de transferência equivalente T(s) = C(s)/R(s), acompanhe o memorial de cálculo em LaTeX,
+              explore diferentes topologias e visualize as transformações gráficas de cada etapa.
+            </p>
+            <div className="hero-features-row" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '14px' }}>
+              <a
+                href="/?view=controllers"
+                className="hero-feature-pill"
+                style={{ background: 'linear-gradient(135deg, rgba(2,132,199,0.3) 0%, rgba(3,105,161,0.3) 100%)', border: '1px solid #0284c7', cursor: 'pointer', textDecoration: 'none', color: 'inherit' }}
+                onClick={e => {
+                  if (!e.ctrlKey && !e.metaKey && !e.shiftKey && e.button === 0) {
+                    e.preventDefault();
+                    handleSetView('controllers');
+                  }
+                }}
+              >
+                🎛️ <b>Controladores</b> (P, PD, PI, Avanço e Atraso)
+              </a>
+              <span className="hero-feature-pill">🧪 <b>Modo de Prática</b> com 3 Níveis &amp; Dicas</span>
+              <span className="hero-feature-pill">📐 <b>Topologias</b> Canônicas e Desafios</span>
+              <span className="hero-feature-pill">📝 <b>Memorial Analítico</b> em LaTeX</span>
+              <span className="hero-feature-pill">🔢 <b>Cálculo de MMC</b> Passo a Passo</span>
+              <span className="hero-feature-pill">💻 <b>Exportação de Scripts</b> para Scilab</span>
+              <span className="hero-feature-pill">📚 <b>Guia Didático</b> com Teoria e Regras</span>
+            </div>
+          </div>
+        )}
       </section>
 
       {/* Trilha Progressiva de Aplicação e Estudo (Percurso Acadêmico) */}
