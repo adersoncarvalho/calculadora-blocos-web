@@ -34,12 +34,18 @@ function renderStackedMath(latex: string): React.ReactNode {
     .split(/\\qquad;\s*\\qquad|\\quad;\s*\\quad|\\;;\\;|\\;\s*;\s*\\;|\s+;\s+/g)
     .map(s => s.trim())
     .filter(Boolean);
-  if (lines.length <= 1) return <MathView math={latex} />;
+  if (lines.length <= 1) {
+    return (
+      <div className="stacked-math-line">
+        <MathView math={latex} block />
+      </div>
+    );
+  }
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'flex-start', width: '100%' }}>
       {lines.map((line, i) => (
-        <div key={`fm-${i}`} style={{ width: '100%', overflowX: 'auto' }}>
-          <MathView math={line} />
+        <div key={`fm-${i}`} className="stacked-math-line">
+          <MathView math={line} block />
         </div>
       ))}
     </div>

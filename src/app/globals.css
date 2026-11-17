@@ -3247,8 +3247,24 @@ kbd {
   overflow-x: auto !important;
   overflow-y: hidden !important;
   max-width: 100% !important;
-  padding: 6px 0 !important;
+  padding: 8px 0 !important;
   -webkit-overflow-scrolling: touch;
+}
+
+.stacked-math-line {
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 4px 0;
+  height: auto;
+}
+
+.stacked-math-line .katex-display {
+  text-align: left !important;
+  margin: 2px 0 !important;
+  padding: 6px 0 !important;
+  overflow-x: visible !important;
+  overflow-y: visible !important;
 }
 
 /* Responsividade Aprimorada para Telas Pequenas e Dispositivos MÃ³veis */
