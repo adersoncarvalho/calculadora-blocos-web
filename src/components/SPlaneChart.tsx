@@ -128,7 +128,14 @@ export const SPlaneChart: React.FC<SPlaneChartProps> = ({
       maxRe += padRe;
       maxIm += padIm;
 
-      return { olPoles, olZeros, denL, numL, locusPoints, defaultBounds: { minRe, maxRe, minIm: -maxIm, maxIm } };
+      const numGc = trimUni(toUnivariateArr(Gc.num));
+      const denGc = trimUni(toUnivariateArr(Gc.den));
+      const baseGain =
+        numGc.length > 0 && denGc.length > 0 && Math.abs(denGc[denGc.length - 1]) > 1e-12
+          ? numGc[numGc.length - 1] / denGc[denGc.length - 1]
+          : 1;
+
+      return { olPoles, olZeros, denL, numL, baseGain, locusPoints, defaultBounds: { minRe, maxRe, minIm: -maxIm, maxIm } };
     } catch {
       return null;
     }
@@ -629,7 +636,7 @@ export const SPlaneChart: React.FC<SPlaneChartProps> = ({
           }}
         >
           <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--primary)' }}>
-            Ganho no LGR: {gainMult.toFixed(2)}× {Math.abs(gainMult - 1) < 0.01 ? '(Projeto)' : ''}
+            Ganho no LGR: K = {(computed.baseGain * gainMult).toFixed(2)} ({gainMult.toFixed(2)}×{Math.abs(gainMult - 1) < 0.01 ? ' Projeto' : ''})
           </span>
           <input
             type="range"
