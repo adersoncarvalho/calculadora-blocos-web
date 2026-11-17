@@ -2,8 +2,12 @@ import { describe, it, expect } from 'vitest';
 import {
   CONTROLLERS_THEORY,
   CONTROLLER_EXERCISES,
-  simulateControllerExercise
+  simulateControllerExercise,
+  buildClosedLoopTf,
+  simulateInputResponseRK4
 } from '../src/features/controllers/controllersData';
+import { LISTA_P2_QUESTIONS } from '../src/features/controllers/listaP2Data';
+import { parseRatExpr } from '../src/core/algebra/parser';
 
 describe('Laboratório dos 5 Controladores Principais (P, PD, PI, Avanço/Lead, Atraso/Lag)', () => {
   it('1. Deve conter exatamente os 5 controladores separados com teoria e roteiro padrão do professor', () => {
@@ -70,5 +74,29 @@ describe('Laboratório dos 5 Controladores Principais (P, PD, PI, Avanço/Lead, 
     // Lead Proposto: erro nulo ao degrau e %OS ~ 16.3%
     const simLead = simulateControllerExercise(byId('fase-ex-lead-proposto'))!;
     expect(Math.abs(simLead.essComp)).toBeLessThan(0.01);
+  });
+
+  it('5. Deve conter todas as 23 questões da Lista P2 Controle 1 e simular Q20 a Q23 corretamente', () => {
+    expect(LISTA_P2_QUESTIONS).toHaveLength(23);
+    const practicalIds = ['q20', 'q21', 'q22', 'q23'];
+    for (const qid of practicalIds) {
+      const q = LISTA_P2_QUESTIONS.find(item => item.id === qid)!;
+      expect(q.practicalData).toBeDefined();
+      const G = parseRatExpr(q.practicalData!.plantExpr);
+      const Gc = parseRatExpr(q.practicalData!.controllerExpr);
+      const T = buildClosedLoopTf(G, Gc);
+      const sim = simulateInputResponseRK4(T, () => 1, q.practicalData!.tMax, 300);
+      expect(sim).not.toBeNull();
+      expect(sim!.y.every(v => Number.isFinite(v))).toBe(true);
+    }
+    // Q21 (PI) deve zerar o erro estacionário ao degrau
+    const q21 = LISTA_P2_QUESTIONS.find(item => item.id === 'q21')!;
+    const sim21 = simulateInputResponseRK4(
+      buildClosedLoopTf(parseRatExpr(q21.practicalData!.plantExpr), parseRatExpr(q21.practicalData!.controllerExpr)),
+      () => 1,
+      25,
+      400
+    )!;
+    expect(Math.abs(1 - sim21.y[sim21.y.length - 1])).toBeLessThan(0.02);
   });
 });

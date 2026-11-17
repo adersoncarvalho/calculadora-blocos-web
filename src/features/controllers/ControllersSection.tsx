@@ -11,6 +11,7 @@ import {
   ControllerExercise
 } from './controllersData';
 import { ControllerBlockDiagram } from './ControllerBlockDiagram';
+import { ListaP2View } from './ListaP2View';
 
 interface ControllersSectionProps {
   onBack: () => void;
@@ -58,6 +59,7 @@ function renderStackedMath(latex: string): React.ReactNode {
 }
 
 export const ControllersSection: React.FC<ControllersSectionProps> = ({ onBack, onNavigate }) => {
+  const [activeTab, setActiveTab] = useState<'controladores' | 'listas'>('controladores');
   const [selectedCategory, setSelectedCategory] = useState<ControllerCategoryId>('P');
   const [showDecisionGuide, setShowDecisionGuide] = useState<boolean>(true);
   const [showTheory, setShowTheory] = useState<boolean>(true);
@@ -73,9 +75,13 @@ export const ControllersSection: React.FC<ControllersSectionProps> = ({ onBack, 
     CONTROLLER_EXERCISES[0].id
   );
 
-  // Restaura controlador e exercício da URL ao recarregar (Ctrl+F5)
+  // Restaura aba, controlador e exercício da URL ao recarregar (Ctrl+F5)
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
+    const tabParam = params.get('tab');
+    if (tabParam === 'listas') {
+      setActiveTab('listas');
+    }
     const ctrlParam = params.get('ctrl') as ControllerCategoryId | null;
     const exParam = params.get('ex');
     if (ctrlParam && CATEGORY_ORDER.includes(ctrlParam)) {
@@ -380,6 +386,62 @@ export const ControllersSection: React.FC<ControllersSectionProps> = ({ onBack, 
         )}
       </div>
 
+      {/* Seletor de Abas: 5 Controladores vs Listas de Exercícios */}
+      <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '20px' }}>
+        <button
+          type="button"
+          onClick={() => {
+            setActiveTab('controladores');
+            if (typeof window !== 'undefined') {
+              const params = new URLSearchParams(window.location.search);
+              params.set('view', 'controllers');
+              params.set('tab', 'controladores');
+              window.history.replaceState(null, '', `/?${params.toString()}`);
+            }
+          }}
+          style={{
+            padding: '10px 18px',
+            borderRadius: '8px',
+            fontSize: '0.88rem',
+            fontWeight: 700,
+            cursor: 'pointer',
+            background: activeTab === 'controladores' ? 'var(--primary)' : 'var(--card-bg)',
+            color: activeTab === 'controladores' ? '#fff' : 'var(--text)',
+            border: `1.5px solid ${activeTab === 'controladores' ? 'var(--primary)' : 'var(--card-border)'}`
+          }}
+        >
+          🎛️ 5 Controladores &amp; Slides (P, PD, PI, Avanço, Atraso)
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setActiveTab('listas');
+            if (typeof window !== 'undefined') {
+              const params = new URLSearchParams(window.location.search);
+              params.set('view', 'controllers');
+              params.set('tab', 'listas');
+              window.history.replaceState(null, '', `/?${params.toString()}`);
+            }
+          }}
+          style={{
+            padding: '10px 18px',
+            borderRadius: '8px',
+            fontSize: '0.88rem',
+            fontWeight: 700,
+            cursor: 'pointer',
+            background: activeTab === 'listas' ? 'var(--primary)' : 'var(--card-bg)',
+            color: activeTab === 'listas' ? '#fff' : 'var(--text)',
+            border: `1.5px solid ${activeTab === 'listas' ? 'var(--primary)' : 'var(--card-border)'}`
+          }}
+        >
+          📝 Listas de Exercícios (Lista P2 Controle 1 — 23 Questões)
+        </button>
+      </div>
+
+      {activeTab === 'listas' ? (
+        <ListaP2View />
+      ) : (
+        <>
       {/* GUIA TEÓRICO GERAL: COMO ESCOLHER O CONTROLADOR IDEAL */}
       <section
         style={{
@@ -1041,6 +1103,8 @@ export const ControllersSection: React.FC<ControllersSectionProps> = ({ onBack, 
           </div>
         </section>
       </div>
+        </>
+      )}
     </section>
   );
 };
