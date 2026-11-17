@@ -542,6 +542,59 @@ export const CONTROLLER_EXERCISES: ControllerExercise[] = [
   // CONTROLADOR PROPORCIONAL (P)
   // ---------------------------------------------------------------------------
   {
+    id: 'p-ex-lgr-20',
+    controllerId: 'P',
+    badge: 'Slide 01 • Mp=6%, ts=0,4s',
+    title: 'Projeto P (Slide 01) — Planta 1/(s² + 20s) para Overshoot 6% e ts = 0,4 s',
+    source: 'Slide 01 — Projeto Controlador Proporcional (LGR)',
+    statementLatex:
+      '\\text{Considere } G(s) = \\frac{1}{s^2 + 20s} = \\frac{1}{s(s+20)} \\text{ com realimentação unitária. Projete um controlador P } (G_c(s)=K) \\text{ para } M_p = 6\\% \\text{ e } t_s = 0{,}4\\text{ s}.',
+    plantExpr: '1/(s^2+20*s)',
+    plantLatex: '\\frac{1}{s^2 + 20s}',
+    controllerExpr: '224.69',
+    controllerLatex: 'G_c(s) = K = 224{,}69',
+    controllerBlockLabel: 'Controlador P (K = 224,69)',
+    inputType: 'step',
+    inputParams: { a0: 1, labelLatex: 'r(t) = u(t)' },
+    tMax: 1.0,
+    whyThisController:
+      'Os polos de malha aberta estão em $s = 0$ e $s = -20$. Os polos desejados $p_{1,2} = -10 \\pm j11{,}16$ possuem parte real $-10$, exatamente sobre a mediatriz entre $0$ e $-20$, que faz parte do Lugar das Raízes original da planta. Logo, apenas um **Controlador Proporcional (P)** atende simultaneamente $M_p = 6\\%$ e $t_s = 0{,}4\\text{ s}$ com erro nulo ao degrau (Tipo 1).',
+    diagnostics: {
+      systemType: 'Tipo 1 (1 polo na origem)',
+      systemOrder: '2ª Ordem',
+      initialErrorLatex: 'e_{ss,(K=1)} = 0',
+      finalErrorLatex: 'e_{ss,(K=224{,}69)} = 0'
+    },
+    detailedSteps: [
+      {
+        title: '1. Polos Dominantes Desejados a partir de Mp = 6% e ts = 0,4 s',
+        description: 'Calculando $\\zeta$, $\\sigma_d = \\zeta\\omega_n$, $\\omega_n$ e $\\omega_d$:',
+        latex:
+          '\\zeta = \\frac{-\\ln(0{,}06)}{\\sqrt{\\pi^2 + \\ln^2(0{,}06)}} \\approx 0{,}6671 \\;;\\; \\sigma_d = \\frac{4}{0{,}4} = 10 \\;;\\; \\omega_n = \\frac{10}{0{,}6671} \\approx 14{,}99\\text{ rad/s} \\;;\\; \\omega_d = \\omega_n\\sqrt{1-\\zeta^2} \\approx 11{,}17\\text{ rad/s} \\implies \\mathbf{p_{1,2} = -10 \\pm j11{,}16}'
+      },
+      {
+        title: '2. Verificação pela Condição de Ângulo no LGR',
+        description: 'Somando os ângulos dos polos $0$ e $-20$ até $s_d = -10 + j11{,}1665$:',
+        latex:
+          '\\angle G(s_d) = -\\angle(s_d) - \\angle(s_d + 20) = -131{,}85^\\circ - 48{,}15^\\circ = \\mathbf{-180^\\circ} \\quad (s_d \\in \\text{LGR!})'
+      },
+      {
+        title: '3. Cálculo do Ganho K pela Condição de Módulo',
+        description: 'Multiplicando as distâncias dos polos até $s_d$:',
+        latex:
+          'K = |s_d| \\cdot |s_d + 20| = \\sqrt{10^2 + 11{,}1665^2} \\cdot \\sqrt{10^2 + 11{,}1665^2} = 100 + 124{,}69 = \\mathbf{224{,}69}'
+      }
+    ],
+    scilabCode: `// Slide 01 - Projeto P: G(s) = 1/(s^2 + 20s), Mp = 6%, ts = 0.4s
+s = %s;
+G = syslin('c', 1, s^2 + 20*s);
+K = 224.69;
+T = (K*G) /. 1;
+clf(); t = 0:0.005:1.0;
+plot(t, csim('step', t, T), 'b-', 'LineWidth', 2);
+xgrid();`
+  },
+  {
     id: 'p-ex-1-3',
     controllerId: 'P',
     badge: 'Ex. 1.3 • Tipo 0',
@@ -821,63 +874,61 @@ s = poly(0, 's');
 G = syslin('c', 50, (s^2)*(s+5));
 disp("Polos de malha fechada com Gc=1:", roots(s^3 + 5*s^2 + 50));`
   },
-  {
-    id: 'p-ex-lgr-20',
-    controllerId: 'P',
-    badge: 'Slide P • Mp=6%, ts=0,4s',
-    title: 'Projeto P — Planta 1/(s² + 20s) para Overshoot 6% e ts = 0,4 s',
-    source: 'Slide 01 — Projeto de Controlador Proporcional',
-    statementLatex:
-      '\\text{Considere } G(s) = \\frac{1}{s^2 + 20s} = \\frac{1}{s(s+20)} \\text{ com realimentação unitária. Projete um controlador P } (G_c(s)=K) \\text{ para } M_p = 6\\% \\text{ e } t_s = 0{,}4\\text{ s}.',
-    plantExpr: '1/(s^2+20*s)',
-    plantLatex: '\\frac{1}{s^2 + 20s}',
-    controllerExpr: '224.69',
-    controllerLatex: 'G_c(s) = K = 224{,}69',
-    controllerBlockLabel: 'Controlador P (K = 224,69)',
-    inputType: 'step',
-    inputParams: { a0: 1, labelLatex: 'r(t) = u(t)' },
-    tMax: 1.0,
-    whyThisController:
-      'Os polos de malha aberta estão em $s = 0$ e $s = -20$. Os polos desejados $p_{1,2} = -10 \\pm j11{,}16$ possuem parte real $-10$, exatamente sobre a mediatriz entre $0$ e $-20$, que faz parte do Lugar das Raízes original da planta. Logo, apenas um **Controlador Proporcional (P)** atende simultaneamente $M_p = 6\\%$ e $t_s = 0{,}4\\text{ s}$ com erro nulo ao degrau (Tipo 1).',
-    diagnostics: {
-      systemType: 'Tipo 1 (1 polo na origem)',
-      systemOrder: '2ª Ordem',
-      initialErrorLatex: 'e_{ss,(K=1)} = 0',
-      finalErrorLatex: 'e_{ss,(K=224{,}69)} = 0'
-    },
-    detailedSteps: [
-      {
-        title: '1. Polos Dominantes Desejados a partir de Mp = 6% e ts = 0,4 s',
-        description: 'Calculando $\\zeta$, $\\sigma_d = \\zeta\\omega_n$, $\\omega_n$ e $\\omega_d$:',
-        latex:
-          '\\zeta = \\frac{-\\ln(0{,}06)}{\\sqrt{\\pi^2 + \\ln^2(0{,}06)}} \\approx 0{,}6671 \\;;\\; \\sigma_d = \\frac{4}{0{,}4} = 10 \\;;\\; \\omega_n = \\frac{10}{0{,}6671} \\approx 14{,}99\\text{ rad/s} \\;;\\; \\omega_d = \\omega_n\\sqrt{1-\\zeta^2} \\approx 11{,}17\\text{ rad/s} \\implies \\mathbf{p_{1,2} = -10 \\pm j11{,}16}'
-      },
-      {
-        title: '2. Verificação pela Condição de Ângulo no LGR',
-        description: 'Somando os ângulos dos polos $0$ e $-20$ até $s_d = -10 + j11{,}1665$:',
-        latex:
-          '\\angle G(s_d) = -\\angle(s_d) - \\angle(s_d + 20) = -131{,}85^\\circ - 48{,}15^\\circ = \\mathbf{-180^\\circ} \\quad (s_d \\in \\text{LGR!})'
-      },
-      {
-        title: '3. Cálculo do Ganho K pela Condição de Módulo',
-        description: 'Multiplicando as distâncias dos polos até $s_d$:',
-        latex:
-          'K = |s_d| \\cdot |s_d + 20| = \\sqrt{10^2 + 11{,}1665^2} \\cdot \\sqrt{10^2 + 11{,}1665^2} = 100 + 124{,}69 = \\mathbf{224{,}69}'
-      }
-    ],
-    scilabCode: `// Slide 01 - Projeto P: G(s) = 1/(s^2 + 20s), Mp = 6%, ts = 0.4s
-s = %s;
-G = syslin('c', 1, s^2 + 20*s);
-K = 224.69;
-T = (K*G) /. 1;
-clf(); t = 0:0.005:1.0;
-plot(t, csim('step', t, T), 'b-', 'LineWidth', 2);
-xgrid();`
-  },
 
   // ---------------------------------------------------------------------------
   // CONTROLADOR PROPORCIONAL-INTEGRAL (PI)
   // ---------------------------------------------------------------------------
+  {
+    id: 'pi-ex-slide-ex1',
+    controllerId: 'PI',
+    badge: 'Slide 03 • Exemplo 1',
+    title: 'Exemplo 1 (Slide 03) — PI em G(s) = 1/[(s+1)(s+5)] Preservando sd = -3+j3',
+    source: 'Slide 03 — PI para erro nulo ao degrau pelo lugar das raízes',
+    statementLatex:
+      '\\text{Para } G(s) = \\frac{1}{(s+1)(s+5)} \\text{ com } s_d = -3 + j3 \\; (\\zeta = 0{,}707,\\; K_0 = 13), \\text{ projete um controlador PI para zerar } e_{ss} \\text{ ao degrau mantendo o transitório.}',
+    plantExpr: '1/((s+1)*(s+5))',
+    plantLatex: '\\frac{1}{(s+1)(s+5)}',
+    controllerExpr: '15.06*(s+0.899)/s',
+    controllerLatex: 'G_c(s) = 15{,}06\\frac{s + 0{,}899}{s}',
+    controllerBlockLabel: 'Controlador PI (ess = 0)',
+    inputType: 'step',
+    inputParams: { a0: 1, labelLatex: 'r(t) = u(t)' },
+    tMax: 6,
+    whyThisController:
+      'Com apenas o controlador proporcional $K_0 = 13$, obtém-se $K_{p,a} = 2{,}6$ e erro estacionário $e_P = 27{,}78\\%$. O **Controlador PI** adiciona um polo na origem (tornando a malha Tipo 1 e zerando $e_{ss}$) e um zero $z_i$ calculado com orçamento angular $\\varphi = 10^\\circ$ limitado pelo critério $|s_{\\text{lenta}}|/1{,}1$.',
+    diagnostics: {
+      systemType: 'Tipo 0 → Tipo 1 (após PI)',
+      systemOrder: '2ª Ordem → 3ª Ordem',
+      initialErrorLatex: 'K_{p,a} = 2{,}6 \\implies e_P = 27{,}78\\%',
+      finalErrorLatex: 'K_p = \\infty \\implies e_{ss} = 0'
+    },
+    detailedSteps: [
+      {
+        title: '1. Triagem e Erro Inicial com P ($K_0 = 13$)',
+        description: 'Calculando $K_0$ em $s_d = -3+j3$, o ganho estático $K_{p,a}$ e o erro $e_P$ ($|s_{\\text{lenta}}| = 1$):',
+        latex: 'K_0 = |-2+j3|\\cdot|2+j3| = 13 \\;;\\; K_{p,a} = 13\\cdot\\frac{1}{5} = 2{,}6 \\;;\\; e_P = \\frac{1}{1+2{,}6} = 27{,}78\\% > 2\\% \\implies \\varphi = 10^\\circ'
+      },
+      {
+        title: '2. Cálculo do Zero $z_i$ e Verificação do Limite do Dipolo',
+        description: 'Com $|s_d| = 3\\sqrt{2} = 4{,}2426$ e $\\beta = 45^\\circ$:',
+        latex: 'z_{i,\\max} = 4{,}2426\\frac{\\sin(10^\\circ)}{\\sin(55^\\circ)} = 0{,}8994 \\;;\\; z_i = \\min\\left(0{,}8994\\,;\\;\\frac{1}{1{,}1}\\right) = \\mathbf{0{,}899}'
+      },
+      {
+        title: '3. Ajuste do Ganho $K_c$ pela Condição de Módulo',
+        description: 'Polos de malha fechada em $-2{,}57 \\pm j3{,}00$ e $-0{,}868$:',
+        latex: 'K_c = K_0\\frac{|s_d|}{|s_d + z_i|} = 13\\cdot\\frac{4{,}2426}{|-2{,}101 + j3|} \\approx \\mathbf{15{,}06} \\implies \\mathbf{G_c(s) = 15{,}06\\frac{s+0{,}899}{s}}'
+      }
+    ],
+    scilabCode: `// Slide 03 - Exemplo 1: G(s) = 1/((s+1)(s+5)) com PI
+s = %s;
+G = syslin('c', 1, (s+1)*(s+5));
+Gc = syslin('c', 15.06*(s+0.899), s);
+t = 0:0.01:6;
+clf();
+plot(t, csim('step', t, (13*G)/.1), 'r--', t, csim('step', t, (Gc*G)/.1), 'b-', 'LineWidth', 2);
+legend(['Só P (K0=13, ess=27.8%)', 'Com PI (ess=0%)']);
+xgrid();`
+  },
   {
     id: 'pi-ex-1-4',
     controllerId: 'PI',
@@ -1066,6 +1117,58 @@ xgrid();`
   // CONTROLADOR PROPORCIONAL-DERIVATIVO (PD)
   // ---------------------------------------------------------------------------
   {
+    id: 'pd-ex-slide-s3',
+    controllerId: 'PD',
+    badge: 'Slide 02 • PD Real (N=10)',
+    title: 'Exemplo Completo (Slide 02) — PD Real em L(s) = 1/[s(s+3)] para sd = -3+j3',
+    source: 'Slide 02 — Controlador PD real pelo lugar das raízes (Slides 22–29)',
+    statementLatex:
+      '\\text{Dada } L(s) = \\frac{1}{s(s+3)}, \\text{ projete um controlador PD Real } (N = 10,\\; r = 11) \\text{ para } \\zeta = 0{,}707 \\text{ e } \\omega_d = 3\\text{ rad/s } (s_d = -3 + j3).',
+    plantExpr: '1/(s*(s+3))',
+    plantLatex: '\\frac{1}{s(s+3)}',
+    controllerExpr: '188.5*(s+5.714)/(s+62.85)',
+    controllerLatex: 'G_c(s) = 188{,}5\\frac{s + 5{,}714}{s + 62{,}85}',
+    controllerBlockLabel: 'Controlador PD Real (N=10)',
+    inputType: 'step',
+    inputParams: { a0: 1, labelLatex: 'r(t) = u(t)' },
+    tMax: 3,
+    whyThisController:
+      'Em $s_d = -3 + j3$, a planta $1/[s(s+3)]$ apresenta ângulo $\\angle L(s_d) = -135^\\circ - 90^\\circ = -225^\\circ$, gerando deficiência angular $\\theta_{\\text{def}} = +45^\\circ$. O **PD Real com filtro** ($N = 10 \\implies r = 11$) fornece o avanço necessário e é fisicamente realizável com amp-op.',
+    diagnostics: {
+      systemType: 'Tipo 1',
+      systemOrder: '2ª Ordem → 3ª Ordem (com filtro)',
+      initialErrorLatex: 'e_{ss} = 0',
+      finalErrorLatex: 'e_{ss} = 0'
+    },
+    detailedSteps: [
+      {
+        title: '1. Polo Desejado e Deficiência de Fase',
+        description: 'Calculando $s_d$ e a fase faltante em relação a $-180^\\circ$:',
+        latex: 's_d = -3 + j3 \\;;\\; \\angle L(s_d) = -135^\\circ - 90^\\circ = -225^\\circ \\implies \\theta_{\\text{def}} = -180^\\circ - (-225^\\circ) = \\mathbf{+45^\\circ}'
+      },
+      {
+        title: '2. Zero $z_c$ e Polo $p_c = 11 z_c$ ($N = 10$)',
+        description: 'Resolvendo a condição de ângulo com $\\cot(45^\\circ) = 1$ e $r = 11$:',
+        latex: 'z_c = \\mathbf{5{,}714} \\;;\\; p_c = 11 \\cdot 5{,}714 = \\mathbf{62{,}85}'
+      },
+      {
+        title: '3. Ganho $K_c$ pela Condição de Módulo',
+        description: 'Polos de malha fechada em $-3 \\pm j3$ e polo rápido em $-59{,}85$:',
+        latex: 'K_c = \\frac{|s_d + 62{,}85|}{|s_d + 5{,}714|} \\cdot \\frac{1}{|L(s_d)|} = \\frac{59{,}93}{4{,}045} \\cdot \\frac{1}{0{,}0786} \\approx \\mathbf{188{,}5} \\implies \\mathbf{G_c(s) = 188{,}5\\frac{s+5{,}714}{s+62{,}85}}'
+      }
+    ],
+    scilabCode: `// Slide 02 - PD Real (N=10): L(s) = 1/(s(s+3)), sd = -3+j3
+s = %s;
+G = syslin('c', 1, s*(s+3));
+Gc = syslin('c', 188.5*(s+5.714), s+62.85);
+T_sem = G /. 1;
+T_com = (Gc*G) /. 1;
+t = 0:0.01:3; clf();
+plot(t, csim('step', t, T_sem), 'r--', t, csim('step', t, T_com), 'b-', 'LineWidth', 2);
+legend(['Sem PD', 'Com PD Real (N=10)']);
+xgrid();`
+  },
+  {
     id: 'pd-ex-slide-lgr',
     controllerId: 'PD',
     badge: 'Slide LGR • Transitório',
@@ -1182,6 +1285,64 @@ xgrid();`
   // ---------------------------------------------------------------------------
   // CONTROLADORES POR ATRASO E AVANÇO DE FASE (LAG & LEAD)
   // ---------------------------------------------------------------------------
+  {
+    id: 'fase-slide-13-21',
+    controllerId: 'Lag',
+    subType: 'Lag',
+    badge: 'Slide 13/21 • Passo a Passo Completo',
+    title: 'Exemplo Completo do Slide 13/21 — Projeto Lag Detalhado',
+    source: 'Slide 13/21 — Aula Projeto Compensador Atraso de Fase',
+    statementLatex:
+      '\\text{Planta: } G(s) = \\frac{1}{(s+1)(s+5)} \\;|\\; \\text{Requisitos: Polos dominantes em } s_d = -3 + j3 \\text{ e } e_{ss}(\\text{degrau}) \\le 5\\%.',
+    plantExpr: '1/((s+1)*(s+5))',
+    plantLatex: '\\frac{1}{(s+1)(s+5)}',
+    controllerExpr: '14.77*(s+0.909)/(s+0.124)',
+    controllerLatex: 'G_c(s) = 14{,}77\\frac{s + 0{,}909}{s + 0{,}124}',
+    controllerBlockLabel: 'Compensador Lag (sd = -3+j3)',
+    inputType: 'step',
+    inputParams: { a0: 1, labelLatex: 'r(t) = 1 \\cdot u(t)' },
+    tMax: 6,
+    whyThisController:
+      'Para posicionar os polos dominantes em $s_d = -3 + j3$, o ganho $P$ necessário é $K_0 = 13$, resultando em $K_{p,\\text{atual}} = 2{,}6$ e erro de $27{,}8\\%$ ($> 5\\%$). Como os polos dominantes já estão na posição exata, o Compensador Lag multiplica $K_p$ por $\\beta = 7{,}31$ sem desviar $s_d$.',
+    diagnostics: {
+      systemType: 'Tipo 0 (0 polos na origem)',
+      systemOrder: '2ª Ordem (s² + 6s + 5)',
+      initialErrorLatex: 'e_{ss,(K_0=13)} = \\frac{1}{1+2{,}6} = 27{,}8\\%',
+      finalErrorLatex: 'e_{ss,(Lag)} = \\frac{1}{1+21{,}6} = 4{,}4\\% \\le 5\\%'
+    },
+    detailedSteps: [
+      {
+        title: '1. Diagnóstico Inicial e Passo 0 (Triagem)',
+        description: 'Calculando $K_{p,0}$ da planta sem compensação, o $K_{p,\\text{req}}$ para $e_{ss} \\le 5\\%$ e o limite do dipolo pelo polo mais lento $|s_{\\text{lenta}}| = 1$:',
+        latex: 'K_{p,0} = \\lim_{s\\to 0} \\frac{1}{(s+1)(s+5)} = \\frac{1}{5} = 0{,}2 \\;;\\; \\frac{1}{1+K_{p,\\text{req}}} = 0{,}05 \\implies K_{p,\\text{req}} = \\mathbf{19} \\;;\\; z_{\\text{dipolo}} = \\frac{1}{1{,}1} \\approx \\mathbf{0{,}909}'
+      },
+      {
+        title: '2. Passos 1 a 3 — Ganho $K_0$, $K_{p,\\text{atual}}$, Fator $\\beta$ e Tolerância $\\varphi$',
+        description: 'Pela condição de módulo $|K_0 G(s_d)| = 1$ em $s_d = -3 + j3$:',
+        latex: 'K_0 = |-2+j3|\\cdot|2+j3| = \\sqrt{13}\\cdot\\sqrt{13} = \\mathbf{13} \\;;\\; K_{p,a} = 13 \\cdot \\frac{1}{5} = 2{,}6 \\; (e_p = 27{,}8\\% > 2\\% \\implies \\varphi = 10^\\circ) \\;;\\; \\beta = \\frac{19}{2{,}6} \\approx \\mathbf{7{,}31}'
+      },
+      {
+        title: '3. Passo 4 — Polinômio Trigonométrico para $z$ e $p$',
+        description: 'Impondo $\\tan(\\theta_z - \\theta_p) = \\tan(10^\\circ)$ com $z = 7{,}31p$ em $s_d = -3 + j3$ e comparando $z_{\\max}$ com $z_{\\text{dipolo}}$:',
+        latex: '7{,}31p^2 - 132{,}24p + 18 = 0 \\implies p_{\\max} \\approx 0{,}137 \\implies z_{\\max} = 7{,}31 \\cdot 0{,}137 \\approx 1{,}002 \\implies z = \\min(1{,}002;\\, 0{,}909) = \\mathbf{0{,}909} \\;;\\; p = \\frac{0{,}909}{7{,}31} \\approx \\mathbf{0{,}124}'
+      },
+      {
+        title: '4. Passo 5 — Ajuste de Ganho $K_c$ e Conferência do Erro Final',
+        description: 'Recalculando o ganho pela condição de módulo e conferindo $K_{p,\\text{novo}}$ e $e_{ss}$:',
+        latex: 'K_c = 13 \\cdot \\frac{|-2{,}876+j3|}{|-2{,}091+j3|} = 13 \\cdot \\frac{4{,}156}{3{,}657} \\approx \\mathbf{14{,}77} \\;;\\; K_{p,\\text{novo}} = \\frac{14{,}77 \\cdot 7{,}31}{5} = 21{,}6 \\implies \\mathbf{e_{ss} = \\frac{1}{1+21{,}6} = 4{,}4\\% \\le 5\\%}'
+      }
+    ],
+    scilabCode: `// Exemplo Completo Slide 13/21 - Lag
+s = poly(0, 's');
+G = syslin('c', 1, (s+1)*(s+5));
+Gc = syslin('c', 14.77*(s+0.909), s+0.124);
+t = 0:0.01:6;
+y_sem = csim('step', t, (13*G)/(1+13*G));
+y_com = csim('step', t, (Gc*G)/(1+Gc*G));
+plot(t, y_sem, 'r--', t, y_com, 'b-', 'LineWidth', 2);
+legend(["Com K0=13 (ess=27.8%)", "Com Lag (ess=4.4%)"]);
+xgrid();`
+  },
   {
     id: 'fase-ex-1-1',
     controllerId: 'Lag',
@@ -1639,61 +1800,56 @@ legend(["Entrada Combinada", "Sem Lag (ess=0.2)", "Com Lag (ess=0.091)"]);
 xgrid();`
   },
   {
-    id: 'fase-slide-13-21',
-    controllerId: 'Lag',
-    subType: 'Lag',
-    badge: 'Slide 13/21 • Passo a Passo Completo',
-    title: 'Exemplo Completo do Slide 13/21 — Projeto Lag Detalhado',
-    source: 'Slide 13/21 — Aula Projeto Compensador Atraso de Fase',
+    id: 'lead-ex-aula20-bissetriz',
+    controllerId: 'Lead',
+    subType: 'Lead',
+    badge: 'Aula 20 • Avanço Bissetriz',
+    title: 'Exemplo Clássico de Slide (Aula 20) — Avanço de Fase pela Bissetriz',
+    source: 'Slides EEL6005 — Aula Avanço de Fase LGR',
     statementLatex:
-      '\\text{Planta: } G(s) = \\frac{1}{(s+1)(s+5)} \\;|\\; \\text{Requisitos: Polos dominantes em } s_d = -3 + j3 \\text{ e } e_{ss}(\\text{degrau}) \\le 5\\%.',
-    plantExpr: '1/((s+1)*(s+5))',
-    plantLatex: '\\frac{1}{(s+1)(s+5)}',
-    controllerExpr: '14.77*(s+0.909)/(s+0.124)',
-    controllerLatex: 'G_c(s) = 14{,}77\\frac{s + 0{,}909}{s + 0{,}124}',
-    controllerBlockLabel: 'Compensador Lag (sd = -3+j3)',
+      '\\text{Dada a planta } G(s) = \\frac{1}{s(s+3)}, \\text{ projete um controlador por avanço de fase } G_c(s) = K_c\\frac{s+z}{s+p} \\text{ para posicionar os polos dominantes em } s_d = -3 + j3 \\; (\\zeta = 0{,}707, T_p = 1{,}047\\text{ s}).',
+    plantExpr: '1/(s*(s+3))',
+    plantLatex: '\\frac{1}{s(s+3)}',
+    controllerExpr: '18*(s+3)/(s+6)',
+    controllerLatex: 'G_c(s) = 18\\frac{s+3}{s+6}',
+    controllerBlockLabel: 'Controlador Avanço (Lead)',
     inputType: 'step',
     inputParams: { a0: 1, labelLatex: 'r(t) = 1 \\cdot u(t)' },
-    tMax: 6,
+    tMax: 4,
     whyThisController:
-      'Para posicionar os polos dominantes em $s_d = -3 + j3$, o ganho $P$ necessário é $K_0 = 13$, resultando em $K_{p,\\text{atual}} = 2{,}6$ e erro de $27{,}8\\%$ ($> 5\\%$). Como os polos dominantes já estão na posição exata, o Compensador Lag multiplica $K_p$ por $\\beta = 7{,}31$ sem desviar $s_d$.',
+      'A planta sem compensação possui parte real dos polos limitada em σ = -1,5. Para deslocar os polos dominantes para sd = -3 + j3 mantendo ganho Kc moderado (18, muito menor que o PD Real r=11 que exigiria Kc=188,5), aplica-se o Controlador por Avanço de Fase (Lead).',
     diagnostics: {
-      systemType: 'Tipo 0 (0 polos na origem)',
-      systemOrder: '2ª Ordem (s² + 6s + 5)',
-      initialErrorLatex: 'e_{ss,(K_0=13)} = \\frac{1}{1+2{,}6} = 27{,}8\\%',
-      finalErrorLatex: 'e_{ss,(Lag)} = \\frac{1}{1+21{,}6} = 4{,}4\\% \\le 5\\%'
+      systemType: 'Tipo 1 (1 polo na origem)',
+      systemOrder: '2ª Ordem (após cancelamento de s+3)',
+      initialErrorLatex: 'T_p(\\text{sem Lead}) \\text{ lento } (\\sigma = -1{,}5)',
+      finalErrorLatex: 's_d = -3 \\pm j3 \\; (\\%OS = 4{,}32\\%, e_{ss} = 0)'
     },
     detailedSteps: [
       {
-        title: '1. Diagnóstico Inicial e Passo 0 (Triagem)',
-        description: 'Calculando $K_{p,0}$ da planta sem compensação, o $K_{p,\\text{req}}$ para $e_{ss} \\le 5\\%$ e o limite do dipolo pelo polo mais lento $|s_{\\text{lenta}}| = 1$:',
-        latex: 'K_{p,0} = \\lim_{s\\to 0} \\frac{1}{(s+1)(s+5)} = \\frac{1}{5} = 0{,}2 \\;;\\; \\frac{1}{1+K_{p,\\text{req}}} = 0{,}05 \\implies K_{p,\\text{req}} = \\mathbf{19} \\;;\\; z_{\\text{dipolo}} = \\frac{1}{1{,}1} \\approx \\mathbf{0{,}909}'
+        title: '1. Deficiência Angular em sd = -3 + j3',
+        description: 'Ângulos dos polos em s = 0 e s = -3:',
+        latex: '\\angle s_d = 135^\\circ \\;;\\; \\angle(s_d+3) = 90^\\circ \\implies \\phi = (135^\\circ + 90^\\circ) - 180^\\circ = \\mathbf{45^\\circ}'
       },
       {
-        title: '2. Passos 1 a 3 — Ganho $K_0$, $K_{p,\\text{atual}}$, Fator $\\beta$ e Tolerância $\\varphi$',
-        description: 'Pela condição de módulo $|K_0 G(s_d)| = 1$ em $s_d = -3 + j3$:',
-        latex: 'K_0 = |-2+j3|\\cdot|2+j3| = \\sqrt{13}\\cdot\\sqrt{13} = \\mathbf{13} \\;;\\; K_{p,a} = 13 \\cdot \\frac{1}{5} = 2{,}6 \\; (e_p = 27{,}8\\% > 2\\% \\implies \\varphi = 10^\\circ) \\;;\\; \\beta = \\frac{19}{2{,}6} \\approx \\mathbf{7{,}31}'
+        title: '2. Posição do Zero e Polo (z = 3, p = 6)',
+        description: 'Cancelando o polo em -3 (z = 3 contribui +90°) e fornecendo +45° pelo polo em -6 (∠(-3+j3+6) = ∠(3+j3) = 45°):',
+        latex: 'z = \\mathbf{3} \\;;\\; p = 3 + \\frac{3}{\\tan(45^\\circ)} = \\mathbf{6}'
       },
       {
-        title: '3. Passo 4 — Polinômio Trigonométrico para $z$ e $p$',
-        description: 'Impondo $\\tan(\\theta_z - \\theta_p) = \\tan(10^\\circ)$ com $z = 7{,}31p$ em $s_d = -3 + j3$ e comparando $z_{\\max}$ com $z_{\\text{dipolo}}$:',
-        latex: '7{,}31p^2 - 132{,}24p + 18 = 0 \\implies p_{\\max} \\approx 0{,}137 \\implies z_{\\max} = 7{,}31 \\cdot 0{,}137 \\approx 1{,}002 \\implies z = \\min(1{,}002;\\, 0{,}909) = \\mathbf{0{,}909} \\;;\\; p = \\frac{0{,}909}{7{,}31} \\approx \\mathbf{0{,}124}'
-      },
-      {
-        title: '4. Passo 5 — Ajuste de Ganho $K_c$ e Conferência do Erro Final',
-        description: 'Recalculando o ganho pela condição de módulo e conferindo $K_{p,\\text{novo}}$ e $e_{ss}$:',
-        latex: 'K_c = 13 \\cdot \\frac{|-2{,}876+j3|}{|-2{,}091+j3|} = 13 \\cdot \\frac{4{,}156}{3{,}657} \\approx \\mathbf{14{,}77} \\;;\\; K_{p,\\text{novo}} = \\frac{14{,}77 \\cdot 7{,}31}{5} = 21{,}6 \\implies \\mathbf{e_{ss} = \\frac{1}{1+21{,}6} = 4{,}4\\% \\le 5\\%}'
+        title: '3. Cálculo do Ganho Kc pela Condição de Módulo',
+        description: 'Impondo |Gc(sd)·G(sd)| = 1:',
+        latex: 'K_c = |s_d| \\cdot |s_d + 6| = \\sqrt{18} \\cdot \\sqrt{18} = \\mathbf{18} \\implies \\mathbf{G_c(s) = 18\\frac{s+3}{s+6}}'
       }
     ],
-    scilabCode: `// Exemplo Completo Slide 13/21 - Lag
+    scilabCode: `// Aula 20 - Avanço de Fase (Lead)
 s = poly(0, 's');
-G = syslin('c', 1, (s+1)*(s+5));
-Gc = syslin('c', 14.77*(s+0.909), s+0.124);
-t = 0:0.01:6;
-y_sem = csim('step', t, (13*G)/(1+13*G));
+G = syslin('c', 1, s*(s+3));
+Gc = syslin('c', 18*(s+3), s+6);
+t = 0:0.01:4;
+y_sem = csim('step', t, G/(1+G));
 y_com = csim('step', t, (Gc*G)/(1+Gc*G));
 plot(t, y_sem, 'r--', t, y_com, 'b-', 'LineWidth', 2);
-legend(["Com K0=13 (ess=27.8%)", "Com Lag (ess=4.4%)"]);
+legend(["Sem Lead (Lento)", "Com Lead: 18(s+3)/(s+6)"]);
 xgrid();`
   },
   {
@@ -1747,59 +1903,6 @@ y_sem = csim('step', t, G/(1+G));
 y_com = csim('step', t, (Gc*G)/(1+Gc*G));
 plot(t, y_sem, 'r--', t, y_com, 'b-', 'LineWidth', 2);
 legend(["Sem Lead (Oscilatório, Ts=4s)", "Com Lead (Ts=1.33s)"]);
-xgrid();`
-  },
-  {
-    id: 'lead-ex-aula20-bissetriz',
-    controllerId: 'Lead',
-    subType: 'Lead',
-    badge: 'Aula 20 • Avanço Bissetriz',
-    title: 'Exemplo Clássico de Slide (Aula 20) — Avanço de Fase pela Bissetriz',
-    source: 'Slides EEL6005 — Aula Avanço de Fase LGR',
-    statementLatex:
-      '\\text{Dada a planta } G(s) = \\frac{1}{s(s+3)}, \\text{ projete um controlador por avanço de fase } G_c(s) = K_c\\frac{s+z}{s+p} \\text{ para posicionar os polos dominantes em } s_d = -3 + j3 \\; (\\zeta = 0{,}707, T_p = 1{,}047\\text{ s}).',
-    plantExpr: '1/(s*(s+3))',
-    plantLatex: '\\frac{1}{s(s+3)}',
-    controllerExpr: '18*(s+3)/(s+6)',
-    controllerLatex: 'G_c(s) = 18\\frac{s+3}{s+6}',
-    controllerBlockLabel: 'Controlador Avanço (Lead)',
-    inputType: 'step',
-    inputParams: { a0: 1, labelLatex: 'r(t) = 1 \\cdot u(t)' },
-    tMax: 4,
-    whyThisController:
-      'A planta sem compensação possui parte real dos polos limitada em σ = -1,5. Para deslocar os polos dominantes para sd = -3 + j3 mantendo ganho Kc moderado (18, muito menor que o PD Real r=11 que exigiria Kc=188,5), aplica-se o Controlador por Avanço de Fase (Lead).',
-    diagnostics: {
-      systemType: 'Tipo 1 (1 polo na origem)',
-      systemOrder: '2ª Ordem (após cancelamento de s+3)',
-      initialErrorLatex: 'T_p(\\text{sem Lead}) \\text{ lento } (\\sigma = -1{,}5)',
-      finalErrorLatex: 's_d = -3 \\pm j3 \\; (\\%OS = 4{,}32\\%, e_{ss} = 0)'
-    },
-    detailedSteps: [
-      {
-        title: '1. Deficiência Angular em sd = -3 + j3',
-        description: 'Ângulos dos polos em s = 0 e s = -3:',
-        latex: '\\angle s_d = 135^\\circ \\;;\\; \\angle(s_d+3) = 90^\\circ \\implies \\phi = (135^\\circ + 90^\\circ) - 180^\\circ = \\mathbf{45^\\circ}'
-      },
-      {
-        title: '2. Posição do Zero e Polo (z = 3, p = 6)',
-        description: 'Cancelando o polo em -3 (z = 3 contribui +90°) e fornecendo +45° pelo polo em -6 (∠(-3+j3+6) = ∠(3+j3) = 45°):',
-        latex: 'z = \\mathbf{3} \\;;\\; p = 3 + \\frac{3}{\\tan(45^\\circ)} = \\mathbf{6}'
-      },
-      {
-        title: '3. Cálculo do Ganho Kc pela Condição de Módulo',
-        description: 'Impondo |Gc(sd)·G(sd)| = 1:',
-        latex: 'K_c = |s_d| \\cdot |s_d + 6| = \\sqrt{18} \\cdot \\sqrt{18} = \\mathbf{18} \\implies \\mathbf{G_c(s) = 18\\frac{s+3}{s+6}}'
-      }
-    ],
-    scilabCode: `// Aula 20 - Avanço de Fase (Lead)
-s = poly(0, 's');
-G = syslin('c', 1, s*(s+3));
-Gc = syslin('c', 18*(s+3), s+6);
-t = 0:0.01:4;
-y_sem = csim('step', t, G/(1+G));
-y_com = csim('step', t, (Gc*G)/(1+Gc*G));
-plot(t, y_sem, 'r--', t, y_com, 'b-', 'LineWidth', 2);
-legend(["Sem Lead (Lento)", "Com Lead: 18(s+3)/(s+6)"]);
 xgrid();`
   }
 ];
