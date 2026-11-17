@@ -72,25 +72,31 @@ export const SPlaneChart: React.FC<SPlaneChartProps> = ({
       const L = ratMul(Gc, G);
       const T = buildClosedLoopTf(G, Gc);
 
+      const numG = trimUni(toUnivariateArr(G.num));
+      const denG = trimUni(toUnivariateArr(G.den));
       const numL = trimUni(toUnivariateArr(L.num));
       const denL = trimUni(toUnivariateArr(L.den));
       const denT = trimUni(toUnivariateArr(T.den));
 
-      const olPoles = computeRootsPoly(denL);
-      const olZeros = numL.length > 1 ? computeRootsPoly(numL) : [];
+      const isZeroGain = numL.length === 0 || (numL.length === 1 && Math.abs(numL[0]) < 1e-12);
+      const locusNum = isZeroGain ? numG : numL;
+      const locusDen = isZeroGain ? denG : denL;
+
+      const olPoles = computeRootsPoly(locusDen);
+      const olZeros = locusNum.length > 1 ? computeRootsPoly(locusNum) : [];
       const clPoles = computeRootsPoly(denT);
 
-      // Amostra o LGR para L(s) = numL / denL (1 + k * L(s) = 0, com k relativo ao sistema compensado)
+      // Amostra o LGR para L(s) = locusNum / locusDen
       const kValues: number[] = [];
       for (let i = -2; i <= 2.2; i += 0.08) {
         kValues.push(Math.pow(10, i));
       }
       const locusPoints: ComplexNumber[] = [];
-      const maxDeg = Math.max(denL.length, numL.length);
+      const maxDeg = Math.max(locusDen.length, locusNum.length);
       for (const k of kValues) {
         const rawChar: number[] = new Array(maxDeg).fill(0);
-        for (let i = 0; i < denL.length; i++) rawChar[i] += denL[i];
-        for (let i = 0; i < numL.length; i++) rawChar[i] += k * numL[i];
+        for (let i = 0; i < locusDen.length; i++) rawChar[i] += locusDen[i];
+        for (let i = 0; i < locusNum.length; i++) rawChar[i] += k * locusNum[i];
         const charPoly = trimUni(rawChar);
         if (charPoly.length > 1) {
           const roots = computeRootsPoly(charPoly);
@@ -148,13 +154,13 @@ export const SPlaneChart: React.FC<SPlaneChartProps> = ({
     ];
   }, [computed, activeClPoles]);
 
-  // Reseta zoom, pan e ganho se trocar de exercício/planta
+  // Reseta zoom e pan apenas ao trocar de planta
   React.useEffect(() => {
     setViewBoxBounds(null);
     setToolMode('none');
     setPanDrag(null);
     setGainMult(1);
-  }, [plantExpr, controllerExpr]);
+  }, [plantExpr]);
 
   if (!computed) return null;
 
@@ -228,10 +234,7 @@ export const SPlaneChart: React.FC<SPlaneChartProps> = ({
     const curW = activeBounds.maxRe - activeBounds.minRe;
     const curH = activeBounds.maxIm - activeBounds.minIm;
     const defW = computed.defaultBounds.maxRe - computed.defaultBounds.minRe;
-    if (curW * 1.6 >= defW) {
-      setViewBoxBounds(null);
-      return;
-    }
+    if (curW >= defW * 20) return;
     const cxRe = (activeBounds.minRe + activeBounds.maxRe) / 2;
     const cyIm = (activeBounds.minIm + activeBounds.maxIm) / 2;
     const nextHalfW = (curW * 1.6) / 2;
@@ -313,15 +316,13 @@ export const SPlaneChart: React.FC<SPlaneChartProps> = ({
             <button
               type="button"
               onClick={handleZoomOut}
-              disabled={!viewBoxBounds}
-              title="Diminuir zoom"
+              title="Diminuir zoom (afastar)"
               style={{
                 padding: '3px 9px',
                 borderRadius: '5px',
                 fontSize: '0.72rem',
                 fontWeight: 700,
-                cursor: viewBoxBounds ? 'pointer' : 'not-allowed',
-                opacity: viewBoxBounds ? 1 : 0.45,
+                cursor: 'pointer',
                 background: 'var(--code-bg)',
                 color: 'var(--text)',
                 border: '1px solid var(--card-border)'

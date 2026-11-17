@@ -137,12 +137,18 @@ function renderRichMathText(text: string): React.ReactNode {
 
 export const LugarRaizesView: React.FC = () => {
   const [selectedCaseId, setSelectedCaseId] = useState<string>(LGR_CASES[0].id);
+  const [kValue, setKValue] = useState<number>(20);
   const [copiedScilab, setCopiedScilab] = useState<boolean>(false);
 
   const activeCase = useMemo(
     () => LGR_CASES.find(c => c.id === selectedCaseId) || LGR_CASES[0],
     [selectedCaseId]
   );
+
+  const handleSelectCase = (c: LgrCase) => {
+    setSelectedCaseId(c.id);
+    setKValue(Number(c.defaultK));
+  };
 
   const copyScilab = (code: string) => {
     navigator.clipboard.writeText(code);
@@ -237,7 +243,7 @@ export const LugarRaizesView: React.FC = () => {
                 <button
                   key={c.id}
                   type="button"
-                  onClick={() => setSelectedCaseId(c.id)}
+                  onClick={() => handleSelectCase(c)}
                   style={{
                     padding: '7px 12px',
                     borderRadius: '6px',
@@ -264,20 +270,93 @@ export const LugarRaizesView: React.FC = () => {
           {renderRichMathText(activeCase.description)}
         </div>
 
+        {/* Controle Direto do Ganho K (como na tabela do exercício) */}
+        <div
+          style={{
+            background: 'var(--code-bg)',
+            border: '1px solid var(--card-border)',
+            borderRadius: '8px',
+            padding: '12px 14px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '10px'
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+            <span style={{ fontSize: '0.82rem', fontWeight: 800, color: 'var(--primary)' }}>
+              Ganho do Controlador K = {kValue}
+            </span>
+            <input
+              type="range"
+              min={0}
+              max={activeCase.id === 'caso4' ? 500 : 60}
+              step={activeCase.id === 'caso4' ? 5 : 1}
+              value={kValue}
+              onChange={e => setKValue(Number(e.target.value))}
+              aria-label="Variar valor exato de K"
+              style={{ flex: '1 1 200px', cursor: 'pointer' }}
+            />
+            <input
+              type="number"
+              min={0}
+              max={2000}
+              step={1}
+              value={kValue}
+              onChange={e => setKValue(Math.max(0, Number(e.target.value) || 0))}
+              style={{
+                width: '78px',
+                padding: '4px 8px',
+                borderRadius: '5px',
+                border: '1px solid var(--card-border)',
+                background: 'var(--card-bg)',
+                color: 'var(--text)',
+                fontWeight: 700,
+                fontSize: '0.82rem'
+              }}
+            />
+          </div>
+          {activeCase.id === 'caso1' && (
+            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center' }}>
+              <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 700 }}>
+                Valores da tabela do slide:
+              </span>
+              {[0, 1, 5, 10, 20, 30, 40].map(val => (
+                <button
+                  key={`preset-${val}`}
+                  type="button"
+                  onClick={() => setKValue(val)}
+                  style={{
+                    padding: '3px 9px',
+                    borderRadius: '5px',
+                    fontSize: '0.74rem',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    background: kValue === val ? 'var(--primary)' : 'var(--card-bg)',
+                    color: kValue === val ? '#fff' : 'var(--text)',
+                    border: `1px solid ${kValue === val ? 'var(--primary)' : 'var(--card-border)'}`
+                  }}
+                >
+                  K = {val}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
         <ControllerBlockDiagram
           title="Diagrama de Blocos do Caso"
           showControllerBlock={true}
           controllerLabel="Ganho K"
-          controllerLatex={activeCase.defaultKLatex}
+          controllerLatex={`K = ${kValue}`}
           plantLatex={activeCase.plantLatex}
           plantExpr={activeCase.plantExpr}
-          controllerExpr={activeCase.defaultK}
+          controllerExpr={String(kValue)}
         />
 
         <SPlaneChart
-          title="Plano s — Lugar das Raízes (Use o slider para variar o ganho K)"
+          title={`Plano s — Lugar das Raízes (K = ${kValue})`}
           plantExpr={activeCase.plantExpr}
-          controllerExpr={activeCase.defaultK}
+          controllerExpr={String(kValue)}
         />
 
         <div style={{ background: 'var(--code-bg)', border: '1px solid var(--card-border)', borderRadius: '8px', overflow: 'hidden' }}>
