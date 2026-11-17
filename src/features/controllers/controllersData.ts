@@ -585,6 +585,12 @@ export const CONTROLLER_EXERCISES: ControllerExercise[] = [
           'Aplicando $K = \\left.\\frac{1}{|G(s)H(s)|}\\right|_{s=s_d}$ com $G(s) = \\frac{1}{s(s+20)}$, $H(s) = 1$ e $s_d = -10 + j11{,}1665$:',
         latex:
           'K = \\left.\\frac{1}{|G(s)H(s)|}\\right|_{s=-10+j11{,}1665} = \\left.\\frac{1}{\\left|\\frac{1}{s(s+20)}\\cdot 1\\right|}\\right|_{s=-10+j11{,}1665} \\;;\\; K = \\frac{1}{\\left|\\frac{1}{(-10+j11{,}1665)\\cdot(-10+j11{,}1665+20)}\\right|} = \\frac{1}{\\left|\\frac{1}{(-10+j11{,}1665)\\cdot(10+j11{,}1665)}\\right|} \\;;\\; K = \\frac{1}{\\frac{1}{|-10+j11{,}1665|\\cdot|10+j11{,}1665|}} = \\frac{1}{\\frac{1}{\\sqrt{(-10)^2+(11{,}1665)^2}\\cdot\\sqrt{(10)^2+(11{,}1665)^2}}} \\;;\\; K = \\frac{1}{\\frac{1}{\\sqrt{100+124{,}69}\\cdot\\sqrt{100+124{,}69}}} = \\frac{1}{\\frac{1}{\\sqrt{224{,}69}\\cdot\\sqrt{224{,}69}}} = \\frac{1}{\\frac{1}{224{,}69}} = \\mathbf{224{,}69}'
+      },
+      {
+        title: '4. Por que o Sistema em Malha Fechada é Estável?',
+        description:
+          'A equação característica resulta em $s^2 + 20s + 224{,}69 = 0$, cujos polos $p_{1,2} = -10 \\pm j11{,}16$ possuem parte real estritamente negativa ($\\text{Re}(s) = -10 < 0$), no semiplano esquerdo do plano $s$. Fisicamente, o termo transitório $e^{-10t} \\to 0$ quando $t \\to \\infty$, garantindo amortecimento das oscilações e convergência ao degrau (critério de Routh-Hurwitz: coeficientes $1, 20, 224{,}69 > 0$).',
+        latex: 'T(s) = \\frac{224{,}69}{s^2 + 20s + 224{,}69} \\implies \\text{Re}(p_{1,2}) = -10 < 0 \\;(\\text{Estável!})'
       }
     ],
     scilabCode: `// Slide 01 - Projeto P: G(s) = 1/(s^2 + 20s), Mp = 6%, ts = 0.4s
@@ -637,9 +643,10 @@ xgrid();`
         latex: 'e_{ss} = \\frac{1}{1 + K_p} = 0{,}1 \\implies \\frac{1}{1 + \\frac{K}{8}} = 0{,}1 \\implies 1 + \\frac{K}{8} = 10 \\implies \\mathbf{K = 72}'
       },
       {
-        title: '4. Conferência da Estabilidade em Malha Fechada',
-        description: 'Equação característica: s² + 6s + 8 + 72 = s² + 6s + 80 = 0 (polos em -3 ± j8,43, ambos no semiplano esquerdo).',
-        latex: 'T(s) = \\frac{72}{s^2 + 6s + 80} \\implies \\text{Estável!}'
+        title: '4. Conferência da Estabilidade em Malha Fechada (Por que é Estável?)',
+        description:
+          'O sistema em malha fechada é **estável** porque todas as raízes da equação característica ($s^2 + 6s + 80 = 0$), dadas por $s_{1,2} = -3 \\pm j8{,}43$, possuem parte real estritamente negativa ($\\mathrm{Re}(s) = -3 < 0$), localizando-se no semiplano esquerdo do plano $s$. Fisicamente, o termo transitório possui decaimento exponencial ($e^{-3t} \\to 0$ quando $t \\to \\infty$), amortecendo as oscilações até um valor finito. Além disso, por ser de 2ª ordem com todos os coeficientes positivos ($1, 6, 80 > 0$), satisfaz o critério de Routh-Hurwitz.',
+        latex: 'T(s) = \\frac{72}{s^2 + 6s + 80} \\implies s_{1,2} = -3 \\pm j8{,}43 \\; (\\mathrm{Re}(s) = -3 < 0 \\implies \\text{Estável!})'
       }
     ],
     scilabCode: `// Exercício 1.3 - Controlador Proporcional (P)
@@ -698,9 +705,10 @@ xgrid();`
         latex: 'e_{ss} = \\frac{1}{K_v} = \\frac{1}{K} = 0{,}05 \\implies \\mathbf{G_c(s) = K = 20}'
       },
       {
-        title: '4. Verificação de Estabilidade (Routh-Hurwitz)',
-        description: 'Polinômio característico: s³ + 5s² + 26s + 120 = 0. Como 5·26 = 130 > 120, todas as raízes têm parte real negativa.',
-        latex: '5 \\cdot 26 = 130 > 120 \\implies \\text{Malha Fechada Estável!}'
+        title: '4. Verificação de Estabilidade (Routh-Hurwitz — Por que é Estável?)',
+        description:
+          'Polinômio característico: $s^3 + 5s^2 + 26s + 120 = 0$. Pelo critério de Routh-Hurwitz ($a_2 a_1 > a_0 \\implies 5 \\cdot 26 = 130 > 120$), não há trocas de sinal na primeira coluna da tabela de Routh, garantindo que todas as raízes possuem parte real estritamente negativa (no semiplano esquerdo) e que os termos transitórios decaem exponencialmente para zero.',
+        latex: '5 \\cdot 26 = 130 > 120 \\implies \\text{Todas as raízes com } \\mathrm{Re}(s) < 0 \\;(\\text{Malha Fechada Estável!})'
       }
     ],
     scilabCode: `// Exercício 2.4 - Tipo 1 com Controlador Proporcional (P)
@@ -760,9 +768,10 @@ xgrid();`
         latex: 'e_{ss} = \\frac{1}{K_a} = \\frac{10}{K} = 0{,}02 \\implies \\mathbf{G_c(s) = K = 500}'
       },
       {
-        title: '4. Conferência de Estabilidade',
-        description: 'Polinômio característico: s³ + 10s² + 500s + 500 = 0. Critério de Routh: 10·500 = 5000 > 500.',
-        latex: '10 \\cdot 500 = 5000 > 500 \\implies \\text{Estável!}'
+        title: '4. Conferência de Estabilidade (Routh-Hurwitz — Por que é Estável?)',
+        description:
+          'Polinômio característico: $s^3 + 10s^2 + 500s + 500 = 0$. Como todos os coeficientes são positivos e $a_2 a_1 = 10 \\cdot 500 = 5000 > 500$, não há mudança de sinal na 1ª coluna de Routh, logo todos os polos de malha fechada têm $\\mathrm{Re}(s) < 0$ (semiplano esquerdo), garantindo resposta amortecida e estável.',
+        latex: '10 \\cdot 500 = 5000 > 500 \\implies \\text{Todos os polos no semiplano esquerdo } (\\text{Estável!})'
       }
     ],
     scilabCode: `// Exercício 3.4 - Tipo 2 com Controlador Proporcional (P)
