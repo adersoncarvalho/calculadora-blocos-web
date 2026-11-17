@@ -448,7 +448,7 @@ export const ControllersSection: React.FC<ControllersSectionProps> = ({ onBack, 
             border: `1.5px solid ${activeTab === 'lgr' ? 'var(--primary)' : 'var(--card-border)'}`
           }}
         >
-          📈 Lugar das Raízes — LGR (Aula 01.1)
+          📈 Lugar das Raízes — LGR
         </button>
         <button
           type="button"
