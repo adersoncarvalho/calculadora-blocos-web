@@ -3404,13 +3404,19 @@ body.light-theme .global-navbar.scrolled {
 .global-navbar-inner {
   max-width: 1360px;
   margin: 0 auto;
-  padding: 10px 20px;
+  padding: 8px 16px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 14px;
+  gap: 10px;
   flex-wrap: wrap;
   transition: padding 0.2s ease;
+}
+
+@media (min-width: 1060px) {
+  .global-navbar-inner {
+    flex-wrap: nowrap;
+  }
 }
 
 .global-navbar.scrolled .global-navbar-inner {
@@ -3478,18 +3484,19 @@ body.light-theme .global-navbar.scrolled {
 .global-navbar-links {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   flex-wrap: wrap;
 }
 
 .global-nav-link {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
+  gap: 5px;
+  padding: 5px 10px;
   border-radius: 7px;
-  font-size: 0.82rem;
+  font-size: 0.8rem;
   font-weight: 600;
+  white-space: nowrap;
   text-decoration: none;
   color: var(--text-muted);
   border: 1px solid transparent;
@@ -3511,7 +3518,9 @@ body.light-theme .global-navbar.scrolled {
 .global-navbar-actions {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .global-nav-shortcut-btn {
