@@ -56,6 +56,8 @@ export const SPlaneChart: React.FC<SPlaneChartProps> = ({
   zetaTarget
 }) => {
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
+  const [zoomMode, setZoomMode] = useState<'none' | 'in'>('none');
+  const [viewBoxBounds, setViewBoxBounds] = useState<{ minRe: number; maxRe: number; minIm: number; maxIm: number } | null>(null);
 
   const computed = useMemo(() => {
     try {
@@ -114,16 +116,23 @@ export const SPlaneChart: React.FC<SPlaneChartProps> = ({
       maxRe += padRe;
       maxIm += padIm;
 
-      const reTicks = buildTicks(minRe, maxRe, niceStep(maxRe - minRe, 6));
-      const imTicks = buildTicks(-maxIm, maxIm, niceStep(2 * maxIm, 4)).filter(v => v !== 0);
-
-      return { points, clPoles, locusPoints, minRe, maxRe, minIm: -maxIm, maxIm, reTicks, imTicks };
+      return { points, clPoles, locusPoints, defaultBounds: { minRe, maxRe, minIm: -maxIm, maxIm } };
     } catch {
       return null;
     }
   }, [plantExpr, controllerExpr]);
 
+  // Reseta zoom se trocar de exercício/planta
+  React.useEffect(() => {
+    setViewBoxBounds(null);
+    setZoomMode('none');
+  }, [plantExpr, controllerExpr]);
+
   if (!computed) return null;
+
+  const activeBounds = viewBoxBounds || computed.defaultBounds;
+  const reTicks = buildTicks(activeBounds.minRe, activeBounds.maxRe, niceStep(activeBounds.maxRe - activeBounds.minRe, 6));
+  const imTicks = buildTicks(activeBounds.minIm, activeBounds.maxIm, niceStep(activeBounds.maxIm - activeBounds.minIm, 4)).filter(v => v !== 0);
 
   const W = 560;
   const H = 290;
@@ -134,8 +143,54 @@ export const SPlaneChart: React.FC<SPlaneChartProps> = ({
   const plotW = W - padL - padR;
   const plotH = H - padT - padB;
 
-  const toX = (re: number) => padL + ((re - computed.minRe) / (computed.maxRe - computed.minRe)) * plotW;
-  const toY = (im: number) => padT + ((computed.maxIm - im) / (computed.maxIm - computed.minIm)) * plotH;
+  const toX = (re: number) => padL + ((re - activeBounds.minRe) / (activeBounds.maxRe - activeBounds.minRe)) * plotW;
+  const toY = (im: number) => padT + ((activeBounds.maxIm - im) / (activeBounds.maxIm - activeBounds.minIm)) * plotH;
+
+  const zoomFactor = (computed.defaultBounds.maxRe - computed.defaultBounds.minRe) / (activeBounds.maxRe - activeBounds.minRe);
+
+  const handleSvgClick = (e: React.MouseEvent<SVGSVGElement>) => {
+    if (zoomMode !== 'in') return;
+    const svg = e.currentTarget;
+    const rect = svg.getBoundingClientRect();
+    const clickSvgX = ((e.clientX - rect.left) / rect.width) * W;
+    const clickSvgY = ((e.clientY - rect.top) / rect.height) * H;
+    const targetRe = activeBounds.minRe + ((clickSvgX - padL) / plotW) * (activeBounds.maxRe - activeBounds.minRe);
+    const targetIm = activeBounds.maxIm - ((clickSvgY - padT) / plotH) * (activeBounds.maxIm - activeBounds.minIm);
+
+    const newHalfW = Math.max(0.08, (activeBounds.maxRe - activeBounds.minRe) / 4);
+    const newHalfH = Math.max(0.08, (activeBounds.maxIm - activeBounds.minIm) / 4);
+    setViewBoxBounds({
+      minRe: targetRe - newHalfW,
+      maxRe: targetRe + newHalfW,
+      minIm: targetIm - newHalfH,
+      maxIm: targetIm + newHalfH
+    });
+  };
+
+  const handleZoomOut = () => {
+    const curW = activeBounds.maxRe - activeBounds.minRe;
+    const curH = activeBounds.maxIm - activeBounds.minIm;
+    const defW = computed.defaultBounds.maxRe - computed.defaultBounds.minRe;
+    if (curW * 1.6 >= defW) {
+      setViewBoxBounds(null);
+      return;
+    }
+    const cxRe = (activeBounds.minRe + activeBounds.maxRe) / 2;
+    const cyIm = (activeBounds.minIm + activeBounds.maxIm) / 2;
+    const nextHalfW = (curW * 1.6) / 2;
+    const nextHalfH = (curH * 1.6) / 2;
+    setViewBoxBounds({
+      minRe: cxRe - nextHalfW,
+      maxRe: cxRe + nextHalfW,
+      minIm: cyIm - nextHalfH,
+      maxIm: cyIm + nextHalfH
+    });
+  };
+
+  const handleResetZoom = () => {
+    setViewBoxBounds(null);
+    setZoomMode('none');
+  };
 
   const zeroX = toX(0);
   const zeroY = toY(0);
@@ -160,15 +215,91 @@ export const SPlaneChart: React.FC<SPlaneChartProps> = ({
         <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--primary)' }}>
           {title}
         </span>
-        <div style={{ display: 'flex', gap: '12px', fontSize: '0.72rem', color: 'var(--text-muted)', flexWrap: 'wrap' }}>
-          <span style={{ color: '#ef4444', fontWeight: 700 }}>× Polo Malha Aberta</span>
-          <span style={{ color: '#3b82f6', fontWeight: 700 }}>○ Zero Malha Aberta</span>
-          <span style={{ color: '#10b981', fontWeight: 700 }}>● Polo Malha Fechada</span>
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+          <div className="no-print" style={{ display: 'flex', gap: '5px', alignItems: 'center' }}>
+            <button
+              type="button"
+              onClick={() => setZoomMode(m => (m === 'in' ? 'none' : 'in'))}
+              title="Ativar lupa: clique no gráfico onde deseja dar zoom"
+              style={{
+                padding: '3px 9px',
+                borderRadius: '5px',
+                fontSize: '0.72rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+                background: zoomMode === 'in' ? 'var(--primary)' : 'var(--code-bg)',
+                color: zoomMode === 'in' ? '#fff' : 'var(--text)',
+                border: `1px solid ${zoomMode === 'in' ? 'var(--primary)' : 'var(--card-border)'}`
+              }}
+            >
+              🔍+ {zoomMode === 'in' ? 'Clique no gráfico' : 'Lupa +'}
+            </button>
+            <button
+              type="button"
+              onClick={handleZoomOut}
+              disabled={!viewBoxBounds}
+              title="Diminuir zoom"
+              style={{
+                padding: '3px 9px',
+                borderRadius: '5px',
+                fontSize: '0.72rem',
+                fontWeight: 700,
+                cursor: viewBoxBounds ? 'pointer' : 'not-allowed',
+                opacity: viewBoxBounds ? 1 : 0.45,
+                background: 'var(--code-bg)',
+                color: 'var(--text)',
+                border: '1px solid var(--card-border)'
+              }}
+            >
+              🔍−
+            </button>
+            <button
+              type="button"
+              onClick={handleResetZoom}
+              disabled={!viewBoxBounds && zoomMode === 'none'}
+              title="Ajustar ao zoom original"
+              style={{
+                padding: '3px 9px',
+                borderRadius: '5px',
+                fontSize: '0.72rem',
+                fontWeight: 700,
+                cursor: viewBoxBounds || zoomMode !== 'none' ? 'pointer' : 'not-allowed',
+                opacity: viewBoxBounds || zoomMode !== 'none' ? 1 : 0.45,
+                background: 'var(--code-bg)',
+                color: 'var(--primary)',
+                border: '1px solid var(--card-border)'
+              }}
+            >
+              ↺ Ajustar ao Original{viewBoxBounds ? ` (${zoomFactor.toFixed(1)}×)` : ''}
+            </button>
+          </div>
+          <div style={{ display: 'flex', gap: '10px', fontSize: '0.72rem', color: 'var(--text-muted)', flexWrap: 'wrap' }}>
+            <span style={{ color: '#ef4444', fontWeight: 700 }}>× Polo MA</span>
+            <span style={{ color: '#3b82f6', fontWeight: 700 }}>○ Zero MA</span>
+            <span style={{ color: '#10b981', fontWeight: 700 }}>● Polo MF</span>
+          </div>
         </div>
       </div>
 
       <div style={{ position: 'relative', width: '100%' }}>
-        <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: 'auto', display: 'block', background: 'rgba(15, 23, 42, 0.35)', borderRadius: '6px' }}>
+        <svg
+          viewBox={`0 0 ${W} ${H}`}
+          onClick={handleSvgClick}
+          style={{
+            width: '100%',
+            height: 'auto',
+            display: 'block',
+            background: 'rgba(15, 23, 42, 0.35)',
+            borderRadius: '6px',
+            cursor: zoomMode === 'in' ? 'zoom-in' : 'default'
+          }}
+        >
+          <defs>
+            <clipPath id="s-plane-plot-clip">
+              <rect x={padL} y={padT} width={plotW} height={plotH} />
+            </clipPath>
+          </defs>
+          <g clipPath="url(#s-plane-plot-clip)">
           {/* Semiplano direito (região instável) */}
           {zeroX < padL + plotW && (
             <rect
@@ -181,7 +312,7 @@ export const SPlaneChart: React.FC<SPlaneChartProps> = ({
           )}
 
           {/* Grade e Valores dos Eixos Re(s) e jω */}
-          {computed.reTicks.map(v => {
+          {reTicks.map(v => {
             const tx = toX(v);
             const nearRealMarker = computed.points.some(
               p => Math.abs(p.im) <= 0.05 && Math.abs(toX(p.re) - tx) < 16
@@ -189,16 +320,20 @@ export const SPlaneChart: React.FC<SPlaneChartProps> = ({
             return (
               <g key={`rx-${v}`}>
                 <line x1={tx} y1={padT} x2={tx} y2={padT + plotH} stroke="rgba(148, 163, 184, 0.12)" strokeWidth="1" />
-                <line x1={tx} y1={zeroY - 3} x2={tx} y2={zeroY + 3} stroke="rgba(148, 163, 184, 0.5)" strokeWidth="1" />
-                {!nearRealMarker && (
-                  <text x={tx} y={zeroY + 13} textAnchor="middle" fontSize="9.5" fill="#94a3b8">
-                    {v}
-                  </text>
+                {zeroY >= padT && zeroY <= padT + plotH && (
+                  <>
+                    <line x1={tx} y1={zeroY - 3} x2={tx} y2={zeroY + 3} stroke="rgba(148, 163, 184, 0.5)" strokeWidth="1" />
+                    {!nearRealMarker && (
+                      <text x={tx} y={zeroY + 13} textAnchor="middle" fontSize="9.5" fill="#94a3b8">
+                        {v}
+                      </text>
+                    )}
+                  </>
                 )}
               </g>
             );
           })}
-          {computed.imTicks.map(v => {
+          {imTicks.map(v => {
             const ty = toY(v);
             return (
               <g key={`iy-${v}`}>
@@ -216,16 +351,18 @@ export const SPlaneChart: React.FC<SPlaneChartProps> = ({
           })}
 
           {/* Eixos Re(s) e Im(s) */}
-          <line x1={padL} y1={zeroY} x2={padL + plotW} y2={zeroY} stroke="rgba(148, 163, 184, 0.45)" strokeWidth="1" />
+          {zeroY >= padT && zeroY <= padT + plotH && (
+            <line x1={padL} y1={zeroY} x2={padL + plotW} y2={zeroY} stroke="rgba(148, 163, 184, 0.45)" strokeWidth="1" />
+          )}
           {zeroX >= padL && zeroX <= padL + plotW && (
             <line x1={zeroX} y1={padT} x2={zeroX} y2={padT + plotH} stroke="rgba(248, 113, 113, 0.55)" strokeDasharray="4 3" strokeWidth="1.2" />
           )}
 
           {/* Reta de zeta constante opcional */}
-          {zetaTarget && zetaTarget > 0 && zetaTarget < 1 && zeroX >= padL && zeroX <= padL + plotW && (
+          {zetaTarget && zetaTarget > 0 && zetaTarget < 1 && (
             (() => {
               const tanBeta = Math.sqrt(1 - zetaTarget * zetaTarget) / zetaTarget;
-              const reEdge = computed.minRe;
+              const reEdge = Math.min(activeBounds.minRe, -100);
               const imEdge = Math.abs(reEdge) * tanBeta;
               return (
                 <>
@@ -238,7 +375,7 @@ export const SPlaneChart: React.FC<SPlaneChartProps> = ({
 
           {/* Pontos do LGR */}
           {computed.locusPoints.map((pt, idx) => {
-            if (pt.re < computed.minRe || pt.re > computed.maxRe || pt.im < computed.minIm || pt.im > computed.maxIm) return null;
+            if (pt.re < activeBounds.minRe || pt.re > activeBounds.maxRe || pt.im < activeBounds.minIm || pt.im > activeBounds.maxIm) return null;
             return (
               <circle
                 key={`lgr-${idx}`}
@@ -274,7 +411,7 @@ export const SPlaneChart: React.FC<SPlaneChartProps> = ({
             };
 
             return computed.points.map((pt, idx) => {
-              if (pt.re < computed.minRe || pt.re > computed.maxRe || pt.im < computed.minIm || pt.im > computed.maxIm) return null;
+              if (pt.re < activeBounds.minRe || pt.re > activeBounds.maxRe || pt.im < activeBounds.minIm || pt.im > activeBounds.maxIm) return null;
               const cx = toX(pt.re);
               const cy = toY(pt.im);
               const isHovered = hoveredIdx === idx;
@@ -379,11 +516,14 @@ export const SPlaneChart: React.FC<SPlaneChartProps> = ({
               );
             });
           })()}
+          </g>
 
           {/* Rótulos dos eixos */}
-          <text x={padL + plotW - 4} y={zeroY - 6} textAnchor="end" fontSize="10" fill="#94a3b8">
-            Re(s)
-          </text>
+          {zeroY >= padT && zeroY <= padT + plotH && (
+            <text x={padL + plotW - 4} y={zeroY - 6} textAnchor="end" fontSize="10" fill="#94a3b8">
+              Re(s)
+            </text>
+          )}
           {zeroX >= padL && zeroX <= padL + plotW && (
             <text x={zeroX + 6} y={padT + 11} fontSize="10" fill="#94a3b8">
               jω
