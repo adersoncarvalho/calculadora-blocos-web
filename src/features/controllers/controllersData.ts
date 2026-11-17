@@ -821,6 +821,59 @@ s = poly(0, 's');
 G = syslin('c', 50, (s^2)*(s+5));
 disp("Polos de malha fechada com Gc=1:", roots(s^3 + 5*s^2 + 50));`
   },
+  {
+    id: 'p-ex-lgr-20',
+    controllerId: 'P',
+    badge: 'Slide P • Mp=6%, ts=0,4s',
+    title: 'Projeto P — Planta 1/(s² + 20s) para Overshoot 6% e ts = 0,4 s',
+    source: 'Slide 01 — Projeto de Controlador Proporcional',
+    statementLatex:
+      '\\text{Considere } G(s) = \\frac{1}{s^2 + 20s} = \\frac{1}{s(s+20)} \\text{ com realimentação unitária. Projete um controlador P } (G_c(s)=K) \\text{ para } M_p = 6\\% \\text{ e } t_s = 0{,}4\\text{ s}.',
+    plantExpr: '1/(s^2+20*s)',
+    plantLatex: '\\frac{1}{s^2 + 20s}',
+    controllerExpr: '224.69',
+    controllerLatex: 'G_c(s) = K = 224{,}69',
+    controllerBlockLabel: 'Controlador P (K = 224,69)',
+    inputType: 'step',
+    inputParams: { a0: 1, labelLatex: 'r(t) = u(t)' },
+    tMax: 1.0,
+    whyThisController:
+      'Os polos de malha aberta estão em $s = 0$ e $s = -20$. Os polos desejados $p_{1,2} = -10 \\pm j11{,}16$ possuem parte real $-10$, exatamente sobre a mediatriz entre $0$ e $-20$, que faz parte do Lugar das Raízes original da planta. Logo, apenas um **Controlador Proporcional (P)** atende simultaneamente $M_p = 6\\%$ e $t_s = 0{,}4\\text{ s}$ com erro nulo ao degrau (Tipo 1).',
+    diagnostics: {
+      systemType: 'Tipo 1 (1 polo na origem)',
+      systemOrder: '2ª Ordem',
+      initialErrorLatex: 'e_{ss,(K=1)} = 0',
+      finalErrorLatex: 'e_{ss,(K=224{,}69)} = 0'
+    },
+    detailedSteps: [
+      {
+        title: '1. Polos Dominantes Desejados a partir de Mp = 6% e ts = 0,4 s',
+        description: 'Calculando $\\zeta$, $\\sigma_d = \\zeta\\omega_n$, $\\omega_n$ e $\\omega_d$:',
+        latex:
+          '\\zeta = \\frac{-\\ln(0{,}06)}{\\sqrt{\\pi^2 + \\ln^2(0{,}06)}} \\approx 0{,}6671 \\;;\\; \\sigma_d = \\frac{4}{0{,}4} = 10 \\;;\\; \\omega_n = \\frac{10}{0{,}6671} \\approx 14{,}99\\text{ rad/s} \\;;\\; \\omega_d = \\omega_n\\sqrt{1-\\zeta^2} \\approx 11{,}17\\text{ rad/s} \\implies \\mathbf{p_{1,2} = -10 \\pm j11{,}16}'
+      },
+      {
+        title: '2. Verificação pela Condição de Ângulo no LGR',
+        description: 'Somando os ângulos dos polos $0$ e $-20$ até $s_d = -10 + j11{,}1665$:',
+        latex:
+          '\\angle G(s_d) = -\\angle(s_d) - \\angle(s_d + 20) = -131{,}85^\\circ - 48{,}15^\\circ = \\mathbf{-180^\\circ} \\quad (s_d \\in \\text{LGR!})'
+      },
+      {
+        title: '3. Cálculo do Ganho K pela Condição de Módulo',
+        description: 'Multiplicando as distâncias dos polos até $s_d$:',
+        latex:
+          'K = |s_d| \\cdot |s_d + 20| = \\sqrt{10^2 + 11{,}1665^2} \\cdot \\sqrt{10^2 + 11{,}1665^2} = 100 + 124{,}69 = \\mathbf{224{,}69}'
+      }
+    ],
+    scilabCode: `// Slide 01 - Projeto P: G(s) = 1/(s^2 + 20s), Mp = 6%, ts = 0.4s
+s = %s;
+G = syslin('c', 1, s^2 + 20*s);
+K = 224.69;
+T = (K*G) /. 1;
+clf(); t = 0:0.005:1.0;
+plot(t, csim('step', t, T), 'b-', 'LineWidth', 2);
+xgrid();`
+  },
 
   // ---------------------------------------------------------------------------
   // CONTROLADOR PROPORCIONAL-INTEGRAL (PI)
