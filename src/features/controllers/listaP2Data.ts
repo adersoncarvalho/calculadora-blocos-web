@@ -420,7 +420,7 @@ export const LISTA_P2_QUESTIONS: ListaQuestion[] = [
         title: '2. Efeito no Regime Transitório',
         description:
           'Um $z_i$ grande aumenta o atraso de fase $\\varphi = \\angle s_d - \\angle(s_d+z_i)$, deslocando $s_d$ para a direita (maior $M_p$ e $t_s$). Um $z_i$ muito pequeno quase não afeta $s_d$, mas deixa o polo real preso entre $0$ e $-z_i$ muito lento, criando uma cauda longa que aumenta $t_s$. Por isso usa-se o critério do professor:',
-        latex: 'z_i = \\min\\left(z_{i,\\max} \\;;\\; \\frac{|s_{\\text{lenta}}|}{1{,}1}\\right)'
+        latex: 'z_i = \\min\\left(z_{i,\\max}\\,;\\; \\frac{|s_{\\text{lenta}}|}{1{,}1}\\right)'
       }
     ]
   },
