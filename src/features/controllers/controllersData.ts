@@ -580,10 +580,11 @@ export const CONTROLLER_EXERCISES: ControllerExercise[] = [
           '\\theta_2 = \\arctan\\left(\\frac{11{,}1665}{20 - 10}\\right) = \\arctan(1{,}1167) = \\mathbf{48{,}15^\\circ} \\;;\\; \\theta_1 = 180^\\circ - \\arctan\\left(\\frac{11{,}1665}{10}\\right) = 180^\\circ - 48{,}15^\\circ = \\mathbf{131{,}85^\\circ} \\;;\\; \\text{Ang zeros} - \\text{Ang polos} = 0^\\circ - (131{,}85^\\circ + 48{,}15^\\circ) = \\mathbf{-180^\\circ} \\;(\\text{Atende!})'
       },
       {
-        title: '3. Cálculo do Ganho K pela Condição de Módulo',
-        description: 'Multiplicando as distâncias dos polos até $s_d$:',
+        title: '3. Cálculo do Ganho K pela Condição de Módulo (Passo a Passo Completo)',
+        description:
+          'Aplicando $K = \\left.\\frac{1}{|G(s)H(s)|}\\right|_{s=s_d}$ com $G(s) = \\frac{1}{s(s+20)}$, $H(s) = 1$ e $s_d = -10 + j11{,}1665$:',
         latex:
-          'K = |s_d| \\cdot |s_d + 20| = \\sqrt{10^2 + 11{,}1665^2} \\cdot \\sqrt{10^2 + 11{,}1665^2} = 100 + 124{,}69 = \\mathbf{224{,}69}'
+          'K = \\left.\\frac{1}{|G(s)H(s)|}\\right|_{s=-10+j11{,}1665} = \\left.\\frac{1}{\\left|\\frac{1}{s(s+20)}\\cdot 1\\right|}\\right|_{s=-10+j11{,}1665} \\;;\\; K = \\frac{1}{\\left|\\frac{1}{(-10+j11{,}1665)\\cdot(-10+j11{,}1665+20)}\\right|} = \\frac{1}{\\left|\\frac{1}{(-10+j11{,}1665)\\cdot(10+j11{,}1665)}\\right|} \\;;\\; K = \\frac{1}{\\frac{1}{|-10+j11{,}1665|\\cdot|10+j11{,}1665|}} = \\frac{1}{\\frac{1}{\\sqrt{(-10)^2+(11{,}1665)^2}\\cdot\\sqrt{(10)^2+(11{,}1665)^2}}} \\;;\\; K = \\frac{1}{\\frac{1}{\\sqrt{100+124{,}69}\\cdot\\sqrt{100+124{,}69}}} = \\frac{1}{\\frac{1}{\\sqrt{224{,}69}\\cdot\\sqrt{224{,}69}}} = \\frac{1}{\\frac{1}{224{,}69}} = \\mathbf{224{,}69}'
       }
     ],
     scilabCode: `// Slide 01 - Projeto P: G(s) = 1/(s^2 + 20s), Mp = 6%, ts = 0.4s
@@ -905,9 +906,10 @@ disp("Polos de malha fechada com Gc=1:", roots(s^3 + 5*s^2 + 50));`
     },
     detailedSteps: [
       {
-        title: '1. Triagem e Erro Inicial com P ($K_0 = 13$)',
-        description: 'Calculando $K_0$ em $s_d = -3+j3$, o ganho estático $K_{p,a}$ e o erro $e_P$ ($|s_{\\text{lenta}}| = 1$):',
-        latex: 'K_0 = |-2+j3|\\cdot|2+j3| = 13 \\;;\\; K_{p,a} = 13\\cdot\\frac{1}{5} = 2{,}6 \\;;\\; e_P = \\frac{1}{1+2{,}6} = 27{,}78\\% > 2\\% \\implies \\varphi = 10^\\circ'
+        title: '1. Triagem e Ganho Inicial $K_0$ pela Condição de Módulo ($s_d = -3+j3$)',
+        description: 'Calculando $K_0 = \\frac{1}{|G(s_d)H(s_d)|}$, $K_{p,a}$ e $e_P$ ($|s_{\\text{lenta}}| = 1$):',
+        latex:
+          'K_0 = \\frac{1}{\\left|\\frac{1}{(-3+j3+1)(-3+j3+5)}\\right|} = \\frac{1}{\\frac{1}{|-2+j3|\\cdot|2+j3|}} = \\frac{1}{\\frac{1}{\\sqrt{4+9}\\cdot\\sqrt{4+9}}} = \\mathbf{13} \\;;\\; K_{p,a} = 13\\cdot\\frac{1}{5} = 2{,}6 \\;;\\; e_P = \\frac{1}{1+2{,}6} = 27{,}78\\% > 2\\% \\implies \\varphi = 10^\\circ'
       },
       {
         title: '2. Cálculo do Zero $z_i$ e Verificação do Limite do Dipolo',
@@ -915,9 +917,10 @@ disp("Polos de malha fechada com Gc=1:", roots(s^3 + 5*s^2 + 50));`
         latex: 'z_{i,\\max} = 4{,}2426\\frac{\\sin(10^\\circ)}{\\sin(55^\\circ)} = 0{,}8994 \\;;\\; z_i = \\min\\left(0{,}8994\\,;\\;\\frac{1}{1{,}1}\\right) = \\mathbf{0{,}899}'
       },
       {
-        title: '3. Ajuste do Ganho $K_c$ pela Condição de Módulo',
-        description: 'Polos de malha fechada em $-2{,}57 \\pm j3{,}00$ e $-0{,}868$:',
-        latex: 'K_c = K_0\\frac{|s_d|}{|s_d + z_i|} = 13\\cdot\\frac{4{,}2426}{|-2{,}101 + j3|} \\approx \\mathbf{15{,}06} \\implies \\mathbf{G_c(s) = 15{,}06\\frac{s+0{,}899}{s}}'
+        title: '3. Ajuste do Ganho $K_c$ pela Condição de Módulo (Passo a Passo)',
+        description: 'Aplicando $K_c = \\left.\\frac{1}{|\\bar{G}_c(s)G(s)|}\\right|_{s=s_d}$ (polos MF em $-2{,}57 \\pm j3{,}00$ e $-0{,}868$):',
+        latex:
+          'K_c = \\frac{1}{\\left|\\frac{s_d+0{,}899}{s_d}\\cdot G(s_d)\\right|} = K_0\\cdot\\frac{|s_d|}{|s_d+0{,}899|} = 13\\cdot\\frac{|-3+j3|}{|-3+j3+0{,}899|} \\;;\\; K_c = 13\\cdot\\frac{|-3+j3|}{|-2{,}101+j3|} = 13\\cdot\\frac{\\sqrt{(-3)^2+3^2}}{\\sqrt{(-2{,}101)^2+3^2}} = 13\\cdot\\frac{\\sqrt{18}}{\\sqrt{13{,}414}} = 13\\cdot\\frac{4{,}2426}{3{,}6625} \\approx \\mathbf{15{,}06} \\;;\\; \\mathbf{G_c(s) = 15{,}06\\frac{s+0{,}899}{s}}'
       }
     ],
     scilabCode: `// Slide 03 - Exemplo 1: G(s) = 1/((s+1)(s+5)) com PI
@@ -1153,9 +1156,10 @@ xgrid();`
         latex: 'z_c = \\mathbf{5{,}714} \\;;\\; p_c = 11 \\cdot 5{,}714 = \\mathbf{62{,}85}'
       },
       {
-        title: '3. Ganho $K_c$ pela Condição de Módulo',
-        description: 'Polos de malha fechada em $-3 \\pm j3$ e polo rápido em $-59{,}85$:',
-        latex: 'K_c = \\frac{|s_d + 62{,}85|}{|s_d + 5{,}714|} \\cdot \\frac{1}{|L(s_d)|} = \\frac{59{,}93}{4{,}045} \\cdot \\frac{1}{0{,}0786} \\approx \\mathbf{188{,}5} \\implies \\mathbf{G_c(s) = 188{,}5\\frac{s+5{,}714}{s+62{,}85}}'
+        title: '3. Ganho $K_c$ pela Condição de Módulo (Passo a Passo Completo)',
+        description: 'Aplicando $K_c = \\left.\\frac{1}{|\\bar{G}_c(s)L(s)|}\\right|_{s=-3+j3}$ (polos MF em $-3 \\pm j3$ e $-59{,}85$):',
+        latex:
+          'K_c = \\frac{1}{\\left|\\frac{s_d+5{,}714}{(s_d+62{,}85)s_d(s_d+3)}\\right|} = \\frac{|s_d+62{,}85|\\cdot|s_d|\\cdot|s_d+3|}{|s_d+5{,}714|} \\;;\\; K_c = \\frac{|-3+j3+62{,}85|\\cdot|-3+j3|\\cdot|-3+j3+3|}{|-3+j3+5{,}714|} = \\frac{|59{,}85+j3|\\cdot|-3+j3|\\cdot|j3|}{|2{,}714+j3|} \\;;\\; K_c = \\frac{\\sqrt{59{,}85^2+3^2}\\cdot\\sqrt{(-3)^2+3^2}\\cdot 3}{\\sqrt{2{,}714^2+3^2}} = \\frac{59{,}925 \\cdot 4{,}2426 \\cdot 3}{4{,}0455} = \\frac{762{,}72}{4{,}0455} \\approx \\mathbf{188{,}5} \\;;\\; \\mathbf{G_c(s) = 188{,}5\\frac{s+5{,}714}{s+62{,}85}}'
       }
     ],
     scilabCode: `// Slide 02 - PD Real (N=10): L(s) = 1/(s(s+3)), sd = -3+j3
@@ -1319,8 +1323,9 @@ xgrid();`
       },
       {
         title: '2. Passos 1 a 3 — Ganho $K_0$, $K_{p,\\text{atual}}$, Fator $\\beta$ e Tolerância $\\varphi$',
-        description: 'Pela condição de módulo $|K_0 G(s_d)| = 1$ em $s_d = -3 + j3$:',
-        latex: 'K_0 = |-2+j3|\\cdot|2+j3| = \\sqrt{13}\\cdot\\sqrt{13} = \\mathbf{13} \\;;\\; K_{p,a} = 13 \\cdot \\frac{1}{5} = 2{,}6 \\; (e_p = 27{,}8\\% > 2\\% \\implies \\varphi = 10^\\circ) \\;;\\; \\beta = \\frac{19}{2{,}6} \\approx \\mathbf{7{,}31}'
+        description: 'Aplicando $K_0 = \\left.\\frac{1}{|G(s)H(s)|}\\right|_{s=-3+j3}$ com $G(s)=\\frac{1}{(s+1)(s+5)}$ e $H(s)=1$:',
+        latex:
+          'K_0 = \\frac{1}{\\left|\\frac{1}{(-3+j3+1)(-3+j3+5)}\\right|} = \\frac{1}{\\frac{1}{|-2+j3|\\cdot|2+j3|}} = \\frac{1}{\\frac{1}{\\sqrt{(-2)^2+3^2}\\cdot\\sqrt{2^2+3^2}}} = \\frac{1}{\\frac{1}{\\sqrt{13}\\cdot\\sqrt{13}}} = \\mathbf{13} \\;;\\; K_{p,a} = 13 \\cdot \\frac{1}{5} = 2{,}6 \\; (e_p = 27{,}8\\% > 2\\% \\implies \\varphi = 10^\\circ) \\;;\\; \\beta = \\frac{19}{2{,}6} \\approx \\mathbf{7{,}31}'
       },
       {
         title: '3. Passo 4 — Polinômio Trigonométrico para $z$ e $p$',
@@ -1328,9 +1333,10 @@ xgrid();`
         latex: '7{,}31p^2 - 132{,}24p + 18 = 0 \\implies p_{\\max} \\approx 0{,}137 \\implies z_{\\max} = 7{,}31 \\cdot 0{,}137 \\approx 1{,}002 \\implies z = \\min(1{,}002;\\, 0{,}909) = \\mathbf{0{,}909} \\;;\\; p = \\frac{0{,}909}{7{,}31} \\approx \\mathbf{0{,}124}'
       },
       {
-        title: '4. Passo 5 — Ajuste de Ganho $K_c$ e Conferência do Erro Final',
-        description: 'Recalculando o ganho pela condição de módulo e conferindo $K_{p,\\text{novo}}$ e $e_{ss}$:',
-        latex: 'K_c = 13 \\cdot \\frac{|-2{,}876+j3|}{|-2{,}091+j3|} = 13 \\cdot \\frac{4{,}156}{3{,}657} \\approx \\mathbf{14{,}77} \\;;\\; K_{p,\\text{novo}} = \\frac{14{,}77 \\cdot 7{,}31}{5} = 21{,}6 \\implies \\mathbf{e_{ss} = \\frac{1}{1+21{,}6} = 4{,}4\\% \\le 5\\%}'
+        title: '4. Passo 5 — Ajuste de Ganho $K_c$ pela Condição de Módulo e Conferência',
+        description: 'Aplicando $K_c = K_0\\frac{|s_d+p|}{|s_d+z|}$ em $s_d = -3+j3$ ($z=0{,}909,\\; p=0{,}124$) e conferindo $K_{p,\\text{novo}}$ e $e_{ss}$:',
+        latex:
+          'K_c = 13\\cdot\\frac{|-3+j3+0{,}124|}{|-3+j3+0{,}909|} = 13\\cdot\\frac{|-2{,}876+j3|}{|-2{,}091+j3|} = 13\\cdot\\frac{\\sqrt{(-2{,}876)^2+3^2}}{\\sqrt{(-2{,}091)^2+3^2}} \\;;\\; K_c = 13\\cdot\\frac{\\sqrt{17{,}271}}{\\sqrt{13{,}372}} = 13\\cdot\\frac{4{,}156}{3{,}657} \\approx \\mathbf{14{,}77} \\;;\\; K_{p,\\text{novo}} = \\frac{14{,}77 \\cdot 7{,}31}{5} = 21{,}6 \\implies \\mathbf{e_{ss} = \\frac{1}{1+21{,}6} = 4{,}4\\% \\le 5\\%}'
       }
     ],
     scilabCode: `// Exemplo Completo Slide 13/21 - Lag
@@ -1837,9 +1843,10 @@ xgrid();`
         latex: 'z = \\mathbf{3} \\;;\\; p = 3 + \\frac{3}{\\tan(45^\\circ)} = \\mathbf{6}'
       },
       {
-        title: '3. Cálculo do Ganho Kc pela Condição de Módulo',
-        description: 'Impondo |Gc(sd)·G(sd)| = 1:',
-        latex: 'K_c = |s_d| \\cdot |s_d + 6| = \\sqrt{18} \\cdot \\sqrt{18} = \\mathbf{18} \\implies \\mathbf{G_c(s) = 18\\frac{s+3}{s+6}}'
+        title: '3. Cálculo do Ganho Kc pela Condição de Módulo (Passo a Passo Completo)',
+        description: 'Aplicando $K_c = \\left.\\frac{1}{|\\bar{G}_c(s)G(s)|}\\right|_{s=-3+j3}$ após o cancelamento de $(s+3)$:',
+        latex:
+          'K_c = \\frac{1}{\\left|\\frac{s_d+3}{s_d+6}\\cdot\\frac{1}{s_d(s_d+3)}\\right|} = \\frac{1}{\\left|\\frac{1}{s_d(s_d+6)}\\right|} = |s_d|\\cdot|s_d+6| \\;;\\; K_c = |-3+j3|\\cdot|-3+j3+6| = |-3+j3|\\cdot|3+j3| \\;;\\; K_c = \\sqrt{(-3)^2+3^2}\\cdot\\sqrt{3^2+3^2} = \\sqrt{18}\\cdot\\sqrt{18} = \\mathbf{18} \\;;\\; \\mathbf{G_c(s) = 18\\frac{s+3}{s+6}}'
       }
     ],
     scilabCode: `// Aula 20 - Avanço de Fase (Lead)
@@ -1890,9 +1897,10 @@ xgrid();`
         latex: 'p = 3 + \\frac{5{,}196}{\\tan(60^\\circ)} = 3 + 3 = \\mathbf{6}'
       },
       {
-        title: '3. Ajuste do Ganho Kc pela Condição de Módulo',
-        description: 'Impondo |Gc(sd)·G(sd)| = 1:',
-        latex: '10 K_c = |s_d||s_d+6| = 6 \\cdot 6 = 36 \\implies \\mathbf{K_c = 3{,}6} \\implies \\mathbf{G_c(s) = 3{,}6\\frac{s+2}{s+6}}'
+        title: '3. Ajuste do Ganho Kc pela Condição de Módulo (Passo a Passo)',
+        description: 'Aplicando $K_c = \\left.\\frac{1}{|\\bar{G}_c(s)G(s)|}\\right|_{s=-3+j5{,}196}$ após o cancelamento de $(s+2)$:',
+        latex:
+          'K_c = \\frac{1}{\\left|\\frac{10}{s_d(s_d+6)}\\right|} = \\frac{|s_d|\\cdot|s_d+6|}{10} = \\frac{|-3+j5{,}196|\\cdot|-3+j5{,}196+6|}{10} \\;;\\; K_c = \\frac{|-3+j5{,}196|\\cdot|3+j5{,}196|}{10} = \\frac{\\sqrt{(-3)^2+5{,}196^2}\\cdot\\sqrt{3^2+5{,}196^2}}{10} = \\frac{6\\cdot 6}{10} = \\mathbf{3{,}6} \\;;\\; \\mathbf{G_c(s) = 3{,}6\\frac{s+2}{s+6}}'
       }
     ],
     scilabCode: `// Proposto - Compensador Avanço de Fase (Lead)

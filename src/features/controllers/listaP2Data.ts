@@ -470,9 +470,11 @@ export const LISTA_P2_QUESTIONS: ListaQuestion[] = [
         latex: '-\\angle(s_d+1) - \\angle(s_d+2) - \\angle(s_d+10) = -180^\\circ \\implies \\omega_n \\approx 3{,}9863\\text{ rad/s} \\;;\\; \\mathbf{s_d = -0{,}6936 + j3{,}9255}'
       },
       {
-        title: '3. Ganho $K$ pela Condição de Módulo',
-        description: 'Calculando as distâncias dos polos ($-1, -2, -10$) até $s_d$:',
-        latex: 'K = |s_d+1|\\cdot|s_d+2|\\cdot|s_d+10| = 3{,}9374 \\cdot 4{,}1372 \\cdot 10{,}1005 \\approx \\mathbf{164{,}53}'
+        title: '3. Ganho $K$ pela Condição de Módulo (Passo a Passo Completo)',
+        description:
+          'Aplicando $K = \\left.\\frac{1}{|G(s)H(s)|}\\right|_{s=s_d}$ com $G(s) = \\frac{1}{(s+1)(s+2)(s+10)}$, $H(s)=1$ e $s_d = -0{,}6936 + j3{,}9255$:',
+        latex:
+          'K = \\left.\\frac{1}{|G(s)H(s)|}\\right|_{s=s_d} = \\left.\\frac{1}{\\left|\\frac{1}{(s+1)(s+2)(s+10)}\\cdot 1\\right|}\\right|_{s=-0{,}6936+j3{,}9255} \\;;\\; K = \\frac{1}{\\left|\\frac{1}{(-0{,}6936+j3{,}9255+1)(-0{,}6936+j3{,}9255+2)(-0{,}6936+j3{,}9255+10)}\\right|} \\;;\\; K = \\frac{1}{\\frac{1}{|0{,}3064+j3{,}9255|\\cdot|1{,}3064+j3{,}9255|\\cdot|9{,}3064+j3{,}9255|}} \\;;\\; K = \\frac{1}{\\frac{1}{\\sqrt{0{,}3064^2+3{,}9255^2}\\cdot\\sqrt{1{,}3064^2+3{,}9255^2}\\cdot\\sqrt{9{,}3064^2+3{,}9255^2}}} \\;;\\; K = \\frac{1}{\\frac{1}{3{,}9374 \\cdot 4{,}1372 \\cdot 10{,}1004}} = \\frac{1}{\\frac{1}{164{,}53}} = \\mathbf{164{,}53}'
       },
       {
         title: '4. Verificação dos Polos e Simulação',
@@ -526,10 +528,11 @@ xgrid();`
         latex: 'z_{i,\\max} = |s_d|\\frac{\\sin(\\varphi)}{\\sin(\\beta+\\varphi)} = 3{,}9869\\frac{\\sin(5^\\circ)}{\\sin(84{,}98^\\circ)} \\approx 0{,}3488 \\;;\\; z_i = \\min\\left(0{,}3488\\,;\\; \\frac{1}{1{,}1}\\right) = \\mathbf{0{,}3488}'
       },
       {
-        title: '4. Ganho $K_c$ pela Condição de Módulo e Conferência',
+        title: '4. Ganho $K_c$ pela Condição de Módulo (Passo a Passo) e Conferência',
         description:
-          'Calculando $K_c$ e verificando que $K_{p,\\text{novo}} = \\infty \\implies e_{ss} = 0$, com $M_p = 52{,}31\\%$ (antes $54{,}05\\%$) e $t_p = 0{,}901\\text{ s}$ (antes $0{,}888\\text{ s}$):',
-        latex: 'K_c = K_0 \\frac{|s_d|}{|s_d + z_i|} = 164{,}6 \\cdot \\frac{3{,}9869}{|-0{,}3446 + j3{,}9262|} \\approx \\mathbf{166{,}51} \\;;\\; \\mathbf{G_c(s) = 166{,}51\\frac{s + 0{,}3488}{s}}'
+          'Aplicando $\\left|K_c\\frac{s_d+z_i}{s_d}G(s_d)\\right| = 1$ (com $K_0 = 164{,}6 = \\frac{1}{|G(s_d)|}$, $s_d = -0{,}6934+j3{,}9262$ e $z_i = 0{,}3488$). Conferência: $K_{p,\\text{novo}} = \\infty \\implies e_{ss} = 0$, $M_p = 52{,}31\\%$ e $t_p = 0{,}901\\text{ s}$:',
+        latex:
+          'K_c = \\frac{1}{\\left|\\frac{s_d+z_i}{s_d}G(s_d)\\right|} = K_0\\cdot\\frac{|s_d|}{|s_d+z_i|} \\;;\\; K_c = 164{,}6\\cdot\\frac{|-0{,}6934+j3{,}9262|}{|-0{,}6934+j3{,}9262+0{,}3488|} = 164{,}6\\cdot\\frac{|-0{,}6934+j3{,}9262|}{|-0{,}3446+j3{,}9262|} \\;;\\; K_c = 164{,}6\\cdot\\frac{\\sqrt{(-0{,}6934)^2+3{,}9262^2}}{\\sqrt{(-0{,}3446)^2+3{,}9262^2}} = 164{,}6\\cdot\\frac{3{,}9870}{3{,}9413} \\approx \\mathbf{166{,}51} \\;;\\; \\mathbf{G_c(s) = 166{,}51\\frac{s + 0{,}3488}{s}}'
       }
     ],
     practicalData: {
@@ -583,10 +586,11 @@ xgrid();`
         latex: 'z_c = \\mathbf{6{,}8256} \\;;\\; p_c = 11 \\cdot 6{,}8256 = \\mathbf{75{,}0814}'
       },
       {
-        title: '5. Ganho $K_c$ pela Condição de Módulo e Análise Final',
+        title: '5. Ganho $K_c$ pela Condição de Módulo (Passo a Passo) e Análise Final',
         description:
-          'Polos de malha fechada: $-4{,}6337 \\pm j4{,}6351$, $-5{,}4484$ e $-70{,}3655$. Na simulação: $t_s = 0{,}793\\text{ s} < 1{,}833/2 = 0{,}917\\text{ s}$ (atendido!), porém $M_p = 8{,}04\\%$ (acima de $4{,}32\\%$) devido ao efeito derivativo dos zeros em $-6$ e $-6{,}8256$. **Solução:** inserir um pré-filtro na referência.',
-        latex: 'K_c = \\frac{|s_d+p_c|}{|s_d+z_c|} \\cdot \\frac{1}{|L(s_d)|} \\approx \\mathbf{347{,}12} \\;;\\; \\mathbf{G_c(s) = 347{,}12\\frac{s + 6{,}8256}{s + 75{,}0814}}'
+          'Aplicando $K_c = \\left.\\frac{1}{|\\bar{G}_c(s)G(s)|}\\right|_{s=s_d}$ em $s_d = -4{,}6337+j4{,}6351$ ($z_c=6{,}8256,\\; p_c=75{,}0814$). Polos MF: $-4{,}6337 \\pm j4{,}6351$, $-5{,}4484$ e $-70{,}3655$. Simulação: $t_s = 0{,}793\\text{ s} < 0{,}917\\text{ s}$, $M_p = 8{,}04\\%$ (sugere-se pré-filtro):',
+        latex:
+          'K_c = \\frac{1}{\\left|\\frac{(s_d+6{,}8256)(s_d+6)}{(s_d+75{,}0814)(s_d+2)(s_d+3)(s_d+5)}\\right|} = \\frac{|s_d+75{,}0814|\\cdot|s_d+2|\\cdot|s_d+3|\\cdot|s_d+5|}{|s_d+6{,}8256|\\cdot|s_d+6|} \\;;\\; K_c = \\frac{|70{,}4477+j4{,}6351|\\cdot|-2{,}6337+j4{,}6351|\\cdot|-1{,}6337+j4{,}6351|\\cdot|0{,}3663+j4{,}6351|}{|2{,}1919+j4{,}6351|\\cdot|1{,}3663+j4{,}6351|} \\;;\\; K_c = \\frac{\\sqrt{70{,}4477^2+4{,}6351^2}\\cdot\\sqrt{(-2{,}6337)^2+4{,}6351^2}\\cdot\\sqrt{(-1{,}6337)^2+4{,}6351^2}\\cdot\\sqrt{0{,}3663^2+4{,}6351^2}}{\\sqrt{2{,}1919^2+4{,}6351^2}\\cdot\\sqrt{1{,}3663^2+4{,}6351^2}} \\;;\\; K_c = \\frac{70{,}6000 \\cdot 5{,}3311 \\cdot 4{,}9146 \\cdot 4{,}6496}{5{,}1272 \\cdot 4{,}8323} = \\frac{8600{,}7}{24{,}776} \\approx \\mathbf{347{,}12} \\;;\\; \\mathbf{G_c(s) = 347{,}12\\frac{s + 6{,}8256}{s + 75{,}0814}}'
       }
     ],
     practicalData: {
@@ -631,10 +635,11 @@ xgrid();`
         latex: 'z_c = \\frac{6{,}5540}{1{,}6444} \\approx \\mathbf{3{,}9857} \\;;\\; p_c = 6{,}5540 \\cdot 1{,}6444 \\approx \\mathbf{10{,}7774}'
       },
       {
-        title: '3. Ganho $K_c$ pela Condição de Módulo e Comparação com a Q22',
+        title: '3. Ganho $K_c$ pela Condição de Módulo (Passo a Passo) e Comparação com a Q22',
         description:
-          'Polos de malha fechada em $-4{,}6337 \\pm j4{,}6351$, $-4{,}1691$ e $-7{,}3410$. Simulação: $M_p = 7{,}56\\%$ e $t_s = 0{,}923\\text{ s}$. Em relação ao PD Real (Q22), a bissetriz reduziu o ganho em **$8{,}4\\times$** ($41{,}45$ contra $347{,}12$), com $t_s$ no limite devido ao polo real em $-4{,}1691$.',
-        latex: 'K_c = \\frac{|s_d+p_c|}{|s_d+z_c|} \\cdot \\frac{1}{|L(s_d)|} \\approx \\mathbf{41{,}45} \\implies \\mathbf{G_c(s) = 41{,}45\\frac{s + 3{,}9857}{s + 10{,}7774}}'
+          'Aplicando a condição de módulo em $s_d = -4{,}6337+j4{,}6351$ ($z_c=3{,}9857,\\; p_c=10{,}7774$). Polos MF: $-4{,}6337 \\pm j4{,}6351$, $-4{,}1691$ e $-7{,}3410$. Simulação: $M_p = 7{,}56\\%$, $t_s = 0{,}923\\text{ s}$ (ganho $8{,}4\\times$ menor que o PD Real da Q22):',
+        latex:
+          'K_c = \\frac{|s_d+10{,}7774|\\cdot|s_d+2|\\cdot|s_d+3|\\cdot|s_d+5|}{|s_d+3{,}9857|\\cdot|s_d+6|} \\;;\\; K_c = \\frac{|6{,}1437+j4{,}6351|\\cdot|-2{,}6337+j4{,}6351|\\cdot|-1{,}6337+j4{,}6351|\\cdot|0{,}3663+j4{,}6351|}{|-0{,}6480+j4{,}6351|\\cdot|1{,}3663+j4{,}6351|} \\;;\\; K_c = \\frac{\\sqrt{6{,}1437^2+4{,}6351^2}\\cdot 5{,}3311 \\cdot 4{,}9146 \\cdot 4{,}6496}{\\sqrt{(-0{,}6480)^2+4{,}6351^2}\\cdot 4{,}8323} \\;;\\; K_c = \\frac{7{,}6961 \\cdot 5{,}3311 \\cdot 4{,}9146 \\cdot 4{,}6496}{4{,}6802 \\cdot 4{,}8323} = \\frac{937{,}60}{22{,}616} \\approx \\mathbf{41{,}45} \\implies \\mathbf{G_c(s) = 41{,}45\\frac{s + 3{,}9857}{s + 10{,}7774}}'
       }
     ],
     practicalData: {
