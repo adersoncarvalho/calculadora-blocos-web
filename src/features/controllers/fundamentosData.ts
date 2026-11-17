@@ -27,6 +27,7 @@ export interface FundamentoExerciseItem {
   };
   simConfig?: {
     mode: 'reference' | 'disturbance';
+    exampleNote: string;
     plantExpr: string;
     ctrlExpr: string;
     ctrlLabel: string;
@@ -143,6 +144,7 @@ export const FUNDAMENTO_EXERCISES: FundamentoExerciseItem[] = [
     },
     simConfig: {
       mode: 'reference',
+      exampleNote: 'Os slides resolvem de forma literal ($R, C, K$). Para plotar o gráfico e o Plano $s$, adotamos um exemplo numérico ilustrativo: $R = 1$, $C = 1$ e $K = 4$ (logo $e_{ss} = \\frac{1}{1+4\\cdot 1} = 20\\%$).',
       plantExpr: '1/(s+1)',
       ctrlExpr: '4',
       ctrlLabel: 'Controlador P (K=4, ess=20%)',
@@ -179,6 +181,7 @@ export const FUNDAMENTO_EXERCISES: FundamentoExerciseItem[] = [
     },
     simConfig: {
       mode: 'reference',
+      exampleNote: 'Os slides resolvem de forma literal ($R, C, K$). Para plotar o gráfico e o Plano $s$, adotamos um exemplo numérico ilustrativo: $R = 1$, $C = 1$ e $K = 4$ (logo $e_{ss} = \\frac{1}{1+4\\cdot 1} = 20\\%$).',
       plantExpr: '1/(s+1)',
       ctrlExpr: '4/s',
       ctrlLabel: 'Controlador I (K=4, ess=0%)',
@@ -217,6 +220,7 @@ export const FUNDAMENTO_EXERCISES: FundamentoExerciseItem[] = [
     },
     simConfig: {
       mode: 'reference',
+      exampleNote: 'Os slides resolvem de forma literal ($R, C, K$). Para plotar o gráfico e o Plano $s$, adotamos um exemplo numérico ilustrativo: $R = 1$, $C = 1$ e $K = 4$ (logo $e_{ss} = \\frac{1}{1+4\\cdot 1} = 20\\%$).',
       plantExpr: '1/(s+1)',
       ctrlExpr: '4*(s+1)/s',
       ctrlLabel: 'Controlador PI (K=4, Ti=1, ess=0%)',
@@ -232,7 +236,7 @@ export const FUNDAMENTO_EXERCISES: FundamentoExerciseItem[] = [
   {
     id: 'caso2-p',
     groupId: 'caso2',
-    shortLabel: 'Controlador P com distúrbio D(s)=1/s',
+    shortLabel: 'Controlador P com distúrbio $D(s)=1/s$',
     badge: 'Caso 2 • Controlador P (Distúrbio)',
     title: 'Controle de Torque com Distúrbio $D(s) = 1/s$ e Controlador P',
     source: 'Aula 0000.2 • Slide 7',
@@ -259,6 +263,7 @@ export const FUNDAMENTO_EXERCISES: FundamentoExerciseItem[] = [
     },
     simConfig: {
       mode: 'disturbance',
+      exampleNote: 'O slide resolve de forma literal ($J, b, K$). Para gerar o gráfico e o Plano $s$, adotamos um exemplo numérico ilustrativo: $J = 1$, $b = 2$ e $K = 4$ (logo $y_{ss} = 1/4 = 0{,}25$).',
       plantExpr: '1/(s*(s+2))',
       ctrlExpr: '4',
       ctrlLabel: 'Saída ao distúrbio com P (y_ss = 1/K = 0,25)',
@@ -268,7 +273,7 @@ export const FUNDAMENTO_EXERCISES: FundamentoExerciseItem[] = [
   {
     id: 'caso2-pi',
     groupId: 'caso2',
-    shortLabel: 'Controlador PI com distúrbio D(s)=1/s',
+    shortLabel: 'Controlador PI com distúrbio $D(s)=1/s$',
     badge: 'Caso 2 • Controlador PI (Distúrbio)',
     title: 'Controle de Torque com Distúrbio $D(s) = 1/s$ e Controlador PI',
     source: 'Aula 0000.2 • Slide 8',
@@ -295,6 +300,7 @@ export const FUNDAMENTO_EXERCISES: FundamentoExerciseItem[] = [
     },
     simConfig: {
       mode: 'disturbance',
+      exampleNote: 'O slide resolve de forma literal ($J, b, K$). Para gerar o gráfico e o Plano $s$, adotamos um exemplo numérico ilustrativo: $J = 1$, $b = 2$ e $K = 4$ (logo $y_{ss} = 1/4 = 0{,}25$).',
       plantExpr: '1/(s*(s+2))',
       ctrlExpr: '4*(s+0.5)/s',
       ctrlLabel: 'Saída ao distúrbio com PI (y_ss = 0)',
@@ -337,6 +343,7 @@ export const FUNDAMENTO_EXERCISES: FundamentoExerciseItem[] = [
     },
     simConfig: {
       mode: 'reference',
+      exampleNote: 'O slide resolve de forma literal ($J, K$). Para gerar o gráfico e o Plano $s$, adotamos um exemplo numérico ilustrativo: $J = 1$ e $K = 4$ (logo polos em $\\pm j\\sqrt{4/1} = \\pm j2$).',
       plantExpr: '1/(s^2)',
       ctrlExpr: '4',
       ctrlLabel: 'Controlador P (K=4 — Oscilação sustentada)',
@@ -373,6 +380,7 @@ export const FUNDAMENTO_EXERCISES: FundamentoExerciseItem[] = [
     },
     simConfig: {
       mode: 'reference',
+      exampleNote: 'O slide resolve de forma literal ($J, K$). Para gerar o gráfico e o Plano $s$, adotamos um exemplo numérico ilustrativo: $J = 1$ e $K = 4$ (logo polos em $\\pm j\\sqrt{4/1} = \\pm j2$).',
       plantExpr: '1/(s^2)',
       ctrlExpr: '4*(1+0.6*s)',
       ctrlLabel: 'Controlador PD (K=4, Td=0,6s — Estável)',

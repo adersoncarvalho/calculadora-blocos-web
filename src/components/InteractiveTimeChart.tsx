@@ -14,7 +14,7 @@ export interface ChartSeries {
 }
 
 interface InteractiveTimeChartProps {
-  title: string;
+  title: React.ReactNode;
   xValues: number[];
   series: ChartSeries[];
   inputType?: 'step' | 'ramp' | 'parabola' | 'combined';

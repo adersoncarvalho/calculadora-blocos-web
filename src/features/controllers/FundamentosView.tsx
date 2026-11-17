@@ -273,7 +273,7 @@ export const FundamentosView: React.FC = () => {
                             cursor: 'pointer'
                           }}
                         >
-                          {item.shortLabel}
+                          {renderRichMathText(item.shortLabel)}
                         </button>
                       );
                     })}
@@ -322,11 +322,31 @@ export const FundamentosView: React.FC = () => {
 
             {activeEx.simConfig && caseSim && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div
+                  style={{
+                    background: 'rgba(56, 189, 248, 0.08)',
+                    border: '1px solid rgba(56, 189, 248, 0.28)',
+                    borderRadius: '6px',
+                    padding: '9px 12px',
+                    fontSize: '0.8rem',
+                    color: 'var(--text)',
+                    lineHeight: 1.5
+                  }}
+                >
+                  <strong style={{ color: 'var(--primary)' }}>Nota da Simulação Ilustrativa:</strong>{' '}
+                  {renderRichMathText(activeEx.simConfig.exampleNote)}
+                </div>
                 <InteractiveTimeChart
                   title={
-                    activeEx.simConfig.mode === 'disturbance'
-                      ? 'Resposta ao Distúrbio em Degrau D(s) = 1/s (RK4)'
-                      : 'Resposta ao Degrau Unitário R(s) = 1/s (RK4)'
+                    activeEx.simConfig.mode === 'disturbance' ? (
+                      <>
+                        Resposta ao Distúrbio em Degrau <MathView math="D(s) = \frac{1}{s}" inline /> (RK4)
+                      </>
+                    ) : (
+                      <>
+                        Resposta ao Degrau Unitário <MathView math="R(s) = \frac{1}{s}" inline /> (RK4)
+                      </>
+                    )
                   }
                   xValues={caseSim.t}
                   series={[
