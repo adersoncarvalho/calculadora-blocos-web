@@ -14,6 +14,7 @@ import {
 import { ControllerBlockDiagram } from './ControllerBlockDiagram';
 import { ListaP2View } from './ListaP2View';
 import { FundamentosView } from './FundamentosView';
+import { LugarRaizesView } from './LugarRaizesView';
 
 interface ControllersSectionProps {
   onBack: () => void;
@@ -61,7 +62,7 @@ function renderStackedMath(latex: string): React.ReactNode {
 }
 
 export const ControllersSection: React.FC<ControllersSectionProps> = ({ onBack, onNavigate }) => {
-  const [activeTab, setActiveTab] = useState<'controladores' | 'listas' | 'fundamentos'>('controladores');
+  const [activeTab, setActiveTab] = useState<'controladores' | 'listas' | 'fundamentos' | 'lgr'>('controladores');
   const [selectedCategory, setSelectedCategory] = useState<ControllerCategoryId>('P');
   const [showDecisionGuide, setShowDecisionGuide] = useState<boolean>(true);
   const [showTheory, setShowTheory] = useState<boolean>(true);
@@ -85,6 +86,8 @@ export const ControllersSection: React.FC<ControllersSectionProps> = ({ onBack, 
       setActiveTab('listas');
     } else if (tabParam === 'fundamentos') {
       setActiveTab('fundamentos');
+    } else if (tabParam === 'lgr') {
+      setActiveTab('lgr');
     }
     const ctrlParam = params.get('ctrl') as ControllerCategoryId | null;
     const exParam = params.get('ex');
@@ -426,6 +429,30 @@ export const ControllersSection: React.FC<ControllersSectionProps> = ({ onBack, 
         <button
           type="button"
           onClick={() => {
+            setActiveTab('lgr');
+            if (typeof window !== 'undefined') {
+              const params = new URLSearchParams(window.location.search);
+              params.set('view', 'controllers');
+              params.set('tab', 'lgr');
+              window.history.replaceState(null, '', `/?${params.toString()}`);
+            }
+          }}
+          style={{
+            padding: '10px 18px',
+            borderRadius: '8px',
+            fontSize: '0.88rem',
+            fontWeight: 700,
+            cursor: 'pointer',
+            background: activeTab === 'lgr' ? 'var(--primary)' : 'var(--card-bg)',
+            color: activeTab === 'lgr' ? '#fff' : 'var(--text)',
+            border: `1.5px solid ${activeTab === 'lgr' ? 'var(--primary)' : 'var(--card-border)'}`
+          }}
+        >
+          📈 Lugar das Raízes — LGR (Aula 01.1)
+        </button>
+        <button
+          type="button"
+          onClick={() => {
             setActiveTab('controladores');
             if (typeof window !== 'undefined') {
               const params = new URLSearchParams(window.location.search);
@@ -477,6 +504,8 @@ export const ControllersSection: React.FC<ControllersSectionProps> = ({ onBack, 
         <ListaP2View />
       ) : activeTab === 'fundamentos' ? (
         <FundamentosView />
+      ) : activeTab === 'lgr' ? (
+        <LugarRaizesView />
       ) : (
         <>
       {/* GUIA TEÓRICO GERAL: COMO ESCOLHER O CONTROLADOR IDEAL */}
