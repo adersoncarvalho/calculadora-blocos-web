@@ -573,10 +573,11 @@ export const CONTROLLER_EXERCISES: ControllerExercise[] = [
           '\\zeta = \\frac{-\\ln(0{,}06)}{\\sqrt{\\pi^2 + \\ln^2(0{,}06)}} \\approx 0{,}6671 \\;;\\; \\sigma_d = \\frac{4}{0{,}4} = 10 \\;;\\; \\omega_n = \\frac{10}{0{,}6671} \\approx 14{,}99\\text{ rad/s} \\;;\\; \\omega_d = \\omega_n\\sqrt{1-\\zeta^2} \\approx 11{,}17\\text{ rad/s} \\implies \\mathbf{p_{1,2} = -10 \\pm j11{,}16}'
       },
       {
-        title: '2. Verificação pela Condição de Ângulo no LGR',
-        description: 'Somando os ângulos dos polos $0$ e $-20$ até $s_d = -10 + j11{,}1665$:',
+        title: '2. Condição de Ângulo por Trigonometria (Método do Slide)',
+        description:
+          'Triângulo no plano $s$ com polos em $0$ e $-20$ e polo de projeto $s_d = -10 + j11{,}1665$ (distância horizontal de $10$ para cada polo e altura $11{,}1665$):',
         latex:
-          '\\angle G(s_d) = -\\angle(s_d) - \\angle(s_d + 20) = -131{,}85^\\circ - 48{,}15^\\circ = \\mathbf{-180^\\circ} \\quad (s_d \\in \\text{LGR!})'
+          '\\theta_2 = \\arctan\\left(\\frac{11{,}1665}{20 - 10}\\right) = \\arctan(1{,}1167) = \\mathbf{48{,}15^\\circ} \\;;\\; \\theta_1 = 180^\\circ - \\arctan\\left(\\frac{11{,}1665}{10}\\right) = 180^\\circ - 48{,}15^\\circ = \\mathbf{131{,}85^\\circ} \\;;\\; \\text{Ang zeros} - \\text{Ang polos} = 0^\\circ - (131{,}85^\\circ + 48{,}15^\\circ) = \\mathbf{-180^\\circ} \\;(\\text{Atende!})'
       },
       {
         title: '3. Cálculo do Ganho K pela Condição de Módulo',
