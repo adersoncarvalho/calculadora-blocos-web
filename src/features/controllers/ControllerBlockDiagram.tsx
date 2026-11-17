@@ -2,6 +2,9 @@
 
 import React from 'react';
 import { MathView } from '@/components/MathView';
+import { parseRatExpr } from '@/core/algebra/parser';
+import { toUnivariateArr } from '@/core/algebra/polynomial';
+import { ratMul } from '@/core/algebra/rational';
 
 interface ControllerBlockDiagramProps {
   title?: string;
@@ -9,9 +12,46 @@ interface ControllerBlockDiagramProps {
   controllerLabel?: string;
   controllerLatex?: string;
   plantLatex: string;
+  plantExpr?: string;
+  controllerExpr?: string;
   feedbackLatex?: string;
   inputLabel?: string;
   outputLabel?: string;
+}
+
+function inferTypeFromLatex(latex: string): number {
+  const denMatch = latex.match(/\\frac\{[^}]*\}\{(.+)\}/);
+  const den = (denMatch ? denMatch[1] : latex).replace(/\s+/g, '');
+  if (/^s\^\{?2\}?(?:\(|$)/.test(den)) return 2;
+  if (/^s(?:\(|$)/.test(den)) return 1;
+  return 0;
+}
+
+function computeSystemType(
+  plantLatex: string,
+  controllerLatex: string,
+  showControllerBlock: boolean,
+  plantExpr?: string,
+  controllerExpr?: string
+): number {
+  if (plantExpr) {
+    try {
+      const G = parseRatExpr(plantExpr);
+      const sys = showControllerBlock && controllerExpr ? ratMul(parseRatExpr(controllerExpr), G) : G;
+      const den = toUnivariateArr(sys.den);
+      const num = toUnivariateArr(sys.num);
+      let denZeros = 0;
+      while (denZeros < den.length && Math.abs(den[denZeros]) < 1e-12) denZeros++;
+      let numZeros = 0;
+      while (numZeros < num.length && Math.abs(num[numZeros]) < 1e-12) numZeros++;
+      return Math.max(0, denZeros - numZeros);
+    } catch {
+      // fallback abaixo
+    }
+  }
+  const plantType = inferTypeFromLatex(plantLatex);
+  const ctrlType = showControllerBlock && controllerLatex ? inferTypeFromLatex(controllerLatex) : 0;
+  return plantType + ctrlType;
 }
 
 export const ControllerBlockDiagram: React.FC<ControllerBlockDiagramProps> = ({
@@ -20,10 +60,13 @@ export const ControllerBlockDiagram: React.FC<ControllerBlockDiagramProps> = ({
   controllerLabel = '',
   controllerLatex = '',
   plantLatex,
+  plantExpr,
+  controllerExpr,
   feedbackLatex = 'H(s) = 1',
   inputLabel = 'R(s)',
   outputLabel = 'C(s)'
 }) => {
+  const systemType = computeSystemType(plantLatex, controllerLatex, showControllerBlock, plantExpr, controllerExpr);
   return (
     <div
       style={{
@@ -36,15 +79,38 @@ export const ControllerBlockDiagram: React.FC<ControllerBlockDiagramProps> = ({
     >
       <div
         style={{
-          fontSize: '0.73rem',
-          fontWeight: 700,
-          color: 'var(--primary)',
-          textTransform: 'uppercase',
-          letterSpacing: '0.5px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: '8px',
           marginBottom: '0.85rem'
         }}
       >
-        {title}
+        <div
+          style={{
+            fontSize: '0.73rem',
+            fontWeight: 700,
+            color: 'var(--primary)',
+            textTransform: 'uppercase',
+            letterSpacing: '0.5px'
+          }}
+        >
+          {title}
+        </div>
+        <span
+          style={{
+            fontSize: '0.72rem',
+            fontWeight: 800,
+            padding: '2px 9px',
+            borderRadius: '999px',
+            background: systemType === 0 ? 'rgba(56, 189, 248, 0.14)' : systemType === 1 ? 'rgba(16, 185, 129, 0.16)' : 'rgba(245, 158, 11, 0.16)',
+            color: systemType === 0 ? 'var(--primary)' : systemType === 1 ? 'var(--success)' : '#f59e0b',
+            border: `1px solid ${systemType === 0 ? 'rgba(56, 189, 248, 0.35)' : systemType === 1 ? 'rgba(16, 185, 129, 0.35)' : 'rgba(245, 158, 11, 0.35)'}`
+          }}
+        >
+          Sistema Tipo {systemType}
+        </span>
       </div>
 
       <div

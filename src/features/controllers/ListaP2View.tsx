@@ -375,6 +375,7 @@ export const ListaP2View: React.FC = () => {
               title="Diagrama de Blocos do Enunciado (Planta Original em Malha Fechada)"
               showControllerBlock={false}
               plantLatex={activeQuestion.practicalData.plantLatex}
+              plantExpr={activeQuestion.practicalData.plantExpr}
             />
             <ControllerBlockDiagram
               title="Diagrama de Blocos Final (Com o Controlador Projetado)"
@@ -382,6 +383,8 @@ export const ListaP2View: React.FC = () => {
               controllerLabel={activeQuestion.practicalData.controllerBlockLabel}
               controllerLatex={activeQuestion.practicalData.controllerLatex}
               plantLatex={activeQuestion.practicalData.plantLatex}
+              plantExpr={activeQuestion.practicalData.plantExpr}
+              controllerExpr={activeQuestion.practicalData.controllerExpr}
             />
           </div>
         )}

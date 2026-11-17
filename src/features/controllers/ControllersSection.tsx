@@ -919,6 +919,7 @@ export const ControllersSection: React.FC<ControllersSectionProps> = ({ onBack, 
                 title="Diagrama de Blocos do Enunciado (Sistema Original sem Compensação)"
                 showControllerBlock={false}
                 plantLatex={activeExercise.plantLatex}
+                plantExpr={activeExercise.plantExpr}
                 feedbackLatex={activeExercise.feedbackLatex}
               />
             </div>
@@ -975,6 +976,8 @@ export const ControllersSection: React.FC<ControllersSectionProps> = ({ onBack, 
               controllerLabel={activeExercise.controllerBlockLabel}
               controllerLatex={activeExercise.controllerLatex}
               plantLatex={activeExercise.plantLatex}
+              plantExpr={activeExercise.plantExpr}
+              controllerExpr={activeExercise.controllerExpr}
               feedbackLatex={activeExercise.feedbackLatex}
             />
 
