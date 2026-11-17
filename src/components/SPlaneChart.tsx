@@ -57,6 +57,7 @@ export const SPlaneChart: React.FC<SPlaneChartProps> = ({
 }) => {
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
   const [toolMode, setToolMode] = useState<'none' | 'zoom' | 'pan'>('none');
+  const [gainMult, setGainMult] = useState<number>(1);
   const [viewBoxBounds, setViewBoxBounds] = useState<{ minRe: number; maxRe: number; minIm: number; maxIm: number } | null>(null);
   const [panDrag, setPanDrag] = useState<{
     startX: number;
@@ -121,17 +122,38 @@ export const SPlaneChart: React.FC<SPlaneChartProps> = ({
       maxRe += padRe;
       maxIm += padIm;
 
-      return { points, clPoles, locusPoints, defaultBounds: { minRe, maxRe, minIm: -maxIm, maxIm } };
+      return { olPoles, olZeros, denL, numL, locusPoints, defaultBounds: { minRe, maxRe, minIm: -maxIm, maxIm } };
     } catch {
       return null;
     }
   }, [plantExpr, controllerExpr]);
 
-  // Reseta zoom e pan se trocar de exercício/planta
+  const activeClPoles = useMemo(() => {
+    if (!computed) return [];
+    const { denL, numL } = computed;
+    const maxDeg = Math.max(denL.length, numL.length);
+    const rawChar: number[] = new Array(maxDeg).fill(0);
+    for (let i = 0; i < denL.length; i++) rawChar[i] += denL[i];
+    for (let i = 0; i < numL.length; i++) rawChar[i] += gainMult * numL[i];
+    const charPoly = trimUni(rawChar);
+    return charPoly.length > 1 ? computeRootsPoly(charPoly) : [];
+  }, [computed, gainMult]);
+
+  const activePoints: PlottedPoint[] = useMemo(() => {
+    if (!computed) return [];
+    return [
+      ...computed.olPoles.map((p, i) => ({ kind: 'ol-pole' as const, re: p.re, im: p.im, label: `Polo MA #${i + 1}` })),
+      ...computed.olZeros.map((z, i) => ({ kind: 'ol-zero' as const, re: z.re, im: z.im, label: `Zero MA #${i + 1}` })),
+      ...activeClPoles.map((p, i) => ({ kind: 'cl-pole' as const, re: p.re, im: p.im, label: `Polo MF #${i + 1}` }))
+    ];
+  }, [computed, activeClPoles]);
+
+  // Reseta zoom, pan e ganho se trocar de exercício/planta
   React.useEffect(() => {
     setViewBoxBounds(null);
     setToolMode('none');
     setPanDrag(null);
+    setGainMult(1);
   }, [plantExpr, controllerExpr]);
 
   if (!computed) return null;
@@ -231,7 +253,8 @@ export const SPlaneChart: React.FC<SPlaneChartProps> = ({
   const zeroX = toX(0);
   const zeroY = toY(0);
 
-  const hovered = hoveredIdx !== null ? computed.points[hoveredIdx] : null;
+  const hovered = hoveredIdx !== null ? activePoints[hoveredIdx] : null;
+  const isUnstable = activeClPoles.some(p => p.re > 1e-4);
   const hoveredMag = hovered ? Math.hypot(hovered.re, hovered.im) : 0;
   const hoveredZeta = hovered && hoveredMag > 1e-6 && hovered.re < 0 ? -hovered.re / hoveredMag : null;
 
@@ -372,7 +395,7 @@ export const SPlaneChart: React.FC<SPlaneChartProps> = ({
           {/* Grade e Valores dos Eixos Re(s) e jω */}
           {reTicks.map(v => {
             const tx = toX(v);
-            const nearRealMarker = computed.points.some(
+            const nearRealMarker = activePoints.some(
               p => Math.abs(p.im) <= 0.05 && Math.abs(toX(p.re) - tx) < 16
             );
             return (
@@ -468,7 +491,7 @@ export const SPlaneChart: React.FC<SPlaneChartProps> = ({
               return { x: idealX, y, shifted: Math.abs(y - idealY) > 1 };
             };
 
-            return computed.points.map((pt, idx) => {
+            return activePoints.map((pt, idx) => {
               if (pt.re < activeBounds.minRe || pt.re > activeBounds.maxRe || pt.im < activeBounds.minIm || pt.im > activeBounds.maxIm) return null;
               const cx = toX(pt.re);
               const cy = toY(pt.im);
@@ -589,6 +612,67 @@ export const SPlaneChart: React.FC<SPlaneChartProps> = ({
           )}
         </svg>
 
+        {/* Slider Interativo de Ganho K no LGR */}
+        <div
+          className="no-print"
+          style={{
+            marginTop: '8px',
+            padding: '8px 12px',
+            borderRadius: '6px',
+            background: 'var(--code-bg)',
+            border: '1px solid var(--card-border)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+            flexWrap: 'wrap'
+          }}
+        >
+          <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--primary)' }}>
+            Ganho no LGR: {gainMult.toFixed(2)}× {Math.abs(gainMult - 1) < 0.01 ? '(Projeto)' : ''}
+          </span>
+          <input
+            type="range"
+            min={0.05}
+            max={4}
+            step={0.05}
+            value={gainMult}
+            onChange={e => setGainMult(Number(e.target.value))}
+            aria-label="Variar multiplicador de ganho no Lugar das Raízes"
+            style={{ flex: '1 1 180px', cursor: 'pointer' }}
+          />
+          <span
+            style={{
+              fontSize: '0.72rem',
+              fontWeight: 700,
+              padding: '2px 8px',
+              borderRadius: '999px',
+              background: isUnstable ? 'rgba(239, 68, 68, 0.16)' : 'rgba(16, 185, 129, 0.14)',
+              color: isUnstable ? 'var(--danger)' : 'var(--success)',
+              border: `1px solid ${isUnstable ? 'rgba(239, 68, 68, 0.35)' : 'rgba(16, 185, 129, 0.35)'}`
+            }}
+          >
+            {isUnstable ? '⚠️ Instável (Semiplano Direito)' : '✓ Estável'}
+          </span>
+          {Math.abs(gainMult - 1) >= 0.01 && (
+            <button
+              type="button"
+              onClick={() => setGainMult(1)}
+              style={{
+                padding: '3px 9px',
+                borderRadius: '5px',
+                fontSize: '0.72rem',
+                fontWeight: 700,
+                background: 'var(--card-bg)',
+                color: 'var(--primary)',
+                border: '1px solid var(--primary)',
+                cursor: 'pointer'
+              }}
+            >
+              ↺ Voltar ao Projeto (1.00×)
+            </button>
+          )}
+        </div>
+
         {/* Resumo fixo dos Polos de Malha Fechada */}
         <div
           style={{
@@ -606,7 +690,7 @@ export const SPlaneChart: React.FC<SPlaneChartProps> = ({
           }}
         >
           <strong style={{ color: '#10b981' }}>Polos de Malha Fechada:</strong>
-          {computed.clPoles.map((p, i) => (
+          {activeClPoles.map((p, i) => (
             <span
               key={`clp-${i}`}
               style={{
