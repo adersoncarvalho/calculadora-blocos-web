@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { ThemeToggle } from './ThemeToggle';
 
 export type NavViewId = 'home' | 'builder' | 'guide' | 'practice' | 'simulations' | 'controllers';
@@ -105,8 +105,19 @@ export const GlobalNavbar: React.FC<GlobalNavbarProps> = ({
   onNavigate,
   onOpenShortcuts
 }) => {
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => {
+      setIsScrolled(window.scrollY > 24);
+    };
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
   return (
-    <nav className="global-navbar no-print" aria-label="Navegação Principal">
+    <nav className={`global-navbar no-print ${isScrolled ? 'scrolled' : ''}`} aria-label="Navegação Principal">
       <div className="global-navbar-inner">
         <a
           href="/"

@@ -24,9 +24,29 @@ interface PlottedPoint {
 function fmtComplex(re: number, im: number): string {
   const r = Math.abs(re) < 1e-4 ? 0 : re;
   const i = Math.abs(im) < 1e-4 ? 0 : im;
-  if (i === 0) return r.toFixed(3);
+  if (i === 0) return r.toFixed(2).replace(/\.00$/, '');
   const sign = i >= 0 ? '+' : '−';
-  return `${r.toFixed(3)} ${sign} j${Math.abs(i).toFixed(3)}`;
+  return `${r.toFixed(2)} ${sign} j${Math.abs(i).toFixed(2)}`;
+}
+
+function niceStep(range: number, targetTicks = 5): number {
+  const rough = range / targetTicks;
+  const pow10 = Math.pow(10, Math.floor(Math.log10(Math.max(rough, 1e-6))));
+  const frac = rough / pow10;
+  let nice = 1;
+  if (frac >= 5) nice = 5;
+  else if (frac >= 2) nice = 2;
+  return nice * pow10;
+}
+
+function buildTicks(min: number, max: number, step: number): number[] {
+  const ticks: number[] = [];
+  const start = Math.ceil(min / step) * step;
+  for (let v = start; v <= max + 1e-9; v += step) {
+    const clean = Math.abs(v) < 1e-9 ? 0 : Number(v.toFixed(4));
+    ticks.push(clean);
+  }
+  return ticks;
 }
 
 export const SPlaneChart: React.FC<SPlaneChartProps> = ({
@@ -94,7 +114,10 @@ export const SPlaneChart: React.FC<SPlaneChartProps> = ({
       maxRe += padRe;
       maxIm += padIm;
 
-      return { points, locusPoints, minRe, maxRe, minIm: -maxIm, maxIm };
+      const reTicks = buildTicks(minRe, maxRe, niceStep(maxRe - minRe, 6));
+      const imTicks = buildTicks(-maxIm, maxIm, niceStep(2 * maxIm, 4)).filter(v => v !== 0);
+
+      return { points, clPoles, locusPoints, minRe, maxRe, minIm: -maxIm, maxIm, reTicks, imTicks };
     } catch {
       return null;
     }
@@ -102,12 +125,12 @@ export const SPlaneChart: React.FC<SPlaneChartProps> = ({
 
   if (!computed) return null;
 
-  const W = 540;
-  const H = 260;
-  const padL = 44;
-  const padR = 20;
-  const padT = 18;
-  const padB = 28;
+  const W = 560;
+  const H = 290;
+  const padL = 46;
+  const padR = 24;
+  const padT = 20;
+  const padB = 34;
   const plotW = W - padL - padR;
   const plotH = H - padT - padB;
 
@@ -157,6 +180,36 @@ export const SPlaneChart: React.FC<SPlaneChartProps> = ({
             />
           )}
 
+          {/* Grade e Valores dos Eixos Re(s) e jω */}
+          {computed.reTicks.map(v => {
+            const tx = toX(v);
+            return (
+              <g key={`rx-${v}`}>
+                <line x1={tx} y1={padT} x2={tx} y2={padT + plotH} stroke="rgba(148, 163, 184, 0.12)" strokeWidth="1" />
+                <line x1={tx} y1={zeroY - 3} x2={tx} y2={zeroY + 3} stroke="rgba(148, 163, 184, 0.5)" strokeWidth="1" />
+                <text x={tx} y={zeroY + 13} textAnchor="middle" fontSize="9.5" fill="#94a3b8">
+                  {v}
+                </text>
+              </g>
+            );
+          })}
+          {computed.imTicks.map(v => {
+            const ty = toY(v);
+            return (
+              <g key={`iy-${v}`}>
+                <line x1={padL} y1={ty} x2={padL + plotW} y2={ty} stroke="rgba(148, 163, 184, 0.12)" strokeWidth="1" />
+                {zeroX >= padL && zeroX <= padL + plotW && (
+                  <>
+                    <line x1={zeroX - 3} y1={ty} x2={zeroX + 3} y2={ty} stroke="rgba(148, 163, 184, 0.5)" strokeWidth="1" />
+                    <text x={zeroX - 6} y={ty + 3} textAnchor="end" fontSize="9.5" fill="#94a3b8">
+                      {v > 0 ? `+j${v}` : `−j${Math.abs(v)}`}
+                    </text>
+                  </>
+                )}
+              </g>
+            );
+          })}
+
           {/* Eixos Re(s) e Im(s) */}
           <line x1={padL} y1={zeroY} x2={padL + plotW} y2={zeroY} stroke="rgba(148, 163, 184, 0.45)" strokeWidth="1" />
           {zeroX >= padL && zeroX <= padL + plotW && (
@@ -192,12 +245,16 @@ export const SPlaneChart: React.FC<SPlaneChartProps> = ({
             );
           })}
 
-          {/* Polos e Zeros interativos */}
+          {/* Polos e Zeros interativos com valores visíveis */}
           {computed.points.map((pt, idx) => {
             if (pt.re < computed.minRe || pt.re > computed.maxRe || pt.im < computed.minIm || pt.im > computed.maxIm) return null;
             const cx = toX(pt.re);
             const cy = toY(pt.im);
             const isHovered = hoveredIdx === idx;
+            const coordText = fmtComplex(pt.re, pt.im);
+            const isUpper = pt.im > 0.05;
+            const isLower = pt.im < -0.05;
+            const labelY = isUpper ? cy - 8 : isLower ? cy + 15 : pt.kind === 'cl-pole' ? cy - 9 : cy + 16;
 
             if (pt.kind === 'ol-pole') {
               return (
@@ -210,6 +267,9 @@ export const SPlaneChart: React.FC<SPlaneChartProps> = ({
                   <circle cx={cx} cy={cy} r={10} fill="transparent" />
                   <line x1={cx - 4.5} y1={cy - 4.5} x2={cx + 4.5} y2={cy + 4.5} stroke="#ef4444" strokeWidth={isHovered ? 3 : 2.2} />
                   <line x1={cx - 4.5} y1={cy + 4.5} x2={cx + 4.5} y2={cy - 4.5} stroke="#ef4444" strokeWidth={isHovered ? 3 : 2.2} />
+                  <text x={cx} y={labelY} textAnchor="middle" fontSize="9.5" fontWeight="700" fill="#fca5a5">
+                    {coordText}
+                  </text>
                 </g>
               );
             }
@@ -224,6 +284,9 @@ export const SPlaneChart: React.FC<SPlaneChartProps> = ({
                 >
                   <circle cx={cx} cy={cy} r={10} fill="transparent" />
                   <circle cx={cx} cy={cy} r={isHovered ? 6 : 4.8} fill="none" stroke="#3b82f6" strokeWidth="2.2" />
+                  <text x={cx} y={cy - 9} textAnchor="middle" fontSize="9.5" fontWeight="700" fill="#93c5fd">
+                    {coordText}
+                  </text>
                 </g>
               );
             }
@@ -237,6 +300,9 @@ export const SPlaneChart: React.FC<SPlaneChartProps> = ({
               >
                 <circle cx={cx} cy={cy} r={10} fill="transparent" />
                 <circle cx={cx} cy={cy} r={isHovered ? 6 : 4.5} fill="#10b981" stroke="#ffffff" strokeWidth="1.2" />
+                <text x={cx + 7} y={cy + 3} textAnchor="start" fontSize="9.5" fontWeight="700" fill="#6ee7b7">
+                  {coordText}
+                </text>
               </g>
             );
           })}
@@ -251,6 +317,40 @@ export const SPlaneChart: React.FC<SPlaneChartProps> = ({
             </text>
           )}
         </svg>
+
+        {/* Resumo fixo dos Polos de Malha Fechada */}
+        <div
+          style={{
+            marginTop: '6px',
+            padding: '6px 10px',
+            borderRadius: '6px',
+            background: 'var(--code-bg)',
+            border: '1px solid var(--card-border)',
+            fontSize: '0.74rem',
+            color: 'var(--text-muted)',
+            display: 'flex',
+            gap: '10px',
+            flexWrap: 'wrap',
+            alignItems: 'center'
+          }}
+        >
+          <strong style={{ color: '#10b981' }}>Polos de Malha Fechada:</strong>
+          {computed.clPoles.map((p, i) => (
+            <span
+              key={`clp-${i}`}
+              style={{
+                padding: '1px 7px',
+                borderRadius: '4px',
+                background: 'rgba(16, 185, 129, 0.12)',
+                color: 'var(--text)',
+                fontFamily: '"JetBrains Mono", Consolas, monospace',
+                fontSize: '0.72rem'
+              }}
+            >
+              p{i + 1} = {fmtComplex(p.re, p.im)}
+            </span>
+          ))}
+        </div>
 
         {hovered && (
           <div

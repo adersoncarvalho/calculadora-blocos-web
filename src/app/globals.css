@@ -3372,11 +3372,33 @@ body:not(.light-theme) button.btn-secondary:hover {
   -webkit-backdrop-filter: blur(12px);
   border-bottom: 1px solid rgba(56, 189, 248, 0.2);
   margin-bottom: 10px;
+  transition: all 0.2s ease;
+}
+
+.global-navbar.scrolled {
+  background: rgba(10, 15, 29, 0.96);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35);
+}
+
+.global-navbar svg {
+  width: 15px !important;
+  height: 15px !important;
+  flex-shrink: 0;
+}
+
+.global-navbar-logo svg {
+  width: 18px !important;
+  height: 18px !important;
 }
 
 body.light-theme .global-navbar {
   background: rgba(255, 255, 255, 0.92);
   border-bottom: 1px solid #e2e8f0;
+}
+
+body.light-theme .global-navbar.scrolled {
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.08);
 }
 
 .global-navbar-inner {
@@ -3388,6 +3410,30 @@ body.light-theme .global-navbar {
   justify-content: space-between;
   gap: 14px;
   flex-wrap: wrap;
+  transition: padding 0.2s ease;
+}
+
+.global-navbar.scrolled .global-navbar-inner {
+  padding: 5px 20px;
+}
+
+.global-navbar.scrolled .global-navbar-logo {
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+}
+
+.global-navbar.scrolled .global-navbar-brand-text strong {
+  font-size: 0.86rem;
+}
+
+.global-navbar.scrolled .global-navbar-brand-text small {
+  display: none;
+}
+
+.global-navbar.scrolled .global-nav-link {
+  padding: 4px 10px;
+  font-size: 0.78rem;
 }
 
 .global-navbar-brand {
