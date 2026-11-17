@@ -397,8 +397,32 @@ export const ControllersSection: React.FC<ControllersSectionProps> = ({ onBack, 
         )}
       </div>
 
-      {/* Seletor de Abas: 5 Controladores vs Listas de Exercícios */}
+      {/* Seletor de Abas: Fundamentos vs 5 Controladores vs Listas de Exercícios */}
       <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '20px' }}>
+        <button
+          type="button"
+          onClick={() => {
+            setActiveTab('fundamentos');
+            if (typeof window !== 'undefined') {
+              const params = new URLSearchParams(window.location.search);
+              params.set('view', 'controllers');
+              params.set('tab', 'fundamentos');
+              window.history.replaceState(null, '', `/?${params.toString()}`);
+            }
+          }}
+          style={{
+            padding: '10px 18px',
+            borderRadius: '8px',
+            fontSize: '0.88rem',
+            fontWeight: 700,
+            cursor: 'pointer',
+            background: activeTab === 'fundamentos' ? 'var(--primary)' : 'var(--card-bg)',
+            color: activeTab === 'fundamentos' ? '#fff' : 'var(--text)',
+            border: `1.5px solid ${activeTab === 'fundamentos' ? 'var(--primary)' : 'var(--card-border)'}`
+          }}
+        >
+          📘 Fundamentos P, I, PI &amp; PD Prático (Aula 13)
+        </button>
         <button
           type="button"
           onClick={() => {
@@ -446,30 +470,6 @@ export const ControllersSection: React.FC<ControllersSectionProps> = ({ onBack, 
           }}
         >
           📝 Listas de Exercícios (Lista P2 Controle 1 — 23 Questões)
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            setActiveTab('fundamentos');
-            if (typeof window !== 'undefined') {
-              const params = new URLSearchParams(window.location.search);
-              params.set('view', 'controllers');
-              params.set('tab', 'fundamentos');
-              window.history.replaceState(null, '', `/?${params.toString()}`);
-            }
-          }}
-          style={{
-            padding: '10px 18px',
-            borderRadius: '8px',
-            fontSize: '0.88rem',
-            fontWeight: 700,
-            cursor: 'pointer',
-            background: activeTab === 'fundamentos' ? 'var(--primary)' : 'var(--card-bg)',
-            color: activeTab === 'fundamentos' ? '#fff' : 'var(--text)',
-            border: `1.5px solid ${activeTab === 'fundamentos' ? 'var(--primary)' : 'var(--card-border)'}`
-          }}
-        >
-          📘 Fundamentos P, I, PI &amp; PD Prático (Aulas 0000.1–0000.3)
         </button>
       </div>
 
