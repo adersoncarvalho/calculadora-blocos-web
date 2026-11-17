@@ -6,11 +6,13 @@ import { InteractiveTimeChart, ChartSeries } from '@/components/InteractiveTimeC
 import { SPlaneChart } from '@/components/SPlaneChart';
 import { ControllerBlockDiagram } from './ControllerBlockDiagram';
 import { parseRatExpr } from '@/core/algebra/parser';
+import { ratAdd, ratDiv, ratMul } from '@/core/algebra/rational';
 import { buildClosedLoopTf, simulateInputResponseRK4 } from './controllersData';
 import {
   BASIC_ACTIONS,
   PID_SUMMARY_TABLE,
-  FUNDAMENTO_CASE_STUDIES,
+  FUNDAMENTO_GROUPS,
+  FUNDAMENTO_EXERCISES,
   PD_PRACTICAL_POINTS
 } from './fundamentosData';
 
@@ -46,36 +48,52 @@ function renderStackedMath(latex: string): React.ReactNode {
 
 export const FundamentosView: React.FC = () => {
   const [activeSubTab, setActiveSubTab] = useState<'acoes' | 'casos' | 'pd-pratico'>('acoes');
-  const [selectedCaseId, setSelectedCaseId] = useState<string>(FUNDAMENTO_CASE_STUDIES[0].id);
+  const [selectedExId, setSelectedExId] = useState<string>(FUNDAMENTO_EXERCISES[0].id);
+  const [isCollapsed, setIsCollapsed] = useState<boolean>(false);
 
-  const activeCase = useMemo(
-    () => FUNDAMENTO_CASE_STUDIES.find(c => c.id === selectedCaseId) || FUNDAMENTO_CASE_STUDIES[0],
-    [selectedCaseId]
+  const activeEx = useMemo(
+    () => FUNDAMENTO_EXERCISES.find(c => c.id === selectedExId) || FUNDAMENTO_EXERCISES[0],
+    [selectedExId]
   );
 
   const caseSim = useMemo(() => {
-    const s = activeCase.simConfig;
+    const s = activeEx.simConfig;
     if (!s) return null;
     try {
       const G = parseRatExpr(s.plantExpr);
-      const Gu = parseRatExpr(s.uncompExpr);
-      const Gc = parseRatExpr(s.compExpr);
-      const Tu = buildClosedLoopTf(G, Gu);
-      const Tc = buildClosedLoopTf(G, Gc);
+      const Gc = parseRatExpr(s.ctrlExpr);
+      const one = { num: [{ coeff: 1, vars: {} }], den: [{ coeff: 1, vars: {} }] };
+
+      const buildTf = (ctrl: ReturnType<typeof parseRatExpr>) => {
+        if (s.mode === 'disturbance') {
+          const den = ratAdd(one, ratMul(ctrl, G));
+          return ratDiv(G, den);
+        }
+        return buildClosedLoopTf(G, ctrl);
+      };
+
+      const Tc = buildTf(Gc);
       const stepFn = () => 1;
-      const simU = simulateInputResponseRK4(Tu, stepFn, s.tMax, 300);
       const simC = simulateInputResponseRK4(Tc, stepFn, s.tMax, 300);
-      if (!simU || !simC) return null;
+      if (!simC) return null;
+
+      let simCompare: { t: number[]; y: number[] } | null = null;
+      if (s.compareExpr) {
+        const Gcomp = parseRatExpr(s.compareExpr);
+        const Tu = buildTf(Gcomp);
+        simCompare = simulateInputResponseRK4(Tu, stepFn, s.tMax, 300);
+      }
+
       return {
         t: simC.t,
-        r: simC.t.map(() => 1),
-        yU: simU.y,
-        yC: simC.y
+        r: simC.t.map(() => (s.mode === 'disturbance' ? 0 : 1)),
+        yC: simC.y,
+        yCompare: simCompare ? simCompare.y : null
       };
     } catch {
       return null;
     }
-  }, [activeCase]);
+  }, [activeEx]);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
@@ -97,39 +115,56 @@ export const FundamentosView: React.FC = () => {
               Fundamentos de Controladores, Casos Práticos &amp; PD Realizável
             </h2>
           </div>
-          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-            {[
-              { id: 'acoes' as const, label: '1. Ações P, I, PI, PD, PID (0000.1)' },
-              { id: 'casos' as const, label: '2. Estudos de Caso & Simulações (0000.2)' },
-              { id: 'pd-pratico' as const, label: '3. Derivativo & PD Prático (0000.3)' }
-            ].map(tab => {
-              const isAct = activeSubTab === tab.id;
-              return (
-                <button
-                  key={tab.id}
-                  type="button"
-                  onClick={() => setActiveSubTab(tab.id)}
-                  style={{
-                    padding: '6px 12px',
-                    borderRadius: '6px',
-                    fontSize: '0.77rem',
-                    fontWeight: isAct ? 700 : 500,
-                    background: isAct ? 'var(--primary)' : 'var(--code-bg)',
-                    color: isAct ? '#fff' : 'var(--text)',
-                    border: `1px solid ${isAct ? 'var(--primary)' : 'var(--card-border)'}`,
-                    cursor: 'pointer'
-                  }}
-                >
-                  {tab.label}
-                </button>
-              );
-            })}
+          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center' }}>
+            {!isCollapsed &&
+              [
+                { id: 'acoes' as const, label: '1. Ações P, I, PI, PD, PID (0000.1)' },
+                { id: 'casos' as const, label: '2. Estudos de Caso — 7 Exercícios (0000.2)' },
+                { id: 'pd-pratico' as const, label: '3. Derivativo & PD Prático (0000.3)' }
+              ].map(tab => {
+                const isAct = activeSubTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => setActiveSubTab(tab.id)}
+                    style={{
+                      padding: '6px 12px',
+                      borderRadius: '6px',
+                      fontSize: '0.77rem',
+                      fontWeight: isAct ? 700 : 500,
+                      background: isAct ? 'var(--primary)' : 'var(--code-bg)',
+                      color: isAct ? '#fff' : 'var(--text)',
+                      border: `1px solid ${isAct ? 'var(--primary)' : 'var(--card-border)'}`,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {tab.label}
+                  </button>
+                );
+              })}
+            <button
+              type="button"
+              onClick={() => setIsCollapsed(p => !p)}
+              style={{
+                padding: '6px 11px',
+                borderRadius: '6px',
+                fontSize: '0.76rem',
+                fontWeight: 700,
+                background: 'var(--code-bg)',
+                color: 'var(--text-muted)',
+                border: '1px solid var(--card-border)',
+                cursor: 'pointer'
+              }}
+            >
+              {isCollapsed ? '👁️ Mostrar Aula 13' : '🙈 Ocultar'}
+            </button>
           </div>
         </div>
       </section>
 
       {/* ABA 1: Ações de Controle + Tabela PID (0000.1) */}
-      {activeSubTab === 'acoes' && (
+      {!isCollapsed && activeSubTab === 'acoes' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '12px' }}>
             {BASIC_ACTIONS.map(act => (
@@ -186,59 +221,95 @@ export const FundamentosView: React.FC = () => {
         </div>
       )}
 
-      {/* ABA 2: Estudos de Caso & Exercícios (0000.2) */}
-      {activeSubTab === 'casos' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-            {FUNDAMENTO_CASE_STUDIES.map(c => {
-              const isAct = c.id === activeCase.id;
+      {/* ABA 2: 3 Estudos de Caso separados em 7 Exercícios (0000.2) */}
+      {!isCollapsed && activeSubTab === 'casos' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          {/* Grade dos 3 Estudos de Caso com seus 7 exercícios separados */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(290px, 1fr))', gap: '12px' }}>
+            {FUNDAMENTO_GROUPS.map(grp => {
+              const items = FUNDAMENTO_EXERCISES.filter(e => e.groupId === grp.id);
+              const isGrpActive = activeEx.groupId === grp.id;
               return (
-                <button
-                  key={c.id}
-                  type="button"
-                  onClick={() => setSelectedCaseId(c.id)}
+                <div
+                  key={grp.id}
                   style={{
-                    padding: '8px 14px',
-                    borderRadius: '6px',
-                    fontSize: '0.8rem',
-                    fontWeight: isAct ? 700 : 500,
-                    background: isAct ? 'var(--primary)' : 'var(--card-bg)',
-                    color: isAct ? '#fff' : 'var(--text)',
-                    border: `1px solid ${isAct ? 'var(--primary)' : 'var(--card-border)'}`,
-                    cursor: 'pointer'
+                    background: 'var(--card-bg)',
+                    border: `1.5px solid ${isGrpActive ? 'var(--primary)' : 'var(--card-border)'}`,
+                    borderRadius: '8px',
+                    padding: '14px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '10px'
                   }}
                 >
-                  {c.badge}
-                </button>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                    <span style={{ fontSize: '0.71rem', fontWeight: 800, color: 'var(--primary)', textTransform: 'uppercase' }}>
+                      {grp.slidesRange}
+                    </span>
+                    <span style={{ fontSize: '0.78rem', color: 'var(--text)' }}>
+                      <MathView math={grp.plantLatex} inline />
+                    </span>
+                  </div>
+                  <div style={{ fontWeight: 800, fontSize: '0.9rem', color: 'var(--text)' }}>
+                    {grp.title}
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    {items.map(item => {
+                      const isAct = item.id === activeEx.id;
+                      return (
+                        <button
+                          key={item.id}
+                          type="button"
+                          onClick={() => setSelectedExId(item.id)}
+                          style={{
+                            textAlign: 'left',
+                            padding: '7px 10px',
+                            borderRadius: '6px',
+                            fontSize: '0.78rem',
+                            fontWeight: isAct ? 700 : 500,
+                            background: isAct ? 'var(--primary)' : 'var(--code-bg)',
+                            color: isAct ? '#fff' : 'var(--text)',
+                            border: `1px solid ${isAct ? 'var(--primary)' : 'var(--card-border)'}`,
+                            cursor: 'pointer'
+                          }}
+                        >
+                          {item.shortLabel}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
               );
             })}
           </div>
 
           <section style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)', borderRadius: '8px', padding: '18px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
             <div>
-              <span style={{ fontSize: '0.73rem', fontWeight: 700, color: 'var(--text-muted)' }}>{activeCase.source}</span>
+              <span style={{ fontSize: '0.73rem', fontWeight: 700, color: 'var(--text-muted)' }}>
+                {activeEx.badge} • {activeEx.source}
+              </span>
               <h3 style={{ margin: '3px 0 8px 0', fontSize: '1.1rem', color: 'var(--primary)' }}>
-                {renderRichMathText(activeCase.title)}
+                {renderRichMathText(activeEx.title)}
               </h3>
               <div style={{ background: 'var(--code-bg)', border: '1px solid var(--card-border)', borderRadius: '6px', padding: '12px 14px', fontSize: '0.86rem', lineHeight: 1.55 }}>
-                {renderRichMathText(activeCase.statement)}
+                {renderRichMathText(activeEx.statement)}
               </div>
             </div>
 
-            {activeCase.simConfig && (
+            {activeEx.diagram && (
               <ControllerBlockDiagram
-                title="Diagrama de Blocos do Caso de Estudo"
+                title="Diagrama de Blocos do Exercício"
                 showControllerBlock={true}
-                controllerLabel="Controlador"
-                controllerLatex={activeCase.simConfig.controllerLatex}
-                plantLatex={activeCase.simConfig.plantLatex}
-                plantExpr={activeCase.simConfig.plantExpr}
-                controllerExpr={activeCase.simConfig.compExpr}
+                controllerLabel={activeEx.diagram.controllerLabel}
+                controllerLatex={activeEx.diagram.controllerLatex}
+                plantLatex={activeEx.diagram.plantLatex}
+                plantExpr={activeEx.diagram.plantExpr}
+                controllerExpr={activeEx.diagram.controllerExpr}
               />
             )}
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              {activeCase.steps.map((st, i) => (
+              {activeEx.steps.map((st, i) => (
                 <div key={`cs-${i}`} style={{ background: 'var(--code-bg)', border: '1px solid var(--card-border)', borderRadius: '6px', padding: '10px 14px' }}>
                   <div style={{ fontWeight: 700, fontSize: '0.86rem', marginBottom: '4px' }}>{renderRichMathText(st.title)}</div>
                   <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', lineHeight: 1.5, marginBottom: st.latex ? '6px' : 0 }}>
@@ -249,23 +320,55 @@ export const FundamentosView: React.FC = () => {
               ))}
             </div>
 
-            {activeCase.simConfig && caseSim && (
+            {activeEx.simConfig && caseSim && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 <InteractiveTimeChart
-                  title="Comparação Temporal ao Degrau Unitário (RK4)"
+                  title={
+                    activeEx.simConfig.mode === 'disturbance'
+                      ? 'Resposta ao Distúrbio em Degrau D(s) = 1/s (RK4)'
+                      : 'Resposta ao Degrau Unitário R(s) = 1/s (RK4)'
+                  }
                   xValues={caseSim.t}
                   series={[
-                    { id: 'ref', label: 'Referência r(t)=1', values: caseSim.r, color: '#94a3b8', dashed: true, strokeWidth: 1.8 },
-                    { id: 'u', label: activeCase.simConfig.uncompLabel, values: caseSim.yU, color: '#dc2626', dashed: true, strokeWidth: 2 },
-                    { id: 'c', label: activeCase.simConfig.compLabel, values: caseSim.yC, color: '#0284c7', strokeWidth: 2.5, showLandmarks: true, landmarkMode: 'output' }
+                    {
+                      id: 'ref',
+                      label: activeEx.simConfig.mode === 'disturbance' ? 'Meta de rejeição (0)' : 'Referência r(t)=1',
+                      values: caseSim.r,
+                      color: '#94a3b8',
+                      dashed: true,
+                      strokeWidth: 1.8
+                    },
+                    ...(caseSim.yCompare && activeEx.simConfig.compareLabel
+                      ? [
+                          {
+                            id: 'cmp',
+                            label: activeEx.simConfig.compareLabel,
+                            values: caseSim.yCompare,
+                            color: '#dc2626',
+                            dashed: true,
+                            strokeWidth: 2
+                          }
+                        ]
+                      : []),
+                    {
+                      id: 'c',
+                      label: activeEx.simConfig.ctrlLabel,
+                      values: caseSim.yC,
+                      color: '#0284c7',
+                      strokeWidth: 2.5,
+                      showLandmarks: true,
+                      landmarkMode: 'output'
+                    }
                   ] as ChartSeries[]}
                   inputType="step"
                 />
-                <SPlaneChart
-                  title="Plano s — Polos, Zeros e LGR do Sistema Compensado"
-                  plantExpr={activeCase.simConfig.plantExpr}
-                  controllerExpr={activeCase.simConfig.compExpr}
-                />
+                {activeEx.diagram && (
+                  <SPlaneChart
+                    title="Plano s — Polos, Zeros e LGR"
+                    plantExpr={activeEx.diagram.plantExpr}
+                    controllerExpr={activeEx.diagram.controllerExpr}
+                  />
+                )}
               </div>
             )}
           </section>
@@ -273,7 +376,7 @@ export const FundamentosView: React.FC = () => {
       )}
 
       {/* ABA 3: Derivativo Puro & PD Prático (0000.3) */}
-      {activeSubTab === 'pd-pratico' && (
+      {!isCollapsed && activeSubTab === 'pd-pratico' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
           {PD_PRACTICAL_POINTS.map((sec, idx) => (
             <section
