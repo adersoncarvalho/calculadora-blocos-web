@@ -3,6 +3,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { MathView } from '@/components/MathView';
 import { InteractiveTimeChart, ChartSeries } from '@/components/InteractiveTimeChart';
+import { SPlaneChart } from '@/components/SPlaneChart';
 import { ControllerBlockDiagram } from './ControllerBlockDiagram';
 import { parseRatExpr } from '@/core/algebra/parser';
 import { buildClosedLoopTf, simulateInputResponseRK4 } from './controllersData';
@@ -47,15 +48,39 @@ export const ListaP2View: React.FC = () => {
   const [categoryFilter, setCategoryFilter] = useState<ListaCategory>('all');
   const [selectedId, setSelectedId] = useState<string>('q1');
   const [copiedScilab, setCopiedScilab] = useState<boolean>(false);
+  const [studyMode, setStudyMode] = useState<boolean>(false);
+  const [revealedCount, setRevealedCount] = useState<number>(0);
+  const [completedIds, setCompletedIds] = useState<string[]>([]);
 
-  // Restaura questão selecionada da URL (?q=q20) ao dar Ctrl+F5
+  // Restaura questão selecionada da URL (?q=q20) e progresso salvo no localStorage
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const qParam = params.get('q');
     if (qParam && LISTA_P2_QUESTIONS.some(q => q.id === qParam)) {
       setSelectedId(qParam);
     }
+    try {
+      const saved = window.localStorage.getItem('lista_p2_completed');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) setCompletedIds(parsed);
+      }
+    } catch {
+      // ignora erro de localStorage
+    }
   }, []);
+
+  const toggleCompleted = (id: string) => {
+    setCompletedIds(prev => {
+      const next = prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id];
+      try {
+        window.localStorage.setItem('lista_p2_completed', JSON.stringify(next));
+      } catch {
+        // ignora erro de localStorage
+      }
+      return next;
+    });
+  };
 
   const filteredQuestions = useMemo(() => {
     if (categoryFilter === 'all') return LISTA_P2_QUESTIONS;
@@ -68,6 +93,7 @@ export const ListaP2View: React.FC = () => {
 
   const handleSelectQuestion = (id: string) => {
     setSelectedId(id);
+    setRevealedCount(0);
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       params.set('view', 'controllers');
@@ -76,6 +102,11 @@ export const ListaP2View: React.FC = () => {
       window.history.replaceState(null, '', `/?${params.toString()}`);
     }
   };
+
+  const activeIdx = filteredQuestions.findIndex(q => q.id === activeQuestion.id);
+  const prevQuestion = activeIdx > 0 ? filteredQuestions[activeIdx - 1] : null;
+  const nextQuestion = activeIdx >= 0 && activeIdx < filteredQuestions.length - 1 ? filteredQuestions[activeIdx + 1] : null;
+  const isCompleted = completedIds.includes(activeQuestion.id);
 
   // Simulação RK4 para questões práticas (Q20 a Q23)
   const practicalSim = useMemo(() => {
@@ -130,6 +161,7 @@ export const ListaP2View: React.FC = () => {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
       {/* Cabeçalho da Lista e Filtros */}
       <section
+        className="no-print"
         style={{
           background: 'var(--card-bg)',
           border: '1px solid var(--card-border)',
@@ -139,11 +171,26 @@ export const ListaP2View: React.FC = () => {
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '14px' }}>
           <div>
-            <span style={{ fontSize: '0.73rem', fontWeight: 800, color: 'var(--primary)', textTransform: 'uppercase' }}>
-              Lista Oficial EEL6005 • 23 Questões Verificadas
-            </span>
-            <h2 style={{ margin: '2px 0 0 0', fontSize: '1.15rem', color: 'var(--text)' }}>
-              📝 Lista P2 Controle 1 — Resolução Passo a Passo &amp; Simulações
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+              <span style={{ fontSize: '0.73rem', fontWeight: 800, color: 'var(--primary)', textTransform: 'uppercase' }}>
+                Lista Oficial EEL6005 • 23 Questões Verificadas
+              </span>
+              <span
+                style={{
+                  fontSize: '0.72rem',
+                  fontWeight: 700,
+                  padding: '2px 8px',
+                  borderRadius: '999px',
+                  background: 'rgba(16, 185, 129, 0.14)',
+                  color: 'var(--success)',
+                  border: '1px solid rgba(16, 185, 129, 0.3)'
+                }}
+              >
+                ✓ {completedIds.length}/{LISTA_P2_QUESTIONS.length} concluídas
+              </span>
+            </div>
+            <h2 style={{ margin: '4px 0 0 0', fontSize: '1.15rem', color: 'var(--text)' }}>
+              Lista P2 Controle 1 — Resolução Passo a Passo &amp; Simulações
             </h2>
           </div>
 
@@ -189,6 +236,7 @@ export const ListaP2View: React.FC = () => {
           {filteredQuestions.map(q => {
             const isAct = q.id === activeQuestion.id;
             const isPractical = q.category === 'pratica';
+            const isDone = completedIds.includes(q.id);
             return (
               <button
                 key={q.id}
@@ -201,15 +249,17 @@ export const ListaP2View: React.FC = () => {
                   fontWeight: isAct ? 800 : 600,
                   background: isAct
                     ? 'var(--primary)'
+                    : isDone
+                    ? 'rgba(16, 185, 129, 0.16)'
                     : isPractical
-                    ? 'rgba(16, 185, 129, 0.12)'
+                    ? 'rgba(14, 165, 233, 0.1)'
                     : 'var(--code-bg)',
-                  color: isAct ? '#fff' : isPractical ? 'var(--success)' : 'var(--text)',
-                  border: `1px solid ${isAct ? 'var(--primary)' : isPractical ? 'var(--success)' : 'var(--card-border)'}`,
+                  color: isAct ? '#fff' : isDone ? 'var(--success)' : isPractical ? 'var(--primary)' : 'var(--text)',
+                  border: `1px solid ${isAct ? 'var(--primary)' : isDone ? 'var(--success)' : 'var(--card-border)'}`,
                   cursor: 'pointer'
                 }}
               >
-                Q{q.number}{isPractical ? ' ⚡' : ''}
+                {isDone ? '✓ ' : ''}Q{q.number}{isPractical ? ' ⚡' : ''}
               </button>
             );
           })}
@@ -229,20 +279,77 @@ export const ListaP2View: React.FC = () => {
         }}
       >
         <div>
-          <span
-            style={{
-              display: 'inline-block',
-              fontSize: '0.72rem',
-              fontWeight: 800,
-              color: '#fff',
-              background: activeQuestion.category === 'pratica' ? '#059669' : 'var(--primary)',
-              padding: '2px 8px',
-              borderRadius: '4px',
-              marginBottom: '6px'
-            }}
-          >
-            {activeQuestion.badge}
-          </span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px', marginBottom: '6px' }}>
+            <span
+              style={{
+                display: 'inline-block',
+                fontSize: '0.72rem',
+                fontWeight: 800,
+                color: '#fff',
+                background: activeQuestion.category === 'pratica' ? '#059669' : 'var(--primary)',
+                padding: '2px 8px',
+                borderRadius: '4px'
+              }}
+            >
+              {activeQuestion.badge}
+            </span>
+
+            <div className="no-print" style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                onClick={() => {
+                  setStudyMode(prev => !prev);
+                  setRevealedCount(0);
+                }}
+                style={{
+                  padding: '5px 10px',
+                  borderRadius: '6px',
+                  fontSize: '0.74rem',
+                  fontWeight: 700,
+                  background: studyMode ? 'rgba(245, 158, 11, 0.16)' : 'var(--code-bg)',
+                  color: studyMode ? '#f59e0b' : 'var(--text)',
+                  border: `1px solid ${studyMode ? '#f59e0b' : 'var(--card-border)'}`,
+                  cursor: 'pointer'
+                }}
+              >
+                {studyMode ? '👁️ Modo Estudo (Ativo)' : '🙈 Ocultar Resolução'}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => toggleCompleted(activeQuestion.id)}
+                style={{
+                  padding: '5px 10px',
+                  borderRadius: '6px',
+                  fontSize: '0.74rem',
+                  fontWeight: 700,
+                  background: isCompleted ? 'rgba(16, 185, 129, 0.16)' : 'var(--code-bg)',
+                  color: isCompleted ? 'var(--success)' : 'var(--text)',
+                  border: `1px solid ${isCompleted ? 'var(--success)' : 'var(--card-border)'}`,
+                  cursor: 'pointer'
+                }}
+              >
+                {isCompleted ? '✓ Concluída' : 'Marcar como Concluída'}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => window.print()}
+                style={{
+                  padding: '5px 10px',
+                  borderRadius: '6px',
+                  fontSize: '0.74rem',
+                  fontWeight: 700,
+                  background: 'var(--code-bg)',
+                  color: 'var(--primary)',
+                  border: '1px solid var(--card-border)',
+                  cursor: 'pointer'
+                }}
+              >
+                🖨️ Imprimir / PDF
+              </button>
+            </div>
+          </div>
           <h3 style={{ margin: '0 0 10px 0', fontSize: '1.15rem', color: 'var(--primary)' }}>
             {renderRichMathText(activeQuestion.title)}
           </h3>
@@ -291,34 +398,80 @@ export const ListaP2View: React.FC = () => {
             gap: '10px'
           }}
         >
-          <div style={{ fontSize: '0.82rem', fontWeight: 800, color: 'var(--primary)', textTransform: 'uppercase' }}>
-            Resolução Passo a Passo (Conferida Analiticamente)
-          </div>
-          {activeQuestion.steps.map((st, idx) => (
-            <div
-              key={`lista-step-${idx}`}
-              style={{
-                background: 'var(--card-bg)',
-                border: '1px solid var(--card-border)',
-                borderRadius: '6px',
-                padding: '10px 14px',
-                height: 'auto',
-                minHeight: 'fit-content'
-              }}
-            >
-              <div style={{ fontWeight: 700, fontSize: '0.86rem', color: 'var(--text)', marginBottom: '4px' }}>
-                {renderRichMathText(st.title)}
-              </div>
-              <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', lineHeight: 1.55, marginBottom: st.latex ? '6px' : 0 }}>
-                {renderRichMathText(st.description)}
-              </div>
-              {st.latex && (
-                <div style={{ padding: '4px 0', height: 'auto' }}>
-                  {renderStackedMath(st.latex)}
-                </div>
-              )}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+            <div style={{ fontSize: '0.82rem', fontWeight: 800, color: 'var(--primary)', textTransform: 'uppercase' }}>
+              Resolução Passo a Passo (Conferida Analiticamente)
             </div>
-          ))}
+            {studyMode && (
+              <div className="no-print" style={{ display: 'flex', gap: '6px' }}>
+                {revealedCount < activeQuestion.steps.length && (
+                  <button
+                    type="button"
+                    onClick={() => setRevealedCount(c => Math.min(activeQuestion.steps.length, c + 1))}
+                    style={{
+                      padding: '4px 10px',
+                      borderRadius: '5px',
+                      fontSize: '0.74rem',
+                      fontWeight: 700,
+                      background: 'var(--primary)',
+                      color: '#fff',
+                      border: 'none',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Revelar Passo ({revealedCount}/{activeQuestion.steps.length})
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setRevealedCount(activeQuestion.steps.length)}
+                  style={{
+                    padding: '4px 10px',
+                    borderRadius: '5px',
+                    fontSize: '0.74rem',
+                    fontWeight: 600,
+                    background: 'var(--card-bg)',
+                    color: 'var(--text)',
+                    border: '1px solid var(--card-border)',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Mostrar Tudo
+                </button>
+              </div>
+            )}
+          </div>
+          {studyMode && revealedCount === 0 ? (
+            <div style={{ padding: '14px', borderRadius: '6px', background: 'var(--card-bg)', border: '1px dashed var(--card-border)', fontSize: '0.82rem', color: 'var(--text-muted)', textAlign: 'center' }}>
+              Resolução ocultada no Modo Estudo. Tente resolver no papel e clique em <strong>Revelar Passo</strong> para conferir.
+            </div>
+          ) : (
+            (studyMode ? activeQuestion.steps.slice(0, revealedCount) : activeQuestion.steps).map((st, idx) => (
+              <div
+                key={`lista-step-${idx}`}
+                style={{
+                  background: 'var(--card-bg)',
+                  border: '1px solid var(--card-border)',
+                  borderRadius: '6px',
+                  padding: '10px 14px',
+                  height: 'auto',
+                  minHeight: 'fit-content'
+                }}
+              >
+                <div style={{ fontWeight: 700, fontSize: '0.86rem', color: 'var(--text)', marginBottom: '4px' }}>
+                  {renderRichMathText(st.title)}
+                </div>
+                <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', lineHeight: 1.55, marginBottom: st.latex ? '6px' : 0 }}>
+                  {renderRichMathText(st.description)}
+                </div>
+                {st.latex && (
+                  <div style={{ padding: '4px 0', height: 'auto' }}>
+                    {renderStackedMath(st.latex)}
+                  </div>
+                )}
+              </div>
+            ))
+          )}
         </div>
 
         {/* Simulação Interativa + Scilab para Q20 a Q23 */}
@@ -389,9 +542,16 @@ export const ListaP2View: React.FC = () => {
                   inputType="step"
                 />
               </div>
+              <SPlaneChart
+                title="Plano s — Polos, Zeros e Lugar das Raízes (Malha Compensada)"
+                plantExpr={activeQuestion.practicalData.plantExpr}
+                controllerExpr={activeQuestion.practicalData.controllerExpr}
+                zetaTarget={activeQuestion.number === 20 || activeQuestion.number === 21 ? 0.174 : 0.707}
+              />
             </div>
 
             <div
+              className="no-print"
               style={{
                 background: 'var(--code-bg)',
                 border: '1px solid var(--card-border)',
@@ -464,6 +624,60 @@ export const ListaP2View: React.FC = () => {
             </div>
           </>
         )}
+
+        {/* Navegação Anterior / Próxima Questão */}
+        <div
+          className="no-print"
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            gap: '10px',
+            paddingTop: '10px',
+            borderTop: '1px solid var(--card-border)',
+            flexWrap: 'wrap'
+          }}
+        >
+          <button
+            type="button"
+            disabled={!prevQuestion}
+            onClick={() => prevQuestion && handleSelectQuestion(prevQuestion.id)}
+            style={{
+              padding: '8px 14px',
+              borderRadius: '6px',
+              fontSize: '0.8rem',
+              fontWeight: 700,
+              background: 'var(--code-bg)',
+              color: prevQuestion ? 'var(--text)' : 'var(--text-muted)',
+              border: '1px solid var(--card-border)',
+              cursor: prevQuestion ? 'pointer' : 'not-allowed',
+              opacity: prevQuestion ? 1 : 0.5
+            }}
+          >
+            ← {prevQuestion ? `Questão ${prevQuestion.number}` : 'Início da Lista'}
+          </button>
+          <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 600 }}>
+            Questão {activeIdx + 1} de {filteredQuestions.length}
+          </span>
+          <button
+            type="button"
+            disabled={!nextQuestion}
+            onClick={() => nextQuestion && handleSelectQuestion(nextQuestion.id)}
+            style={{
+              padding: '8px 14px',
+              borderRadius: '6px',
+              fontSize: '0.8rem',
+              fontWeight: 700,
+              background: nextQuestion ? 'var(--primary)' : 'var(--code-bg)',
+              color: nextQuestion ? '#fff' : 'var(--text-muted)',
+              border: `1px solid ${nextQuestion ? 'var(--primary)' : 'var(--card-border)'}`,
+              cursor: nextQuestion ? 'pointer' : 'not-allowed',
+              opacity: nextQuestion ? 1 : 0.5
+            }}
+          >
+            {nextQuestion ? `Questão ${nextQuestion.number}` : 'Fim da Lista'} →
+          </button>
+        </div>
       </section>
     </div>
   );

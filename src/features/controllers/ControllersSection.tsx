@@ -3,6 +3,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { MathView } from '@/components/MathView';
 import { InteractiveTimeChart, ChartSeries } from '@/components/InteractiveTimeChart';
+import { SPlaneChart } from '@/components/SPlaneChart';
 import {
   ControllerCategoryId,
   CONTROLLERS_THEORY,
@@ -333,6 +334,13 @@ export const ControllersSection: React.FC<ControllersSectionProps> = ({ onBack, 
             inputType={activeExercise.inputType}
           />
         </div>
+        {!activeExercise.feedbackExpr && (
+          <SPlaneChart
+            title="Plano s — Polos, Zeros e Lugar das Raízes (Malha Compensada)"
+            plantExpr={activeExercise.plantExpr}
+            controllerExpr={activeExercise.controllerExpr}
+          />
+        )}
       </div>
     );
   };

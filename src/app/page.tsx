@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Header } from '@/components/Header';
+import { GlobalNavbar } from '@/components/GlobalNavbar';
 import { ShortcutsModal } from '@/components/ShortcutsModal';
 import { GuideSection } from '@/features/guide/GuideSection';
 import { PracticeSection } from '@/features/practice/PracticeSection';
@@ -59,78 +59,86 @@ export default function HomePage() {
     }
   };
 
-  // Se o usuário está em uma das ferramentas dedicadas, abre direto no topo em tela cheia limpa
+  // Se o usuário está em uma das ferramentas dedicadas, abre direto no topo em tela cheia limpa com Navbar global
   if (view === 'builder') {
     return (
-      <main style={{ padding: '16px 20px', minHeight: '100vh' }}>
-        <BuilderSection
-          onBack={() => handleSetView('home')}
-        />
-        <ShortcutsModal isOpen={showShortcuts} onClose={() => setShowShortcuts(false)} />
-      </main>
+      <>
+        <GlobalNavbar activeView={view} onNavigate={handleSetView} onOpenShortcuts={() => setShowShortcuts(true)} />
+        <main style={{ padding: '16px 20px', minHeight: '100vh' }}>
+          <BuilderSection
+            onBack={() => handleSetView('home')}
+          />
+          <ShortcutsModal isOpen={showShortcuts} onClose={() => setShowShortcuts(false)} />
+        </main>
+      </>
     );
   }
 
   if (view === 'guide') {
     return (
-      <main style={{ padding: '16px 20px', minHeight: '100vh' }}>
-        <GuideSection
-          onBack={() => handleSetView('home')}
-          onNavigate={v => handleSetView(v)}
-        />
-        <ShortcutsModal isOpen={showShortcuts} onClose={() => setShowShortcuts(false)} />
-      </main>
+      <>
+        <GlobalNavbar activeView={view} onNavigate={handleSetView} onOpenShortcuts={() => setShowShortcuts(true)} />
+        <main style={{ padding: '16px 20px', minHeight: '100vh' }}>
+          <GuideSection
+            onBack={() => handleSetView('home')}
+            onNavigate={v => handleSetView(v)}
+          />
+          <ShortcutsModal isOpen={showShortcuts} onClose={() => setShowShortcuts(false)} />
+        </main>
+      </>
     );
   }
 
   if (view === 'practice') {
     return (
-      <main style={{ padding: '16px 20px', minHeight: '100vh' }}>
-        <PracticeSection
-          onBack={() => handleSetView('home')}
-          onNavigate={v => handleSetView(v)}
-        />
-        <ShortcutsModal isOpen={showShortcuts} onClose={() => setShowShortcuts(false)} />
-      </main>
+      <>
+        <GlobalNavbar activeView={view} onNavigate={handleSetView} onOpenShortcuts={() => setShowShortcuts(true)} />
+        <main style={{ padding: '16px 20px', minHeight: '100vh' }}>
+          <PracticeSection
+            onBack={() => handleSetView('home')}
+            onNavigate={v => handleSetView(v)}
+          />
+          <ShortcutsModal isOpen={showShortcuts} onClose={() => setShowShortcuts(false)} />
+        </main>
+      </>
     );
   }
 
   if (view === 'simulations') {
     return (
-      <main style={{ padding: '16px 20px', minHeight: '100vh' }}>
-        <SimulationsGallerySection
-          onBack={() => handleSetView('home')}
-          onNavigate={v => handleSetView(v)}
-        />
-        <ShortcutsModal isOpen={showShortcuts} onClose={() => setShowShortcuts(false)} />
-      </main>
+      <>
+        <GlobalNavbar activeView={view} onNavigate={handleSetView} onOpenShortcuts={() => setShowShortcuts(true)} />
+        <main style={{ padding: '16px 20px', minHeight: '100vh' }}>
+          <SimulationsGallerySection
+            onBack={() => handleSetView('home')}
+            onNavigate={v => handleSetView(v)}
+          />
+          <ShortcutsModal isOpen={showShortcuts} onClose={() => setShowShortcuts(false)} />
+        </main>
+      </>
     );
   }
 
   if (view === 'controllers') {
     return (
-      <main style={{ padding: '16px 20px', minHeight: '100vh' }}>
-        <ControllersSection
-          onBack={() => handleSetView('home')}
-          onNavigate={v => handleSetView(v)}
-        />
-        <ShortcutsModal isOpen={showShortcuts} onClose={() => setShowShortcuts(false)} />
-      </main>
+      <>
+        <GlobalNavbar activeView={view} onNavigate={handleSetView} onOpenShortcuts={() => setShowShortcuts(true)} />
+        <main style={{ padding: '16px 20px', minHeight: '100vh' }}>
+          <ControllersSection
+            onBack={() => handleSetView('home')}
+            onNavigate={v => handleSetView(v)}
+          />
+          <ShortcutsModal isOpen={showShortcuts} onClose={() => setShowShortcuts(false)} />
+        </main>
+      </>
     );
   }
 
-  // Visualização Inicial Padrão (HOME) - Totalmente Clean
+  // Visualização Inicial Padrão (HOME)
   return (
-    <main style={{ padding: '16px 20px', minHeight: '100vh' }}>
-      {/* Top Header Principal */}
-      <Header
-        onOpenShortcuts={() => setShowShortcuts(true)}
-        onOpenBuilder={() => handleSetView('builder')}
-        onOpenGuide={() => handleSetView('guide')}
-        onOpenPractice={() => handleSetView('practice')}
-        onOpenSimulations={() => handleSetView('simulations')}
-        onOpenControllers={() => handleSetView('controllers')}
-      />
+    <>
+      <GlobalNavbar activeView={view} onNavigate={handleSetView} onOpenShortcuts={() => setShowShortcuts(true)} />
+      <main style={{ padding: '16px 20px', minHeight: '100vh' }}>
 
       {/* Hero Banner Profissional */}
       <section className="hero-banner" id="heroBanner" style={{ marginTop: '16px' }}>
@@ -315,5 +323,6 @@ export default function HomePage() {
         </p>
       </footer>
     </main>
+    </>
   );
 }
