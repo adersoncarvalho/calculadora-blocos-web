@@ -13,6 +13,7 @@ import {
 } from './controllersData';
 import { ControllerBlockDiagram } from './ControllerBlockDiagram';
 import { ListaP2View } from './ListaP2View';
+import { FundamentosView } from './FundamentosView';
 
 interface ControllersSectionProps {
   onBack: () => void;
@@ -60,7 +61,7 @@ function renderStackedMath(latex: string): React.ReactNode {
 }
 
 export const ControllersSection: React.FC<ControllersSectionProps> = ({ onBack, onNavigate }) => {
-  const [activeTab, setActiveTab] = useState<'controladores' | 'listas'>('controladores');
+  const [activeTab, setActiveTab] = useState<'controladores' | 'listas' | 'fundamentos'>('controladores');
   const [selectedCategory, setSelectedCategory] = useState<ControllerCategoryId>('P');
   const [showDecisionGuide, setShowDecisionGuide] = useState<boolean>(true);
   const [showTheory, setShowTheory] = useState<boolean>(true);
@@ -82,6 +83,8 @@ export const ControllersSection: React.FC<ControllersSectionProps> = ({ onBack, 
     const tabParam = params.get('tab');
     if (tabParam === 'listas') {
       setActiveTab('listas');
+    } else if (tabParam === 'fundamentos') {
+      setActiveTab('fundamentos');
     }
     const ctrlParam = params.get('ctrl') as ControllerCategoryId | null;
     const exParam = params.get('ex');
@@ -444,10 +447,36 @@ export const ControllersSection: React.FC<ControllersSectionProps> = ({ onBack, 
         >
           📝 Listas de Exercícios (Lista P2 Controle 1 — 23 Questões)
         </button>
+        <button
+          type="button"
+          onClick={() => {
+            setActiveTab('fundamentos');
+            if (typeof window !== 'undefined') {
+              const params = new URLSearchParams(window.location.search);
+              params.set('view', 'controllers');
+              params.set('tab', 'fundamentos');
+              window.history.replaceState(null, '', `/?${params.toString()}`);
+            }
+          }}
+          style={{
+            padding: '10px 18px',
+            borderRadius: '8px',
+            fontSize: '0.88rem',
+            fontWeight: 700,
+            cursor: 'pointer',
+            background: activeTab === 'fundamentos' ? 'var(--primary)' : 'var(--card-bg)',
+            color: activeTab === 'fundamentos' ? '#fff' : 'var(--text)',
+            border: `1.5px solid ${activeTab === 'fundamentos' ? 'var(--primary)' : 'var(--card-border)'}`
+          }}
+        >
+          📘 Fundamentos P, I, PI &amp; PD Prático (Aulas 0000.1–0000.3)
+        </button>
       </div>
 
       {activeTab === 'listas' ? (
         <ListaP2View />
+      ) : activeTab === 'fundamentos' ? (
+        <FundamentosView />
       ) : (
         <>
       {/* GUIA TEÓRICO GERAL: COMO ESCOLHER O CONTROLADOR IDEAL */}
