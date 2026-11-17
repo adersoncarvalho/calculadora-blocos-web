@@ -81,7 +81,7 @@ export const ControllerBlockDiagram: React.FC<ControllerBlockDiagramProps> = ({
               >
                 +
               </span>
-              <svg width="42" height="16" viewBox="0 0 42 16">
+              <svg width="42" height="16" viewBox="0 0 42 16" style={{ width: '42px', height: '16px', display: 'block' }}>
                 <line x1="0" y1="8" x2="34" y2="8" stroke="var(--text)" strokeWidth="2" />
                 <polygon points="33,4 41,8 33,12" fill="var(--text)" />
               </svg>
@@ -141,7 +141,7 @@ export const ControllerBlockDiagram: React.FC<ControllerBlockDiagramProps> = ({
                 >
                   E(s)
                 </span>
-                <svg width="44" height="16" viewBox="0 0 44 16">
+                <svg width="44" height="16" viewBox="0 0 44 16" style={{ width: '44px', height: '16px', display: 'block' }}>
                   <line x1="0" y1="8" x2="36" y2="8" stroke="var(--text)" strokeWidth="2" />
                   <polygon points="35,4 43,8 35,12" fill="var(--text)" />
                 </svg>
@@ -193,7 +193,7 @@ export const ControllerBlockDiagram: React.FC<ControllerBlockDiagramProps> = ({
                     >
                       U(s)
                     </span>
-                    <svg width="44" height="16" viewBox="0 0 44 16">
+                    <svg width="44" height="16" viewBox="0 0 44 16" style={{ width: '44px', height: '16px', display: 'block' }}>
                       <line x1="0" y1="8" x2="36" y2="8" stroke="var(--text)" strokeWidth="2" />
                       <polygon points="35,4 43,8 35,12" fill="var(--text)" />
                     </svg>
@@ -231,7 +231,7 @@ export const ControllerBlockDiagram: React.FC<ControllerBlockDiagramProps> = ({
 
               {/* Segmento da saída até o ponto de derivação (centro do nó fica exatamente a 4px da borda direita) */}
               <div style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
-                <svg width="24" height="16" viewBox="0 0 24 16">
+                <svg width="24" height="16" viewBox="0 0 24 16" style={{ width: '24px', height: '16px', display: 'block' }}>
                   <line x1="0" y1="8" x2="20" y2="8" stroke="var(--text)" strokeWidth="2" />
                   <circle cx="20" cy="8" r="3.5" fill="var(--text)" />
                 </svg>
@@ -271,7 +271,7 @@ export const ControllerBlockDiagram: React.FC<ControllerBlockDiagramProps> = ({
                 width="12"
                 height="10"
                 viewBox="0 0 12 10"
-                style={{ position: 'absolute', left: '-7px', top: '-2px' }}
+                style={{ position: 'absolute', left: '-7px', top: '-2px', width: '12px', height: '10px', display: 'block' }}
               >
                 <polygon points="6,0 11,9 1,9" fill="var(--text)" />
               </svg>
@@ -292,7 +292,7 @@ export const ControllerBlockDiagram: React.FC<ControllerBlockDiagramProps> = ({
 
           {/* Seta final de saída até C(s) */}
           <div style={{ display: 'flex', alignItems: 'center', minHeight: '66px' }}>
-            <svg width="32" height="16" viewBox="0 0 32 16">
+            <svg width="32" height="16" viewBox="0 0 32 16" style={{ width: '32px', height: '16px', display: 'block' }}>
               <line x1="0" y1="8" x2="24" y2="8" stroke="var(--text)" strokeWidth="2" />
               <polygon points="23,4 31,8 23,12" fill="var(--text)" />
             </svg>
