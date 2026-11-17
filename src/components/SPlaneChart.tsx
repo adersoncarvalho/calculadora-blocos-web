@@ -291,6 +291,11 @@ export const SPlaneChart: React.FC<SPlaneChartProps> = ({
               );
             }
 
+            const clIsComplex = Math.abs(pt.im) > 0.05;
+            const clX = clIsComplex ? (pt.re <= 0 ? cx - 8 : cx + 8) : cx;
+            const clY = clIsComplex ? cy + 3 : cy - 10;
+            const clAnchor = clIsComplex ? (pt.re <= 0 ? 'end' : 'start') : 'middle';
+
             return (
               <g
                 key={`pt-${idx}`}
@@ -300,7 +305,17 @@ export const SPlaneChart: React.FC<SPlaneChartProps> = ({
               >
                 <circle cx={cx} cy={cy} r={10} fill="transparent" />
                 <circle cx={cx} cy={cy} r={isHovered ? 6 : 4.5} fill="#10b981" stroke="#ffffff" strokeWidth="1.2" />
-                <text x={cx + 7} y={cy + 3} textAnchor="start" fontSize="9.5" fontWeight="700" fill="#6ee7b7">
+                <text
+                  x={clX}
+                  y={clY}
+                  textAnchor={clAnchor}
+                  fontSize="9.5"
+                  fontWeight="700"
+                  fill="#6ee7b7"
+                  stroke="#0f172a"
+                  strokeWidth="3"
+                  style={{ paintOrder: 'stroke' }}
+                >
                   {coordText}
                 </text>
               </g>
