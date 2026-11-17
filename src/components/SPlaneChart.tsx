@@ -56,8 +56,13 @@ export const SPlaneChart: React.FC<SPlaneChartProps> = ({
   zetaTarget
 }) => {
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
-  const [zoomMode, setZoomMode] = useState<'none' | 'in'>('none');
+  const [toolMode, setToolMode] = useState<'none' | 'zoom' | 'pan'>('none');
   const [viewBoxBounds, setViewBoxBounds] = useState<{ minRe: number; maxRe: number; minIm: number; maxIm: number } | null>(null);
+  const [panDrag, setPanDrag] = useState<{
+    startX: number;
+    startY: number;
+    startBounds: { minRe: number; maxRe: number; minIm: number; maxIm: number };
+  } | null>(null);
 
   const computed = useMemo(() => {
     try {
@@ -122,10 +127,11 @@ export const SPlaneChart: React.FC<SPlaneChartProps> = ({
     }
   }, [plantExpr, controllerExpr]);
 
-  // Reseta zoom se trocar de exercício/planta
+  // Reseta zoom e pan se trocar de exercício/planta
   React.useEffect(() => {
     setViewBoxBounds(null);
-    setZoomMode('none');
+    setToolMode('none');
+    setPanDrag(null);
   }, [plantExpr, controllerExpr]);
 
   if (!computed) return null;
@@ -149,7 +155,7 @@ export const SPlaneChart: React.FC<SPlaneChartProps> = ({
   const zoomFactor = (computed.defaultBounds.maxRe - computed.defaultBounds.minRe) / (activeBounds.maxRe - activeBounds.minRe);
 
   const handleSvgClick = (e: React.MouseEvent<SVGSVGElement>) => {
-    if (zoomMode !== 'in') return;
+    if (toolMode !== 'zoom') return;
     const svg = e.currentTarget;
     const rect = svg.getBoundingClientRect();
     const clickSvgX = ((e.clientX - rect.left) / rect.width) * W;
@@ -165,6 +171,35 @@ export const SPlaneChart: React.FC<SPlaneChartProps> = ({
       minIm: targetIm - newHalfH,
       maxIm: targetIm + newHalfH
     });
+  };
+
+  const handleMouseDown = (e: React.MouseEvent<SVGSVGElement>) => {
+    if (toolMode !== 'pan') return;
+    e.preventDefault();
+    setPanDrag({
+      startX: e.clientX,
+      startY: e.clientY,
+      startBounds: activeBounds
+    });
+  };
+
+  const handleMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
+    if (toolMode !== 'pan' || !panDrag) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const scaleX = (panDrag.startBounds.maxRe - panDrag.startBounds.minRe) / ((plotW / W) * rect.width);
+    const scaleY = (panDrag.startBounds.maxIm - panDrag.startBounds.minIm) / ((plotH / H) * rect.height);
+    const dRe = (e.clientX - panDrag.startX) * scaleX;
+    const dIm = (e.clientY - panDrag.startY) * scaleY;
+    setViewBoxBounds({
+      minRe: panDrag.startBounds.minRe - dRe,
+      maxRe: panDrag.startBounds.maxRe - dRe,
+      minIm: panDrag.startBounds.minIm + dIm,
+      maxIm: panDrag.startBounds.maxIm + dIm
+    });
+  };
+
+  const handleMouseUp = () => {
+    if (panDrag) setPanDrag(null);
   };
 
   const handleZoomOut = () => {
@@ -189,7 +224,8 @@ export const SPlaneChart: React.FC<SPlaneChartProps> = ({
 
   const handleResetZoom = () => {
     setViewBoxBounds(null);
-    setZoomMode('none');
+    setToolMode('none');
+    setPanDrag(null);
   };
 
   const zeroX = toX(0);
@@ -216,10 +252,10 @@ export const SPlaneChart: React.FC<SPlaneChartProps> = ({
           {title}
         </span>
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
-          <div className="no-print" style={{ display: 'flex', gap: '5px', alignItems: 'center' }}>
+          <div className="no-print" style={{ display: 'flex', gap: '5px', alignItems: 'center', flexWrap: 'wrap' }}>
             <button
               type="button"
-              onClick={() => setZoomMode(m => (m === 'in' ? 'none' : 'in'))}
+              onClick={() => setToolMode(m => (m === 'zoom' ? 'none' : 'zoom'))}
               title="Ativar lupa: clique no gráfico onde deseja dar zoom"
               style={{
                 padding: '3px 9px',
@@ -227,12 +263,29 @@ export const SPlaneChart: React.FC<SPlaneChartProps> = ({
                 fontSize: '0.72rem',
                 fontWeight: 700,
                 cursor: 'pointer',
-                background: zoomMode === 'in' ? 'var(--primary)' : 'var(--code-bg)',
-                color: zoomMode === 'in' ? '#fff' : 'var(--text)',
-                border: `1px solid ${zoomMode === 'in' ? 'var(--primary)' : 'var(--card-border)'}`
+                background: toolMode === 'zoom' ? 'var(--primary)' : 'var(--code-bg)',
+                color: toolMode === 'zoom' ? '#fff' : 'var(--text)',
+                border: `1px solid ${toolMode === 'zoom' ? 'var(--primary)' : 'var(--card-border)'}`
               }}
             >
-              🔍+ {zoomMode === 'in' ? 'Clique no gráfico' : 'Lupa +'}
+              🔍+ {toolMode === 'zoom' ? 'Clique no gráfico' : 'Lupa +'}
+            </button>
+            <button
+              type="button"
+              onClick={() => setToolMode(m => (m === 'pan' ? 'none' : 'pan'))}
+              title="Ativar mãozinha: clique e arraste para mover o gráfico"
+              style={{
+                padding: '3px 9px',
+                borderRadius: '5px',
+                fontSize: '0.72rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+                background: toolMode === 'pan' ? 'var(--primary)' : 'var(--code-bg)',
+                color: toolMode === 'pan' ? '#fff' : 'var(--text)',
+                border: `1px solid ${toolMode === 'pan' ? 'var(--primary)' : 'var(--card-border)'}`
+              }}
+            >
+              ✋ {toolMode === 'pan' ? 'Arraste o gráfico' : 'Mover'}
             </button>
             <button
               type="button"
@@ -256,15 +309,15 @@ export const SPlaneChart: React.FC<SPlaneChartProps> = ({
             <button
               type="button"
               onClick={handleResetZoom}
-              disabled={!viewBoxBounds && zoomMode === 'none'}
+              disabled={!viewBoxBounds && toolMode === 'none'}
               title="Ajustar ao zoom original"
               style={{
                 padding: '3px 9px',
                 borderRadius: '5px',
                 fontSize: '0.72rem',
                 fontWeight: 700,
-                cursor: viewBoxBounds || zoomMode !== 'none' ? 'pointer' : 'not-allowed',
-                opacity: viewBoxBounds || zoomMode !== 'none' ? 1 : 0.45,
+                cursor: viewBoxBounds || toolMode !== 'none' ? 'pointer' : 'not-allowed',
+                opacity: viewBoxBounds || toolMode !== 'none' ? 1 : 0.45,
                 background: 'var(--code-bg)',
                 color: 'var(--primary)',
                 border: '1px solid var(--card-border)'
@@ -285,13 +338,18 @@ export const SPlaneChart: React.FC<SPlaneChartProps> = ({
         <svg
           viewBox={`0 0 ${W} ${H}`}
           onClick={handleSvgClick}
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onMouseLeave={handleMouseUp}
           style={{
             width: '100%',
             height: 'auto',
             display: 'block',
             background: 'rgba(15, 23, 42, 0.35)',
             borderRadius: '6px',
-            cursor: zoomMode === 'in' ? 'zoom-in' : 'default'
+            userSelect: 'none',
+            cursor: toolMode === 'zoom' ? 'zoom-in' : toolMode === 'pan' ? (panDrag ? 'grabbing' : 'grab') : 'default'
           }}
         >
           <defs>
