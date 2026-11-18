@@ -72,6 +72,12 @@ export const CONTROL_GLOSSARY: Record<string, GlossaryEntry> = {
     meaning: 'Contribuição angular exigida do compensador (no PD/Lead) ou perda máxima tolerada de ângulo (no PI/Lag: 5° ou 10°).',
     purpose: 'Garante que o polo desejado sd permaneça no Lugar das Raízes sem deformar o transitório.'
   },
+  φmax: {
+    symbol: 'φmax',
+    name: 'Avanço Máximo de Um Estágio PD Real',
+    meaning: 'Ângulo máximo que 1 estágio PD Real (com razão r = N + 1) consegue fornecer no polo desejado sd: cot(φmax) = [2√r − ζ(r+1)] / [√(1−ζ²)(r−1)].',
+    purpose: 'Determina o número mínimo de estágios m (menor inteiro tal que θdef / m ≤ φmax) e a folga angular do projeto.'
+  },
   zc: {
     symbol: 'zc',
     name: 'Zero do Controlador / Compensador',

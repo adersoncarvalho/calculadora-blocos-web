@@ -1342,11 +1342,11 @@ xgrid();`
     },
     detailedSteps: [
       {
-        title: '1. Método da Deficiência Angular em $s_d = -3 + j3$',
+        title: '1. Método da Deficiência Angular em $s_d = -3 + j3$ e Avanço Máximo $\\varphi_{\\max}$ (Slides 9–11)',
         description:
-          'Pela condição de ângulo do LGR, $\\angle G_c(s_d) + \\angle L(s_d) = -180^\\circ$. Como $L(s) = 1/s^2$ tem dois polos na origem ($p_{1,2} = 0$) e $s_d = -3 + j3$ está no 2º quadrante:',
+          'Pela condição de ângulo do LGR, $\\angle G_c(s_d) + \\angle L(s_d) = -180^\\circ$. Como $L(s) = 1/s^2$ tem dois polos na origem ($p_{1,2} = 0$) e $s_d = -3 + j3$ está no 2º quadrante, calculamos $\\theta_{\\text{def}} = +90^\\circ$. Para saber quantos estágios $m$ são necessários ($\\theta_{\\text{def}}/m \\le \\varphi_{\\max}$), calculamos o avanço máximo $\\varphi_{\\max}$ de 1 estágio com $r = N + 1 = 11$ e $\\zeta = \\sigma_d/|s_d| = 3/\\sqrt{18} = 0{,}707$ (Slides 9–10):',
         latex:
-          '\\theta_p = 180^\\circ - \\arctan\\left(\\frac{\\omega_d}{\\sigma_d}\\right) = 180^\\circ - \\arctan\\left(\\frac{3}{3}\\right) = 135^\\circ \\;;\\; \\angle L(s_d) = \\sum\\theta_z - \\sum\\theta_p = 0^\\circ - 2\\theta_p = -270^\\circ \\;;\\; \\theta_{\\text{def}} = -180^\\circ - \\angle L(s_d) = -180^\\circ - (-270^\\circ) = \\mathbf{+90^\\circ}'
+          '\\theta_p = 180^\\circ - \\arctan\\left(\\frac{\\omega_d}{\\sigma_d}\\right) = 180^\\circ - \\arctan\\left(\\frac{3}{3}\\right) = 135^\\circ \\;;\\; \\angle L(s_d) = \\sum\\theta_z - \\sum\\theta_p = 0^\\circ - 2\\theta_p = -270^\\circ \\;;\\; \\theta_{\\text{def}} = -180^\\circ - \\angle L(s_d) = -180^\\circ - (-270^\\circ) = \\mathbf{+90^\\circ} \\;;\\; \\cot\\varphi_{\\max} = \\frac{2\\sqrt{r} - \\zeta(r+1)}{\\sqrt{1-\\zeta^2}\\,(r-1)} = \\frac{2\\sqrt{11} - 0{,}707(11+1)}{0{,}707(11-1)} = \\frac{6{,}633 - 8{,}484}{7{,}070} = \\frac{-1{,}851}{7{,}070} = -0{,}2618 \\;;\\; \\varphi_{\\max} = 90^\\circ + \\arctan(0{,}2618) = 90^\\circ + 14{,}67^\\circ = \\mathbf{104{,}7^\\circ} \\;(\\ge 90^\\circ \\implies m = 1\\text{ estágio, folga de } 104{,}7^\\circ - 90^\\circ = \\mathbf{14{,}7^\\circ})'
       },
       {
         title: '2. Derivação do Polinômio em $z_c$ ($r = N+1$, $\\varphi = 90^\\circ \\implies \\cot 90^\\circ = 0$)',
