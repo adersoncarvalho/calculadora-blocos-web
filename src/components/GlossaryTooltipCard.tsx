@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { CONTROL_GLOSSARY, GlossaryEntry } from '@/utils/controlGlossary';
 
 interface GlossaryTooltipCardProps {
@@ -9,27 +10,28 @@ interface GlossaryTooltipCardProps {
 }
 
 export const GlossaryTooltipCard: React.FC<GlossaryTooltipCardProps> = ({ entry, rect }) => {
-  const showBelow = rect.top < 150;
+  const showBelow = rect.top < 160;
   const maxWidth = 320;
   const vw = typeof window !== 'undefined' ? window.innerWidth : 1024;
+  const vh = typeof window !== 'undefined' ? window.innerHeight : 768;
   const left = Math.min(Math.max(12, rect.left + rect.width / 2 - maxWidth / 2), vw - maxWidth - 12);
 
-  return (
+  const card = (
     <div
       role="tooltip"
       style={{
         position: 'fixed',
         left: `${left}px`,
         top: showBelow ? `${rect.bottom + 8}px` : undefined,
-        bottom: showBelow ? undefined : `${(typeof window !== 'undefined' ? window.innerHeight : 768) - rect.top + 8}px`,
+        bottom: showBelow ? undefined : `${vh - rect.top + 8}px`,
         width: `${maxWidth}px`,
-        zIndex: 9999,
+        zIndex: 99999,
         pointerEvents: 'none',
-        background: 'rgba(15, 23, 42, 0.96)',
-        border: '1px solid rgba(56, 189, 248, 0.45)',
+        background: 'rgba(15, 23, 42, 0.97)',
+        border: '1px solid rgba(56, 189, 248, 0.5)',
         borderRadius: '8px',
         padding: '10px 12px',
-        boxShadow: '0 10px 28px rgba(0, 0, 0, 0.45)',
+        boxShadow: '0 10px 28px rgba(0, 0, 0, 0.5)',
         color: '#e2e8f0',
         fontSize: '0.76rem',
         lineHeight: 1.45,
@@ -60,6 +62,11 @@ export const GlossaryTooltipCard: React.FC<GlossaryTooltipCardProps> = ({ entry,
       </div>
     </div>
   );
+
+  if (typeof document !== 'undefined') {
+    return createPortal(card, document.body);
+  }
+  return card;
 };
 
 interface GlossaryTermProps {

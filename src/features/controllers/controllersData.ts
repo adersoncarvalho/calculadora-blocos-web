@@ -1510,7 +1510,7 @@ xgrid();`
         description:
           'Sem $F(s)$: $M_p = 7{,}1\\%$, $t_p = 0{,}79\\text{ s}$; com $F(s) = \\frac{5{,}646}{s+5{,}646}$: $M_p = 4{,}3\\%$, $t_p = 1{,}07\\text{ s}$:',
         latex:
-          'K_p = \\frac{K_c}{r} = \\frac{152{,}4}{9} = \\mathbf{16{,}94} \\;;\\; T_d = \\frac{N}{p_c} = \\frac{8}{50{,}81} = \\mathbf{0{,}157\\text{ s}} \\;;\\; K_d = K_p T_d = 16{,}94\\cdot 0{,}157 = 2{,}67 \\;;\\; s(s+3)(s+p_c) + K_c(s+z_c) = 0 \\implies p_1 + p_2 + p_3 = -(3+p_c) \\implies p_3 = -(3 + p_c) - (-2\\sigma_d) = -(3 + 50{,}81) + 6 = \\mathbf{-47{,}81}'
+          'K_c = K_p(N+1) = K_p r \\implies K_p = \\frac{K_c}{r} = \\frac{152{,}4}{9} = \\mathbf{16{,}94} \\;;\\; p_c = \\frac{N}{T_d} \\implies T_d = \\frac{N}{p_c} = \\frac{8}{50{,}81} = \\mathbf{0{,}157\\text{ s}} \\;;\\; K_d = K_p T_d = 16{,}94\\cdot 0{,}157 = 2{,}67 \\;;\\; 1 + G_c(s)L(s) = 0 \\implies 1 + K_c\\frac{s+z_c}{s+p_c}\\cdot\\frac{1}{s(s+3)} = 0 \\;;\\; s(s+3)(s+p_c) + K_c(s+z_c) = 0 \\implies s\\big(s^2 + (3+p_c)s + 3p_c\\big) + K_c s + K_c z_c = 0 \\;;\\; s^3 + (3 + p_c)s^2 + (3p_c + K_c)s + K_c z_c = 0 \\;;\\; p_1 + p_2 + p_3 = -(3 + p_c) \\;\\text{ com }\\; p_{1,2} = -\\sigma_d \\pm j\\omega_d \\implies (-2\\sigma_d) + p_3 = -(3 + p_c) \\;;\\; p_3 = -(3 + p_c) - (-2\\sigma_d) = -(3 + 50{,}81) + 6 = \\mathbf{-47{,}81} \\;;\\; s^3 + (3+50{,}81)s^2 + (3\\cdot 50{,}81 + 152{,}4)s + 152{,}4\\cdot 5{,}646 = 0 \\;;\\; s^3 + 53{,}81s^2 + 304{,}8s + 860{,}5 = (s^2+6s+18)(s+47{,}81) = 0'
       },
       {
         title: '5. Regra dos 10 V, Erro à Rampa ($K_{\\text{vel}}$) e Dimensionamento RC ($C_1 = 10\\,\\mu\\text{F}$)',
@@ -1580,7 +1580,7 @@ xgrid();`
         description:
           'Sem $F(s)$: $M_p = 7{,}0\\%$, $t_p = 0{,}79\\text{ s}$; com $F(s) = \\frac{5{,}760}{s+5{,}760}$: $M_p = 4{,}3\\%$, $t_p = 1{,}06\\text{ s}$:',
         latex:
-          'K_p = \\frac{K_c}{r} = \\frac{224{,}6}{13} = \\mathbf{17{,}28} \\;;\\; T_d = \\frac{N}{p_c} = \\frac{12}{74{,}87} = \\mathbf{0{,}160\\text{ s}} \\;;\\; K_d = K_p T_d = 17{,}28\\cdot 0{,}160 = 2{,}77 \\;;\\; s(s+3)(s+p_c) + K_c(s+z_c) = 0 \\implies p_1 + p_2 + p_3 = -(3+p_c) \\implies p_3 = -(3 + p_c) - (-2\\sigma_d) = -(3 + 74{,}87) + 6 = \\mathbf{-71{,}87}'
+          'K_c = K_p(N+1) = K_p r \\implies K_p = \\frac{K_c}{r} = \\frac{224{,}6}{13} = \\mathbf{17{,}28} \\;;\\; p_c = \\frac{N}{T_d} \\implies T_d = \\frac{N}{p_c} = \\frac{12}{74{,}87} = \\mathbf{0{,}160\\text{ s}} \\;;\\; K_d = K_p T_d = 17{,}28\\cdot 0{,}160 = 2{,}77 \\;;\\; 1 + G_c(s)L(s) = 0 \\implies 1 + K_c\\frac{s+z_c}{s+p_c}\\cdot\\frac{1}{s(s+3)} = 0 \\;;\\; s(s+3)(s+p_c) + K_c(s+z_c) = 0 \\implies s\\big(s^2 + (3+p_c)s + 3p_c\\big) + K_c s + K_c z_c = 0 \\;;\\; s^3 + (3 + p_c)s^2 + (3p_c + K_c)s + K_c z_c = 0 \\;;\\; p_1 + p_2 + p_3 = -(3 + p_c) \\;\\text{ com }\\; p_{1,2} = -\\sigma_d \\pm j\\omega_d \\implies (-2\\sigma_d) + p_3 = -(3 + p_c) \\;;\\; p_3 = -(3 + p_c) - (-2\\sigma_d) = -(3 + 74{,}87) + 6 = \\mathbf{-71{,}87} \\;;\\; s^3 + (3+74{,}87)s^2 + (3\\cdot 74{,}87 + 224{,}6)s + 224{,}6\\cdot 5{,}760 = 0 \\;;\\; s^3 + 77{,}87s^2 + 449{,}2s + 1293{,}7 = (s^2+6s+18)(s+71{,}87) = 0'
       },
       {
         title: '5. Regra dos 10 V, Erro à Rampa ($K_{\\text{vel}}$) e Dimensionamento RC ($C_1 = 10\\,\\mu\\text{F}$)',
@@ -1650,7 +1650,7 @@ xgrid();`
         description:
           'Sem $F(s)$: $M_p = 4{,}8\\%$, $t_p = 1{,}41\\text{ s}$; com $F(s) = \\frac{7{,}540}{s+7{,}540}$: $M_p = 4{,}3\\%$, $t_p = 1{,}58\\text{ s}$:',
         latex:
-          'K_p = \\frac{K_c}{r} = \\frac{86{,}9}{11} = \\mathbf{7{,}90} \\;;\\; T_d = \\frac{N}{p_c} = \\frac{10}{82{,}94} = \\mathbf{0{,}121\\text{ s}} \\;;\\; K_d = K_p T_d = 7{,}90\\cdot 0{,}121 = 0{,}95 \\;;\\; s(s+3)(s+p_c) + K_c(s+z_c) = 0 \\implies p_1 + p_2 + p_3 = -(3+p_c) \\implies p_3 = -(3 + p_c) - (-2\\sigma_d) = -(3 + 82{,}94) + 4 = \\mathbf{-81{,}94}'
+          'K_c = K_p(N+1) = K_p r \\implies K_p = \\frac{K_c}{r} = \\frac{86{,}9}{11} = \\mathbf{7{,}90} \\;;\\; p_c = \\frac{N}{T_d} \\implies T_d = \\frac{N}{p_c} = \\frac{10}{82{,}94} = \\mathbf{0{,}121\\text{ s}} \\;;\\; K_d = K_p T_d = 7{,}90\\cdot 0{,}121 = 0{,}95 \\;;\\; 1 + G_c(s)L(s) = 0 \\implies 1 + K_c\\frac{s+z_c}{s+p_c}\\cdot\\frac{1}{s(s+3)} = 0 \\;;\\; s(s+3)(s+p_c) + K_c(s+z_c) = 0 \\implies s\\big(s^2 + (3+p_c)s + 3p_c\\big) + K_c s + K_c z_c = 0 \\;;\\; s^3 + (3 + p_c)s^2 + (3p_c + K_c)s + K_c z_c = 0 \\;;\\; p_1 + p_2 + p_3 = -(3 + p_c) \\;\\text{ com }\\; p_{1,2} = -\\sigma_d \\pm j\\omega_d \\implies (-2\\sigma_d) + p_3 = -(3 + p_c) \\;;\\; p_3 = -(3 + p_c) - (-2\\sigma_d) = -(3 + 82{,}94) + 4 = \\mathbf{-81{,}94} \\;;\\; s^3 + (3+82{,}94)s^2 + (3\\cdot 82{,}94 + 86{,}9)s + 86{,}9\\cdot 7{,}540 = 0 \\;;\\; s^3 + 85{,}94s^2 + 335{,}7s + 655{,}2 = (s^2+4s+8)(s+81{,}94) = 0'
       },
       {
         title: '5. Regra dos 10 V, Erro à Rampa ($K_{\\text{vel}}$) e Dimensionamento RC ($C_1 = 10\\,\\mu\\text{F}$)',

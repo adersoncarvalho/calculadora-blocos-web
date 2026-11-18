@@ -49,35 +49,44 @@ export const MathView: React.FC<MathViewProps> = ({ math, block = false, inline 
       const txt = (el.textContent || '').trim();
       if (!txt || txt.length > 14) return;
       if (Object.prototype.hasOwnProperty.call(CONTROL_GLOSSARY, txt)) {
+        const entry = CONTROL_GLOSSARY[txt];
         el.setAttribute('data-glossary-key', txt);
+        el.setAttribute('title', `${entry.symbol} — ${entry.name}: ${entry.meaning}`);
         el.style.cursor = 'help';
         el.style.borderBottom = '1px dotted rgba(56, 189, 248, 0.55)';
       }
     });
   }, [html]);
 
-  const handleMouseOver = (e: React.MouseEvent) => {
+  const handleMouseMove = (e: React.MouseEvent) => {
     const target = e.target as HTMLElement | null;
-    const hit = target?.closest?.('[data-glossary-key]') as HTMLElement | null;
-    if (!hit) return;
+    let hit = target?.closest?.('[data-glossary-key]') as HTMLElement | null;
+    if (!hit && typeof document !== 'undefined' && document.elementsFromPoint) {
+      const stack = document.elementsFromPoint(e.clientX, e.clientY);
+      for (const node of stack) {
+        const found = (node as HTMLElement)?.closest?.('[data-glossary-key]') as HTMLElement | null;
+        if (found) {
+          hit = found;
+          break;
+        }
+      }
+    }
+    if (!hit) {
+      if (hover) setHover(null);
+      return;
+    }
     const key = hit.getAttribute('data-glossary-key');
     if (key && CONTROL_GLOSSARY[key]) {
-      setHover({ key, rect: hit.getBoundingClientRect() });
+      const rect = hit.getBoundingClientRect();
+      setHover(prev => (prev && prev.key === key && Math.abs(prev.rect.left - rect.left) < 1 && Math.abs(prev.rect.top - rect.top) < 1 ? prev : { key, rect }));
     }
-  };
-
-  const handleMouseOut = (e: React.MouseEvent) => {
-    const related = e.relatedTarget as HTMLElement | null;
-    if (related?.closest?.('[data-glossary-key]')) return;
-    setHover(null);
   };
 
   if (isDisplay) {
     return (
       <div
         className={`math-block ${className}`}
-        onMouseOver={handleMouseOver}
-        onMouseOut={handleMouseOut}
+        onMouseMove={handleMouseMove}
         onMouseLeave={() => setHover(null)}
       >
         <span ref={contentRef} dangerouslySetInnerHTML={{ __html: html }} />
@@ -91,8 +100,7 @@ export const MathView: React.FC<MathViewProps> = ({ math, block = false, inline 
   return (
     <span
       className={`math-inline ${className}`}
-      onMouseOver={handleMouseOver}
-      onMouseOut={handleMouseOut}
+      onMouseMove={handleMouseMove}
       onMouseLeave={() => setHover(null)}
     >
       <span ref={contentRef} dangerouslySetInnerHTML={{ __html: html }} />
