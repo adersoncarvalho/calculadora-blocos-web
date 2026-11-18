@@ -1266,6 +1266,201 @@ legend(['Sem PD', 'Com PD Real (N=10)']);
 xgrid();`
   },
   {
+    id: 'pd-ex-slide-prop1',
+    controllerId: 'PD',
+    badge: 'Slide 02 • Proposto (N=8)',
+    title: 'Exercício Proposto 1 (Slide 31) — PD Real em L(s) = 1/[s(s+3)] com N = 8 e sd = -3+j3',
+    source: 'Slide 02 — Controlador PD real pelo lugar das raízes (Slides 30–31)',
+    statementLatex:
+      '\\text{Dada } L(s) = \\frac{1}{s(s+3)}, \\text{ refaça o projeto do controlador PD Real com } N = 8 \\; (r = 9) \\text{ para } s_d = -3 + j3 \\; (\\zeta = 0{,}707,\\; \\omega_d = 3\\text{ rad/s}).',
+    plantExpr: '1/(s*(s+3))',
+    plantLatex: '\\frac{1}{s(s+3)}',
+    controllerExpr: '152.4*(s+5.646)/(s+50.81)',
+    controllerLatex: 'G_c(s) = 152{,}4\\frac{s + 5{,}646}{s + 50{,}81}',
+    controllerBlockLabel: 'Controlador PD Real (N=8)',
+    inputType: 'step',
+    inputParams: { a0: 1, labelLatex: 'r(t) = u(t)' },
+    tMax: 3,
+    whyThisController:
+      'Mantendo $s_d = -3 + j3$, a deficiência angular continua $\\theta_{\\text{def}} = +45^\\circ$. Reduzir o fator de filtro de $N = 10$ para $N = 8$ ($r = 9$) aproxima o polo $p_c$ e reduz o ganho de alta frequência $K_c$ de $188{,}5$ para $152{,}4$, aliviando a saturação inicial do amp-op.',
+    diagnostics: {
+      systemType: 'Tipo 1',
+      systemOrder: '2ª Ordem → 3ª Ordem (com filtro)',
+      initialErrorLatex: 'e_{ss} = 0',
+      finalErrorLatex: 'e_{ss} = 0'
+    },
+    detailedSteps: [
+      {
+        title: '1. Polo Desejado $s_d$ e Deficiência Angular $\\theta_{\\text{def}}$',
+        description: 'Com $\\sigma_d = 3$ e $\\omega_d = 3\\text{ rad/s}$ ($s_d = -3 + j3$), os polos em $0$ e $-3$ dão:',
+        latex:
+          '\\theta_1 = \\operatorname{atan2}(3, -3) = 135^\\circ \\;;\\; \\theta_2 = \\operatorname{atan2}(3, 0) = 90^\\circ \\;;\\; \\angle L(s_d) = -225^\\circ \\implies \\theta_{\\text{def}} = \\mathbf{+45{,}0^\\circ}'
+      },
+      {
+        title: '2. Polinômio em $z_c$ para $N = 8$ ($r = 9$, $\\cot 45^\\circ = 1$)',
+        description: 'Calculando $c_2 = r$, $c_1 = -[\\sigma_d(r+1) + \\omega_d(r-1)\\cot\\varphi]$ e $c_0 = \\sigma_d^2 + \\omega_d^2$:',
+        latex:
+          'c_2 = 9 \\;;\\; c_1 = -[3\\cdot 10 + 3\\cdot 8\\cdot 1] = -54{,}0 \\;;\\; c_0 = 18 \\;;\\; 9z_c^2 - 54{,}0 z_c + 18 = 0 \\implies \\Delta = 2268 \\;(\\sqrt{\\Delta} = 47{,}62) \\;;\\; z_c = \\frac{54{,}0 + 47{,}62}{18} = \\mathbf{5{,}646} \\;(\\text{descarta } 0{,}354) \\;;\\; p_c = 9\\cdot 5{,}646 = \\mathbf{50{,}81}'
+      },
+      {
+        title: '3. Ganho $K_c$ pela Condição de Módulo',
+        description: 'Aplicando $K_c = \\left.\\frac{1}{|\\bar{G}_c(s)L(s)|}\\right|_{s=-3+j3}$:',
+        latex:
+          'K_c = \\frac{|s_d+50{,}81|\\cdot|s_d|\\cdot|s_d+3|}{|s_d+5{,}646|} = \\frac{|-3+j3+50{,}81|\\cdot|-3+j3|\\cdot|j3|}{|2{,}646+j3|} = \\frac{47{,}906\\cdot 4{,}2426\\cdot 3}{4{,}0000} \\approx \\mathbf{152{,}4} \\;;\\; \\mathbf{G_c(s) = 152{,}4\\frac{s+5{,}646}{s+50{,}81}}'
+      },
+      {
+        title: '4. Parâmetros $K_p$, $T_d$, Polos de Malha Fechada e Pré-Filtro $F(s)$',
+        description: 'Sem $F(s)$: $M_p = 7{,}1\\%$ e $t_p = 0{,}79\\text{ s}$. Com pré-filtro $F(s) = \\frac{5{,}646}{s+5{,}646}$: $M_p = 4{,}3\\%$ e $t_p = 1{,}07\\text{ s}$:',
+        latex:
+          'K_p = \\frac{152{,}4}{9} = \\mathbf{16{,}94} \\;;\\; T_d = \\frac{8}{50{,}81} = \\mathbf{0{,}157\\text{ s}} \\;;\\; K_d = 2{,}67 \\;;\\; \\text{Polos MF: } -3 \\pm j3 \\text{ e } -47{,}81'
+      },
+      {
+        title: '5. Regra dos 10 V, Erro em Regime e Componentes ($C_1 = 10\\,\\mu\\text{F}$)',
+        description: 'Pico de $u$ por volt de $\\Delta e$: $152{,}4$ (sem $F$) e $14{,}8$ (com $F$). Erro à rampa e circuito RC:',
+        latex:
+          'K_{\\text{vel}} = \\frac{16{,}94}{3} = 5{,}65 \\;;\\; e_{ss,\\text{rampa}} = \\frac{1}{5{,}65} = 0{,}177\\text{ V} \\;;\\; R_1 = \\frac{1}{z_c C_1} = \\mathbf{17{,}7\\text{ k}\\Omega} \\;;\\; R_2 = K_p R_1 = \\mathbf{300\\text{ k}\\Omega} \\;;\\; C_2 = \\frac{1}{p_c R_2} = \\mathbf{65{,}6\\text{ nF}}'
+      }
+    ],
+    scilabCode: `// Slide 31 - Proposto 1: N = 8, L(s) = 1/(s(s+3)), sd = -3+j3
+s = %s;
+G = syslin('c', 1, s*(s+3));
+Gc = syslin('c', 152.4*(s+5.646), s+50.81);
+T_com = (Gc*G) /. 1;
+t = 0:0.01:3; clf();
+plot(t, csim('step', t, T_com), 'b-', 'LineWidth', 2);
+xgrid();`
+  },
+  {
+    id: 'pd-ex-slide-prop2',
+    controllerId: 'PD',
+    badge: 'Slide 02 • Proposto (N=12)',
+    title: 'Exercício Proposto 2 (Slide 31) — PD Real em L(s) = 1/[s(s+3)] com N = 12 e sd = -3+j3',
+    source: 'Slide 02 — Controlador PD real pelo lugar das raízes (Slides 30–31)',
+    statementLatex:
+      '\\text{Dada } L(s) = \\frac{1}{s(s+3)}, \\text{ refaça o projeto do controlador PD Real com } N = 12 \\; (r = 13) \\text{ para } s_d = -3 + j3 \\; (\\zeta = 0{,}707,\\; \\omega_d = 3\\text{ rad/s}).',
+    plantExpr: '1/(s*(s+3))',
+    plantLatex: '\\frac{1}{s(s+3)}',
+    controllerExpr: '224.6*(s+5.760)/(s+74.87)',
+    controllerLatex: 'G_c(s) = 224{,}6\\frac{s + 5{,}760}{s + 74{,}87}',
+    controllerBlockLabel: 'Controlador PD Real (N=12)',
+    inputType: 'step',
+    inputParams: { a0: 1, labelLatex: 'r(t) = u(t)' },
+    tMax: 3,
+    whyThisController:
+      'Com $N = 12$ ($r = 13$), o polo do filtro $p_c = 74{,}87$ fica ainda mais afastado dos polos dominantes ($-71{,}87$ em malha fechada), aproximando o comportamento do PD ideal, ao custo de elevar o ganho de alta frequência para $K_c = 224{,}6$.',
+    diagnostics: {
+      systemType: 'Tipo 1',
+      systemOrder: '2ª Ordem → 3ª Ordem (com filtro)',
+      initialErrorLatex: 'e_{ss} = 0',
+      finalErrorLatex: 'e_{ss} = 0'
+    },
+    detailedSteps: [
+      {
+        title: '1. Polo Desejado $s_d$ e Deficiência Angular $\\theta_{\\text{def}}$',
+        description: 'Para $s_d = -3 + j3$ e $L(s) = \\frac{1}{s(s+3)}$:',
+        latex:
+          '\\theta_1 = 135^\\circ \\;;\\; \\theta_2 = 90^\\circ \\;;\\; \\angle L(s_d) = -225^\\circ \\implies \\theta_{\\text{def}} = \\mathbf{+45{,}0^\\circ}'
+      },
+      {
+        title: '2. Polinômio em $z_c$ para $N = 12$ ($r = 13$, $\\cot 45^\\circ = 1$)',
+        description: 'Calculando $c_2 = 13$, $c_1 = -[3\\cdot 14 + 3\\cdot 12\\cdot 1] = -78{,}0$ e $c_0 = 18$:',
+        latex:
+          '13z_c^2 - 78{,}0 z_c + 18 = 0 \\implies \\Delta = 5148 \\;(\\sqrt{\\Delta} = 71{,}75) \\;;\\; z_c = \\frac{78{,}0 + 71{,}75}{26} = \\mathbf{5{,}760} \\;(\\text{descarta } 0{,}240) \\;;\\; p_c = 13\\cdot 5{,}760 = \\mathbf{74{,}87}'
+      },
+      {
+        title: '3. Ganho $K_c$ pela Condição de Módulo',
+        description: 'Aplicando $K_c = \\left.\\frac{1}{|\\bar{G}_c(s)L(s)|}\\right|_{s=-3+j3}$:',
+        latex:
+          'K_c = \\frac{|s_d+74{,}87|\\cdot|s_d|\\cdot|s_d+3|}{|s_d+5{,}760|} = \\frac{71{,}937\\cdot 4{,}2426\\cdot 3}{4{,}0762} \\approx \\mathbf{224{,}6} \\;;\\; \\mathbf{G_c(s) = 224{,}6\\frac{s+5{,}760}{s+74{,}87}}'
+      },
+      {
+        title: '4. Parâmetros $K_p$, $T_d$, Polos de Malha Fechada e Pré-Filtro $F(s)$',
+        description: 'Sem $F(s)$: $M_p = 7{,}0\\%$ e $t_p = 0{,}79\\text{ s}$. Com pré-filtro $F(s) = \\frac{5{,}760}{s+5{,}760}$: $M_p = 4{,}3\\%$ e $t_p = 1{,}06\\text{ s}$:',
+        latex:
+          'K_p = \\frac{224{,}6}{13} = \\mathbf{17{,}28} \\;;\\; T_d = \\frac{12}{74{,}87} = \\mathbf{0{,}160\\text{ s}} \\;;\\; K_d = 2{,}77 \\;;\\; \\text{Polos MF: } -3 \\pm j3 \\text{ e } -71{,}87'
+      },
+      {
+        title: '5. Regra dos 10 V, Erro em Regime e Componentes ($C_1 = 10\\,\\mu\\text{F}$)',
+        description: 'Pico de $u$ por volt de $\\Delta e$: $224{,}6$ (sem $F$) e $15{,}6$ (com $F$). Erro à rampa e circuito RC:',
+        latex:
+          'K_{\\text{vel}} = \\frac{17{,}28}{3} = 5{,}76 \\;;\\; e_{ss,\\text{rampa}} = \\frac{1}{5{,}76} = 0{,}174\\text{ V} \\;;\\; R_1 = \\frac{1}{z_c C_1} = \\mathbf{17{,}4\\text{ k}\\Omega} \\;;\\; R_2 = K_p R_1 = \\mathbf{300\\text{ k}\\Omega} \\;;\\; C_2 = \\frac{1}{p_c R_2} = \\mathbf{44{,}5\\text{ nF}}'
+      }
+    ],
+    scilabCode: `// Slide 31 - Proposto 2: N = 12, L(s) = 1/(s(s+3)), sd = -3+j3
+s = %s;
+G = syslin('c', 1, s*(s+3));
+Gc = syslin('c', 224.6*(s+5.760), s+74.87);
+T_com = (Gc*G) /. 1;
+t = 0:0.01:3; clf();
+plot(t, csim('step', t, T_com), 'b-', 'LineWidth', 2);
+xgrid();`
+  },
+  {
+    id: 'pd-ex-slide-prop3',
+    controllerId: 'PD',
+    badge: 'Slide 02 • Proposto (sd=-2+j2)',
+    title: 'Exercício Proposto 3 (Slide 31) — PD Real em L(s) = 1/[s(s+3)] com N = 10 e sd = -2+j2',
+    source: 'Slide 02 — Controlador PD real pelo lugar das raízes (Slides 30–31)',
+    statementLatex:
+      '\\text{Dada } L(s) = \\frac{1}{s(s+3)}, \\text{ projete o controlador PD Real com } N = 10 \\; (r = 11) \\text{ para um polo desejado mais lento } s_d = -2 + j2 \\; (\\zeta = 0{,}707,\\; \\omega_d = 2\\text{ rad/s}).',
+    plantExpr: '1/(s*(s+3))',
+    plantLatex: '\\frac{1}{s(s+3)}',
+    controllerExpr: '86.9*(s+7.540)/(s+82.94)',
+    controllerLatex: 'G_c(s) = 86{,}9\\frac{s + 7{,}540}{s + 82{,}94}',
+    controllerBlockLabel: 'Controlador PD Real (N=10)',
+    inputType: 'step',
+    inputParams: { a0: 1, labelLatex: 'r(t) = u(t)' },
+    tMax: 4,
+    whyThisController:
+      'Para $s_d = -2 + j2$, a deficiência de fase cai para $\\theta_{\\text{def}} = +18{,}4^\\circ$. Como $\\theta_{\\text{def}} > 0$, ainda é necessário um **PD Real** de 1 estágio, porém com ganho $K_c = 86{,}9$ bem menor e pico de atuação de apenas $7{,}5\\text{ V/V}$ com pré-filtro.',
+    diagnostics: {
+      systemType: 'Tipo 1',
+      systemOrder: '2ª Ordem → 3ª Ordem (com filtro)',
+      initialErrorLatex: 'e_{ss} = 0',
+      finalErrorLatex: 'e_{ss} = 0'
+    },
+    detailedSteps: [
+      {
+        title: '1. Polo Desejado $s_d = -2 + j2$ e Deficiência Angular $\\theta_{\\text{def}}$',
+        description: 'Vetores dos polos $0$ e $-3$ até $s_d = -2 + j2$: $s_d - 0 = -2 + j2$ e $s_d - (-3) = 1 + j2$:',
+        latex:
+          '\\theta_1 = \\operatorname{atan2}(2, -2) = 135^\\circ \\;;\\; \\theta_2 = \\operatorname{atan2}(2, 1) = 63{,}43^\\circ \\;;\\; \\angle L(s_d) = -198{,}43^\\circ \\implies \\theta_{\\text{def}} = -180^\\circ - (-198{,}43^\\circ) = \\mathbf{+18{,}4^\\circ}'
+      },
+      {
+        title: '2. Polinômio em $z_c$ para $N = 10$ ($r = 11$, $\\cot 18{,}43^\\circ = 3$)',
+        description: 'Com $\\sigma_d = 2$, $\\omega_d = 2$ e $\\cot\\varphi = 3$: $c_2 = 11$, $c_1 = -[2\\cdot 12 + 2\\cdot 10\\cdot 3] = -84{,}0$ e $c_0 = 2^2 + 2^2 = 8$:',
+        latex:
+          '11z_c^2 - 84{,}0 z_c + 8 = 0 \\implies \\Delta = 6704 \\;(\\sqrt{\\Delta} = 81{,}88) \\;;\\; z_c = \\frac{84{,}0 + 81{,}88}{22} = \\mathbf{7{,}540} \\;(\\text{descarta } 0{,}096) \\;;\\; p_c = 11\\cdot 7{,}540 = \\mathbf{82{,}94}'
+      },
+      {
+        title: '3. Ganho $K_c$ pela Condição de Módulo',
+        description: 'Aplicando $K_c = \\left.\\frac{1}{|\\bar{G}_c(s)L(s)|}\\right|_{s=-2+j2}$:',
+        latex:
+          'K_c = \\frac{|s_d+82{,}94|\\cdot|s_d|\\cdot|s_d+3|}{|s_d+7{,}540|} = \\frac{80{,}964\\cdot 2{,}8284\\cdot 2{,}2361}{5{,}8899} \\approx \\mathbf{86{,}9} \\;;\\; \\mathbf{G_c(s) = 86{,}9\\frac{s+7{,}540}{s+82{,}94}}'
+      },
+      {
+        title: '4. Parâmetros $K_p$, $T_d$, Polos de Malha Fechada e Pré-Filtro $F(s)$',
+        description: 'Sem $F(s)$: $M_p = 4{,}8\\%$ e $t_p = 1{,}41\\text{ s}$. Com pré-filtro $F(s) = \\frac{7{,}540}{s+7{,}540}$: $M_p = 4{,}3\\%$ e $t_p = 1{,}58\\text{ s}$:',
+        latex:
+          'K_p = \\frac{86{,}9}{11} = \\mathbf{7{,}90} \\;;\\; T_d = \\frac{10}{82{,}94} = \\mathbf{0{,}121\\text{ s}} \\;;\\; K_d = 0{,}95 \\;;\\; \\text{Polos MF: } -2 \\pm j2 \\text{ e } -81{,}94'
+      },
+      {
+        title: '5. Regra dos 10 V, Erro em Regime e Componentes ($C_1 = 10\\,\\mu\\text{F}$)',
+        description: 'Pico de $u$ por volt de $\\Delta e$: $86{,}9$ (sem $F$) e $7{,}5$ (com $F$). Erro à rampa e circuito RC:',
+        latex:
+          'K_{\\text{vel}} = \\frac{7{,}90}{3} = 2{,}63 \\;;\\; e_{ss,\\text{rampa}} = \\frac{1}{2{,}63} = 0{,}380\\text{ V} \\;;\\; R_1 = \\frac{1}{z_c C_1} = \\mathbf{13{,}3\\text{ k}\\Omega} \\;;\\; R_2 = K_p R_1 = \\mathbf{105\\text{ k}\\Omega} \\;;\\; C_2 = \\frac{1}{p_c R_2} = \\mathbf{115{,}0\\text{ nF}}'
+      }
+    ],
+    scilabCode: `// Slide 31 - Proposto 3: N = 10, L(s) = 1/(s(s+3)), sd = -2+j2
+s = %s;
+G = syslin('c', 1, s*(s+3));
+Gc = syslin('c', 86.9*(s+7.540), s+82.94);
+T_com = (Gc*G) /. 1;
+t = 0:0.01:4; clf();
+plot(t, csim('step', t, T_com), 'b-', 'LineWidth', 2);
+xgrid();`
+  },
+  {
     id: 'pd-ex-slide-lgr',
     controllerId: 'PD',
     badge: 'Slide LGR • Transitório',
