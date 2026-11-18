@@ -979,7 +979,7 @@ xgrid();`
         description:
           'Singularidades em $0{,}5;\\, 3;\\, 4;\\, 6 \\implies |s_{\\text{lenta}}| = 0{,}5$. Aplicando $K_0 = \\frac{1}{|G(s_d)|}$ passo a passo com $|a+jb| = \\sqrt{a^2+b^2}$, o ganho estático $G(0)$ e o erro $e_P$:',
         latex:
-          'K_0 = \\frac{|s_d+0{,}5|\\cdot|s_d+4|\\cdot|s_d+6|}{|s_d+3|} = \\frac{|-3{,}47+j3{,}98|\\cdot|0{,}03+j3{,}98|\\cdot|2{,}03+j3{,}98|}{|-0{,}97+j3{,}98|} \\;;\\; K_0 = \\frac{\\sqrt{(-3{,}47)^2+3{,}98^2}\\cdot\\sqrt{0{,}03^2+3{,}98^2}\\cdot\\sqrt{2{,}03^2+3{,}98^2}}{\\sqrt{(-0{,}97)^2+3{,}98^2}} = \\frac{5{,}280\\cdot 3{,}980\\cdot 4{,}468}{4{,}097} = \\frac{93{,}89}{4{,}097} = \\mathbf{22{,}92} \\;;\\; G(0) = \\frac{3}{0{,}5\\cdot 4\\cdot 6} = 0{,}25 \\;;\\; K_a = K_0 G(0) = 22{,}92\\cdot 0{,}25 = 5{,}73 \\;;\\; e_P = \\frac{1}{1+K_a} = \\frac{1}{6{,}73} = 14{,}9\\% > 2\\% \\implies \\varphi = 10^\\circ'
+          'K_0 = \\frac{1}{|G(s_d)|} = \\frac{1}{\\left|\\frac{s_d+3}{(s_d+0{,}5)(s_d+4)(s_d+6)}\\right|} = \\frac{1}{\\left|\\frac{-3{,}97+j3{,}98+3}{(-3{,}97+j3{,}98+0{,}5)(-3{,}97+j3{,}98+4)(-3{,}97+j3{,}98+6)}\\right|} \\;;\\; K_0 = \\frac{1}{\\frac{|-0{,}97+j3{,}98|}{|-3{,}47+j3{,}98|\\cdot|0{,}03+j3{,}98|\\cdot|2{,}03+j3{,}98|}} = \\frac{1}{\\frac{\\sqrt{(-0{,}97)^2+3{,}98^2}}{\\sqrt{(-3{,}47)^2+3{,}98^2}\\cdot\\sqrt{0{,}03^2+3{,}98^2}\\cdot\\sqrt{2{,}03^2+3{,}98^2}}} = \\frac{1}{\\frac{4{,}097}{5{,}280\\cdot 3{,}980\\cdot 4{,}468}} = \\frac{1}{\\frac{4{,}097}{93{,}89}} = \\frac{1}{0{,}04364} = \\mathbf{22{,}92} \\;;\\; G(0) = \\frac{3}{0{,}5\\cdot 4\\cdot 6} = 0{,}25 \\;;\\; K_a = K_0 G(0) = 22{,}92\\cdot 0{,}25 = 5{,}73 \\;;\\; e_P = \\frac{1}{1+K_a} = \\frac{1}{6{,}73} = 14{,}9\\% > 2\\% \\implies \\varphi = 10^\\circ'
       },
       {
         title: '2. Cálculo de $z_{i,\\max}$ e Restrição do Dipolo ($|s_{\\text{lenta}}|/1{,}1$)',
@@ -1042,7 +1042,7 @@ xgrid();`
         description:
           'A mediatriz dos polos $-0{,}1$ e $-10$ fica em $\\sigma_d = \\frac{0{,}1 + 10}{2} = 5{,}05$; para $\\zeta = 0{,}707$, $\\omega_d = \\sigma_d\\frac{\\sqrt{1-\\zeta^2}}{\\zeta} = 5{,}05 \\implies s_d = -5{,}05 + j5{,}05$. Calculando $K_0 = |s_d+0{,}1|\\cdot|s_d+10|$, $K_a$ e $e_P$:',
         latex:
-          'K_0 = |-5{,}05+j5{,}05+0{,}1|\\cdot|-5{,}05+j5{,}05+10| = |-4{,}95+j5{,}05|\\cdot|4{,}95+j5{,}05| \\;;\\; K_0 = \\sqrt{(-4{,}95)^2+5{,}05^2}\\cdot\\sqrt{4{,}95^2+5{,}05^2} = 7{,}071\\cdot 7{,}071 = \\mathbf{50{,}0} \\;;\\; G(0) = \\frac{1}{0{,}1\\cdot 10} = 1 \\;;\\; K_a = K_0 G(0) = 50{,}0 \\;;\\; e_P = \\frac{1}{1+K_a} = \\frac{1}{51{,}0} = 1{,}96\\% \\le 2\\% \\implies \\varphi = 5^\\circ'
+          'K_0 = \\frac{1}{|G(s_d)|} = \\frac{1}{\\left|\\frac{1}{(s_d+0{,}1)(s_d+10)}\\right|} = \\frac{1}{\\left|\\frac{1}{(-5{,}05+j5{,}05+0{,}1)(-5{,}05+j5{,}05+10)}\\right|} \\;;\\; K_0 = \\frac{1}{\\frac{1}{|-4{,}95+j5{,}05|\\cdot|4{,}95+j5{,}05|}} = \\frac{1}{\\frac{1}{\\sqrt{(-4{,}95)^2+5{,}05^2}\\cdot\\sqrt{4{,}95^2+5{,}05^2}}} = \\frac{1}{\\frac{1}{7{,}071\\cdot 7{,}071}} = \\frac{1}{0{,}0200} = \\mathbf{50{,}0} \\;;\\; G(0) = \\frac{1}{0{,}1\\cdot 10} = 1 \\;;\\; K_a = K_0 G(0) = 50{,}0 \\;;\\; e_P = \\frac{1}{1+K_a} = \\frac{1}{51{,}0} = 1{,}96\\% \\le 2\\% \\implies \\varphi = 5^\\circ'
       },
       {
         title: '2. Cálculo de $z_i$ pelo Limite Angular vs. Limite do Dipolo',
@@ -1097,7 +1097,7 @@ xgrid();`
         description:
           'No LGR do P para $\\zeta = 0{,}6$, $s_d = -5{,}57 + j7{,}42$ ($|s_d| = \\sqrt{5{,}57^2+7{,}42^2} = 9{,}278$, $\\beta = \\arccos(0{,}6) = 53{,}13^\\circ$). Aplicando $K_0 = \\frac{1}{|G(s_d)|}$:',
         latex:
-          'K_0 = \\frac{|s_d+2|\\cdot|s_d+4|\\cdot|s_d+12|}{|s_d+6|} = \\frac{|-3{,}57+j7{,}42|\\cdot|-1{,}57+j7{,}42|\\cdot|6{,}43+j7{,}42|}{|0{,}43+j7{,}42|} \\;;\\; K_0 = \\frac{\\sqrt{(-3{,}57)^2+7{,}42^2}\\cdot\\sqrt{(-1{,}57)^2+7{,}42^2}\\cdot\\sqrt{6{,}43^2+7{,}42^2}}{\\sqrt{0{,}43^2+7{,}42^2}} = \\frac{8{,}234\\cdot 7{,}584\\cdot 9{,}818}{7{,}432} = \\mathbf{82{,}5} \\;;\\; G(0) = \\frac{6}{2\\cdot 4\\cdot 12} = \\frac{1}{16} \\;;\\; K_a = K_0 G(0) = 5{,}16 \\;;\\; e_P = \\frac{1}{1+5{,}16} = 16{,}2\\% > 2\\% \\implies \\varphi = 10^\\circ'
+          'K_0 = \\frac{1}{|G(s_d)|} = \\frac{1}{\\left|\\frac{s_d+6}{(s_d+2)(s_d+4)(s_d+12)}\\right|} = \\frac{1}{\\left|\\frac{-5{,}57+j7{,}42+6}{(-5{,}57+j7{,}42+2)(-5{,}57+j7{,}42+4)(-5{,}57+j7{,}42+12)}\\right|} \\;;\\; K_0 = \\frac{1}{\\frac{|0{,}43+j7{,}42|}{|-3{,}57+j7{,}42|\\cdot|-1{,}57+j7{,}42|\\cdot|6{,}43+j7{,}42|}} = \\frac{1}{\\frac{\\sqrt{0{,}43^2+7{,}42^2}}{\\sqrt{(-3{,}57)^2+7{,}42^2}\\cdot\\sqrt{(-1{,}57)^2+7{,}42^2}\\cdot\\sqrt{6{,}43^2+7{,}42^2}}} = \\frac{1}{\\frac{7{,}432}{8{,}234\\cdot 7{,}584\\cdot 9{,}818}} = \\frac{1}{0{,}01212} = \\mathbf{82{,}5} \\;;\\; G(0) = \\frac{6}{2\\cdot 4\\cdot 12} = \\frac{1}{16} \\;;\\; K_a = K_0 G(0) = 5{,}16 \\;;\\; e_P = \\frac{1}{1+5{,}16} = 16{,}2\\% > 2\\% \\implies \\varphi = 10^\\circ'
       },
       {
         title: '2. Cálculo de $z_i$ ($\\varphi = 10^\\circ$ vs. $\\varphi = 5^\\circ$) e Limite do Dipolo',
@@ -1288,7 +1288,7 @@ xgrid();`
         description:
           'Impondo $|G_c(s_d) G(s_d)| = 1$ e calculando cada módulo complexo por $|a + jb| = \\sqrt{a^2 + b^2}$:',
         latex:
-          'K_p = \\frac{|s_d|\\cdot|s_d+1|\\cdot|s_d+2|}{|s_d+0{,}68|} = \\frac{|-1{,}2+j1{,}8|\\cdot|-0{,}2+j1{,}8|\\cdot|0{,}8+j1{,}8|}{|-0{,}52+j1{,}8|} = \\frac{2{,}163 \\cdot 1{,}811 \\cdot 1{,}970}{1{,}873} \\approx \\mathbf{4{,}12}'
+          'K_p = \\frac{1}{|\\bar{G}_c(s_d)G(s_d)|} = \\frac{1}{\\left|\\frac{s_d+0{,}68}{s_d}\\cdot\\frac{1}{(s_d+1)(s_d+2)}\\right|} = \\frac{1}{\\left|\\frac{-1{,}2+j1{,}8+0{,}68}{(-1{,}2+j1{,}8)(-1{,}2+j1{,}8+1)(-1{,}2+j1{,}8+2)}\\right|} \\;;\\; K_p = \\frac{1}{\\frac{|-0{,}52+j1{,}8|}{|-1{,}2+j1{,}8|\\cdot|-0{,}2+j1{,}8|\\cdot|0{,}8+j1{,}8|}} = \\frac{1}{\\frac{\\sqrt{(-0{,}52)^2+1{,}8^2}}{\\sqrt{(-1{,}2)^2+1{,}8^2}\\cdot\\sqrt{(-0{,}2)^2+1{,}8^2}\\cdot\\sqrt{0{,}8^2+1{,}8^2}}} = \\frac{1}{\\frac{1{,}873}{2{,}163\\cdot 1{,}811\\cdot 1{,}970}} = \\frac{1}{0{,}2427} \\approx \\mathbf{4{,}12}'
       },
       {
         title: '4. Forma Paralela Final do Controlador PI ($K_p + K_i/s$)',
@@ -1714,7 +1714,8 @@ xgrid();`
         title: '4. Ajuste do Ganho $K_d$ pela Condição de Módulo (Passo a Passo)',
         description:
           'Impondo $|K_d(s_d+4) \\cdot \\frac{1}{s_d(s_d+4)(s_d+6)}| = 1$, o fator $(s_d+4)$ simplifica-se e calculamos $|s_d| = \\sqrt{(-3)^2 + 5{,}196^2} = 6$ e $|s_d+6| = \\sqrt{3^2 + 5{,}196^2} = 6$:',
-        latex: 'K_d = |s_d| \\cdot |s_d + 6| = \\sqrt{9 + 27}\\cdot\\sqrt{9 + 27} = 6 \\cdot 6 = \\mathbf{36} \\implies \\mathbf{G_c(s) = 36(s+4) = 144 + 36s}'
+        latex:
+          'K_d = \\frac{1}{|\\bar{G}_c(s_d)G(s_d)|} = \\frac{1}{\\left|(s_d+4)\\cdot\\frac{1}{s_d(s_d+4)(s_d+6)}\\right|} = \\frac{1}{\\left|\\frac{1}{s_d(s_d+6)}\\right|} = \\frac{1}{\\frac{1}{|-3+j5{,}196|\\cdot|-3+j5{,}196+6|}} \\;;\\; K_d = \\frac{1}{\\frac{1}{\\sqrt{(-3)^2+5{,}196^2}\\cdot\\sqrt{3^2+5{,}196^2}}} = \\frac{1}{\\frac{1}{\\sqrt{9+27}\\cdot\\sqrt{9+27}}} = \\frac{1}{\\frac{1}{6\\cdot 6}} = \\frac{1}{\\frac{1}{36}} = \\mathbf{36} \\implies \\mathbf{G_c(s) = 36(s+4) = 144 + 36s}'
       }
     ],
     scilabCode: `// Exemplo Clássico - Controlador PD via LGR
@@ -1773,7 +1774,7 @@ xgrid();`
         description:
           'Impondo $|K_d(s_d+4{,}374)\\cdot\\frac{10}{s_d(s_d+2)}| = 1$ e calculando cada módulo complexo $|a+jb| = \\sqrt{a^2+b^2}$:',
         latex:
-          'K_d = \\frac{|s_d|\\cdot|s_d+2|}{10\\cdot|s_d+4{,}374|} = \\frac{|-2{,}828+j2{,}828|\\cdot|-0{,}828+j2{,}828|}{10\\cdot|1{,}546+j2{,}828|} = \\frac{4{,}000 \\cdot 2{,}947}{10 \\cdot 3{,}223} = \\mathbf{0{,}366} \\implies \\mathbf{G_c(s) = 1{,}60 + 0{,}366s}'
+          'K_d = \\frac{1}{|\\bar{G}_c(s_d)G(s_d)|} = \\frac{1}{\\left|(s_d+4{,}374)\\cdot\\frac{10}{s_d(s_d+2)}\\right|} = \\frac{1}{\\left|\\frac{10(-2{,}828+j2{,}828+4{,}374)}{(-2{,}828+j2{,}828)(-2{,}828+j2{,}828+2)}\\right|} \\;;\\; K_d = \\frac{1}{\\frac{10\\cdot|1{,}546+j2{,}828|}{|-2{,}828+j2{,}828|\\cdot|-0{,}828+j2{,}828|}} = \\frac{1}{\\frac{10\\cdot\\sqrt{1{,}546^2+2{,}828^2}}{\\sqrt{(-2{,}828)^2+2{,}828^2}\\cdot\\sqrt{(-0{,}828)^2+2{,}828^2}}} = \\frac{1}{\\frac{10\\cdot 3{,}223}{4{,}000\\cdot 2{,}947}} = \\frac{1}{2{,}734} \\approx \\mathbf{0{,}366} \\implies \\mathbf{G_c(s) = 1{,}60 + 0{,}366s}'
       }
     ],
     scilabCode: `// Proposto Servo Motor - Controlador PD
@@ -1891,7 +1892,7 @@ xgrid();`
         description:
           'Triagem: Tipo 1, $|s_{\\text{lenta}}| = 4 \\implies 4/1{,}1 = 3{,}64$ (o polo na origem não entra). Calculando $K_0 = |s_d|\\cdot|s_d+4|$ e $K_{\\text{vel},a} = K_0\\lim_{s\\to 0} s G(s)$:',
         latex:
-          'K_0 = |-2+j2|\\cdot|-2+j2+4| = |-2+j2|\\cdot|2+j2| = \\sqrt{(-2)^2+2^2}\\cdot\\sqrt{2^2+2^2} = 2{,}828\\cdot 2{,}828 = \\mathbf{8} \\;;\\; K_{\\text{vel},a} = K_0\\lim_{s\\to 0}\\frac{1}{s+4} = \\frac{8}{4} = 2 \\;;\\; \\beta = \\frac{K_{\\text{vel,req}}}{K_{\\text{vel},a}} = \\frac{10}{2} = \\mathbf{5} \\;;\\; \\varphi = 10^\\circ'
+          'K_0 = \\frac{1}{|G(s_d)|} = \\frac{1}{\\left|\\frac{1}{s_d(s_d+4)}\\right|} = \\frac{1}{\\left|\\frac{1}{(-2+j2)(-2+j2+4)}\\right|} = \\frac{1}{\\frac{1}{|-2+j2|\\cdot|2+j2|}} = \\frac{1}{\\frac{1}{\\sqrt{(-2)^2+2^2}\\cdot\\sqrt{2^2+2^2}}} = \\frac{1}{\\frac{1}{2{,}828\\cdot 2{,}828}} = \\frac{1}{0{,}125} = \\mathbf{8} \\;;\\; K_{\\text{vel},a} = K_0\\lim_{s\\to 0}\\frac{1}{s+4} = \\frac{8}{4} = 2 \\;;\\; \\beta = \\frac{K_{\\text{vel,req}}}{K_{\\text{vel},a}} = \\frac{10}{2} = \\mathbf{5} \\;;\\; \\varphi = 10^\\circ'
       },
       {
         title: '2. Três Limites para $z$: Polinômio Angular, Dipolo e Regra da Cauda ($A = 2\\%$)',
@@ -1955,7 +1956,7 @@ xgrid();`
         description:
           'Aplicando $K_0 = \\frac{1}{|G(s_d)|}$ passo a passo com $|a+jb| = \\sqrt{a^2+b^2}$, $G(0) = \\frac{4}{1\\cdot 2\\cdot 8} = 0{,}25$ e $\\beta = \\frac{K_{\\text{pos,req}}}{K_{\\text{pos},a}}$:',
         latex:
-          'K_0 = \\frac{|s_d+1|\\cdot|s_d+2|\\cdot|s_d+8|}{|s_d+4|} = \\frac{|-1+j2|\\cdot|j2|\\cdot|6+j2|}{|2+j2|} = \\frac{\\sqrt{(-1)^2+2^2}\\cdot 2\\cdot\\sqrt{6^2+2^2}}{\\sqrt{2^2+2^2}} = \\frac{2{,}2361\\cdot 2\\cdot 6{,}3246}{2{,}8284} = \\mathbf{10} \\;;\\; K_{\\text{pos},a} = K_0 G(0) = 10\\cdot 0{,}25 = 2{,}5 \\;;\\; e_P = \\frac{1}{1+2{,}5} = 28{,}6\\% > 2\\% \\implies \\varphi = 10^\\circ \\;;\\; \\beta = \\frac{19}{2{,}5} = \\mathbf{7{,}6}'
+          'K_0 = \\frac{1}{|G(s_d)|} = \\frac{1}{\\left|\\frac{s_d+4}{(s_d+1)(s_d+2)(s_d+8)}\\right|} = \\frac{1}{\\left|\\frac{-2+j2+4}{(-2+j2+1)(-2+j2+2)(-2+j2+8)}\\right|} \\;;\\; K_0 = \\frac{1}{\\frac{|2+j2|}{|-1+j2|\\cdot|j2|\\cdot|6+j2|}} = \\frac{1}{\\frac{\\sqrt{2^2+2^2}}{\\sqrt{(-1)^2+2^2}\\cdot 2\\cdot\\sqrt{6^2+2^2}}} = \\frac{1}{\\frac{2{,}8284}{2{,}2361\\cdot 2\\cdot 6{,}3246}} = \\frac{1}{0{,}1000} = \\mathbf{10} \\;;\\; K_{\\text{pos},a} = K_0 G(0) = 10\\cdot 0{,}25 = 2{,}5 \\;;\\; e_P = \\frac{1}{1+2{,}5} = 28{,}6\\% > 2\\% \\implies \\varphi = 10^\\circ \\;;\\; \\beta = \\frac{19}{2{,}5} = \\mathbf{7{,}6}'
       },
       {
         title: '2. Escolha de $z$ e $p$ (Polinômio Angular vs. Dipolo $|s_{\\text{lenta}}|/1{,}1$)',
@@ -2011,7 +2012,7 @@ xgrid();`
         description:
           'Aplicando $K_0 = |s_d|\\cdot|s_d+2|\\cdot|s_d+10|$ passo a passo e $K_{\\text{vel},a} = K_0\\lim_{s\\to 0} s G(s) = \\frac{K_0}{2\\cdot 10}$:',
         latex:
-          'K_0 = |-0{,}9+j0{,}9|\\cdot|1{,}1+j0{,}9|\\cdot|9{,}1+j0{,}9| = \\sqrt{(-0{,}9)^2+0{,}9^2}\\cdot\\sqrt{1{,}1^2+0{,}9^2}\\cdot\\sqrt{9{,}1^2+0{,}9^2} = 1{,}2728\\cdot 1{,}4213\\cdot 9{,}1444 = \\mathbf{16{,}54} \\;;\\; K_{\\text{vel},a} = \\frac{16{,}54}{20} = 0{,}827 \\;;\\; \\beta = \\frac{K_{\\text{vel,req}}}{K_{\\text{vel},a}} = \\frac{10}{0{,}827} = \\mathbf{12{,}1} \\;;\\; \\varphi = 10^\\circ'
+          'K_0 = \\frac{1}{|G(s_d)|} = \\frac{1}{\\left|\\frac{1}{s_d(s_d+2)(s_d+10)}\\right|} = \\frac{1}{\\left|\\frac{1}{(-0{,}9+j0{,}9)(-0{,}9+j0{,}9+2)(-0{,}9+j0{,}9+10)}\\right|} \\;;\\; K_0 = \\frac{1}{\\frac{1}{|-0{,}9+j0{,}9|\\cdot|1{,}1+j0{,}9|\\cdot|9{,}1+j0{,}9|}} = \\frac{1}{\\frac{1}{\\sqrt{(-0{,}9)^2+0{,}9^2}\\cdot\\sqrt{1{,}1^2+0{,}9^2}\\cdot\\sqrt{9{,}1^2+0{,}9^2}}} = \\frac{1}{\\frac{1}{1{,}2728\\cdot 1{,}4213\\cdot 9{,}1444}} = \\frac{1}{0{,}06045} = \\mathbf{16{,}54} \\;;\\; K_{\\text{vel},a} = \\frac{16{,}54}{20} = 0{,}827 \\;;\\; \\beta = \\frac{K_{\\text{vel,req}}}{K_{\\text{vel},a}} = \\frac{10}{0{,}827} = \\mathbf{12{,}1} \\;;\\; \\varphi = 10^\\circ'
       },
       {
         title: '2. Três Limites para $z$: Polinômio Angular, Dipolo e Regra da Cauda ($A = 2\\%$)',
@@ -2536,7 +2537,7 @@ xgrid();`
         description:
           'Aplicando $K_c = \\left.\\frac{1}{|\\bar{G}_c(s)G(s)|}\\right|_{s=-3+j3}$ após o cancelamento de $(s+3)$ ($K_p = K_c/r = 18/2 = 9{,}0$):',
         latex:
-          'K_c = \\frac{1}{\\left|\\frac{s_d+3}{s_d+6}\\cdot\\frac{1}{s_d(s_d+3)}\\right|} = \\frac{1}{\\left|\\frac{1}{s_d(s_d+6)}\\right|} = |s_d|\\cdot|s_d+6| \\;;\\; K_c = |-3+j3|\\cdot|-3+j3+6| = \\sqrt{(-3)^2+3^2}\\cdot\\sqrt{3^2+3^2} = \\sqrt{18}\\cdot\\sqrt{18} = \\mathbf{18{,}0} \\;;\\; \\mathbf{G_c(s) = 18\\frac{s+3}{s+6}}'
+          'K_c = \\frac{1}{|\\bar{G}_c(s_d)G(s_d)|} = \\frac{1}{\\left|\\frac{s_d+3}{s_d+6}\\cdot\\frac{1}{s_d(s_d+3)}\\right|} = \\frac{1}{\\left|\\frac{1}{s_d(s_d+6)}\\right|} = \\frac{1}{\\left|\\frac{1}{(-3+j3)(-3+j3+6)}\\right|} \\;;\\; K_c = \\frac{1}{\\frac{1}{|-3+j3|\\cdot|3+j3|}} = \\frac{1}{\\frac{1}{\\sqrt{(-3)^2+3^2}\\cdot\\sqrt{3^2+3^2}}} = \\frac{1}{\\frac{1}{\\sqrt{18}\\cdot\\sqrt{18}}} = \\frac{1}{\\frac{1}{18}} = \\mathbf{18{,}0} \\;;\\; \\mathbf{G_c(s) = 18\\frac{s+3}{s+6}}'
       },
       {
         title: '4. Regra dos 10 V, Erro à Rampa ($K_{\\text{vel}}$), Componentes ($C_1 = 10\\,\\mu\\text{F}$) e Banda — Slide 9',
@@ -2602,7 +2603,7 @@ xgrid();`
         description:
           'Aplicando $K_c = \\frac{|s_d+p_c|\\cdot|s_d|\\cdot|s_d+3|}{|s_d+z_c|}$ com $|a+jb| = \\sqrt{a^2+b^2}$ e $p_3 = -(3 + p_c) - (-2\\sigma_d) = -(6{,}24) + 4 = -2{,}24$:',
         latex:
-          'K_c = \\frac{|-2+j2+3{,}24|\\cdot|-2+j2|\\cdot|1+j2|}{|0{,}472+j2|} = \\frac{\\sqrt{1{,}24^2+2^2}\\cdot\\sqrt{(-2)^2+2^2}\\cdot\\sqrt{1^2+2^2}}{\\sqrt{0{,}472^2+2^2}} = \\frac{2{,}353\\cdot 2{,}828\\cdot 2{,}236}{2{,}055} = \\frac{14{,}88}{2{,}055} \\approx \\mathbf{7{,}2} \\;;\\; K_p = \\frac{K_c}{r} = \\frac{7{,}24}{1{,}31} = \\mathbf{5{,}53} \\;;\\; \\text{Polos MF: } -2\\pm j2 \\text{ e } -2{,}24'
+          'K_c = \\frac{1}{|\\bar{G}_c(s_d)L(s_d)|} = \\frac{1}{\\left|\\frac{s_d+z_c}{s_d+p_c}\\cdot\\frac{1}{s_d(s_d+3)}\\right|} = \\frac{1}{\\left|\\frac{-2+j2+2{,}472}{-2+j2+3{,}24}\\cdot\\frac{1}{(-2+j2)(-2+j2+3)}\\right|} \\;;\\; K_c = \\frac{1}{\\frac{|0{,}472+j2|}{|1{,}24+j2|\\cdot|-2+j2|\\cdot|1+j2|}} = \\frac{1}{\\frac{\\sqrt{0{,}472^2+2^2}}{\\sqrt{1{,}24^2+2^2}\\cdot\\sqrt{(-2)^2+2^2}\\cdot\\sqrt{1^2+2^2}}} = \\frac{1}{\\frac{2{,}055}{2{,}353\\cdot 2{,}828\\cdot 2{,}236}} = \\frac{1}{\\frac{2{,}055}{14{,}88}} = \\frac{1}{0{,}1381} \\approx \\mathbf{7{,}2} \\;;\\; K_p = \\frac{K_c}{r} = \\frac{7{,}24}{1{,}31} = \\mathbf{5{,}53} \\;;\\; \\text{Polos MF: } -2\\pm j2 \\text{ e } -2{,}24'
       },
       {
         title: '4. Limites Práticos e Componentes ($C_1 = 10\\,\\mu\\text{F}$) — Slide 14',
@@ -2663,7 +2664,7 @@ xgrid();`
         description:
           'Aplicando $K_c = \\left.\\frac{1}{|\\bar{G}_c(s)G(s)|}\\right|_{s=-3+j5{,}196}$ após o cancelamento de $(s+2)$ e calculando $|a+jb| = \\sqrt{a^2+b^2}$:',
         latex:
-          'K_c = \\frac{1}{\\left|\\frac{10}{s_d(s_d+6)}\\right|} = \\frac{|s_d|\\cdot|s_d+6|}{10} = \\frac{|-3+j5{,}196|\\cdot|-3+j5{,}196+6|}{10} \\;;\\; K_c = \\frac{|-3+j5{,}196|\\cdot|3+j5{,}196|}{10} = \\frac{\\sqrt{(-3)^2+5{,}196^2}\\cdot\\sqrt{3^2+5{,}196^2}}{10} = \\frac{6\\cdot 6}{10} = \\mathbf{3{,}6} \\;;\\; \\mathbf{G_c(s) = 3{,}6\\frac{s+2}{s+6}}'
+          'K_c = \\frac{1}{|\\bar{G}_c(s_d)G(s_d)|} = \\frac{1}{\\left|\\frac{s_d+2}{s_d+6}\\cdot\\frac{10}{s_d(s_d+2)}\\right|} = \\frac{1}{\\left|\\frac{10}{s_d(s_d+6)}\\right|} = \\frac{1}{\\left|\\frac{10}{(-3+j5{,}196)(-3+j5{,}196+6)}\\right|} \\;;\\; K_c = \\frac{1}{\\frac{10}{|-3+j5{,}196|\\cdot|3+j5{,}196|}} = \\frac{1}{\\frac{10}{\\sqrt{(-3)^2+5{,}196^2}\\cdot\\sqrt{3^2+5{,}196^2}}} = \\frac{1}{\\frac{10}{6\\cdot 6}} = \\frac{1}{\\frac{10}{36}} = \\frac{1}{0{,}2778} = \\mathbf{3{,}6} \\;;\\; \\mathbf{G_c(s) = 3{,}6\\frac{s+2}{s+6}}'
       }
     ],
     scilabCode: `// Proposto - Compensador Avanço de Fase (Lead)
