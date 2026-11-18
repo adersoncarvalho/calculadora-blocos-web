@@ -1208,20 +1208,36 @@ xgrid();`
     },
     detailedSteps: [
       {
-        title: '1. Polo Desejado e Deficiência de Fase',
-        description: 'Calculando $s_d$ e a fase faltante em relação a $-180^\\circ$:',
-        latex: 's_d = -3 + j3 \\;;\\; \\angle L(s_d) = -135^\\circ - 90^\\circ = -225^\\circ \\implies \\theta_{\\text{def}} = -180^\\circ - (-225^\\circ) = \\mathbf{+45^\\circ}'
-      },
-      {
-        title: '2. Zero $z_c$ e Polo $p_c = 11 z_c$ ($N = 10$)',
-        description: 'Resolvendo a condição de ângulo com $\\cot(45^\\circ) = 1$ e $r = 11$:',
-        latex: 'z_c = \\mathbf{5{,}714} \\;;\\; p_c = 11 \\cdot 5{,}714 = \\mathbf{62{,}85}'
-      },
-      {
-        title: '3. Ganho $K_c$ pela Condição de Módulo (Passo a Passo Completo)',
-        description: 'Aplicando $K_c = \\left.\\frac{1}{|\\bar{G}_c(s)L(s)|}\\right|_{s=-3+j3}$ (polos MF em $-3 \\pm j3$ e $-59{,}85$):',
+        title: '1. Passo 1 — Polo Desejado $s_d$ a partir de $\\zeta = 0{,}707$ e $\\omega_d = 3\\text{ rad/s}$',
+        description: 'Calculando $M_p$, $t_p$, $\\sigma_d$ e $t_s$:',
         latex:
-          'K_c = \\frac{1}{\\left|\\frac{s_d+5{,}714}{(s_d+62{,}85)s_d(s_d+3)}\\right|} = \\frac{|s_d+62{,}85|\\cdot|s_d|\\cdot|s_d+3|}{|s_d+5{,}714|} \\;;\\; K_c = \\frac{|-3+j3+62{,}85|\\cdot|-3+j3|\\cdot|-3+j3+3|}{|-3+j3+5{,}714|} = \\frac{|59{,}85+j3|\\cdot|-3+j3|\\cdot|j3|}{|2{,}714+j3|} \\;;\\; K_c = \\frac{\\sqrt{59{,}85^2+3^2}\\cdot\\sqrt{(-3)^2+3^2}\\cdot 3}{\\sqrt{2{,}714^2+3^2}} = \\frac{59{,}925 \\cdot 4{,}2426 \\cdot 3}{4{,}0455} = \\frac{762{,}72}{4{,}0455} \\approx \\mathbf{188{,}5} \\;;\\; \\mathbf{G_c(s) = 188{,}5\\frac{s+5{,}714}{s+62{,}85}}'
+          'M_p = e^{-\\frac{\\pi\\zeta}{\\sqrt{1-\\zeta^2}}} = e^{-\\pi} = 4{,}3\\% \\;;\\; t_p = \\frac{\\pi}{\\omega_d} = \\frac{\\pi}{3} = 1{,}05\\text{ s} \\;;\\; \\sigma_d = \\frac{\\zeta\\cdot\\omega_d}{\\sqrt{1-\\zeta^2}} = \\frac{0{,}707\\cdot 3}{0{,}707} = 3 \\;;\\; t_s \\approx \\frac{4}{\\sigma_d} = 1{,}33\\text{ s} \\;;\\; \\mathbf{s_d = -3 + j3}'
+      },
+      {
+        title: '2. Passo 2 — Deficiência de Fase ($\\theta_{\\text{def}}$) por Trigonometria',
+        description: 'Para $L(s) = \\frac{1}{s(s+3)}$ (polos em $0$ e $-3$): $s_d - 0 = -3+j3$ e $s_d - (-3) = j3$:',
+        latex:
+          '\\theta_1 = \\operatorname{atan2}(3, -3) = 135^\\circ \\;;\\; \\theta_2 = \\operatorname{atan2}(3, 0) = 90^\\circ \\;;\\; \\angle L(s_d) = 0^\\circ - (135^\\circ + 90^\\circ) = -225^\\circ \\;;\\; \\theta_{\\text{def}} = -180^\\circ - (-225^\\circ) = \\mathbf{+45^\\circ}'
+      },
+      {
+        title: '3. Passos 3 e 4 — Fator de Filtro $N = 10$ ($r = 11$) e Polinômio em $z_c$',
+        description:
+          'Com $m = 1$ estágio ($\\varphi = 45^\\circ,\\; \\cot 45^\\circ = 1$), calculando $c_2 = r$, $c_1 = -[\\sigma_d(r+1)+\\omega_d(r-1)\\cot\\varphi]$ e $c_0 = \\sigma_d^2+\\omega_d^2$:',
+        latex:
+          'c_2 = 11 \\;;\\; c_1 = -[3\\cdot 12 + 3\\cdot 10\\cdot 1] = -66 \\;;\\; c_0 = 3^2 + 3^2 = 18 \\;;\\; 11 z_c^2 - 66 z_c + 18 = 0 \\implies \\Delta = 66^2 - 4\\cdot 11\\cdot 18 = 3564 \\;(\\sqrt{3564} = 59{,}70) \\;;\\; z_c = \\frac{66 + 59{,}70}{22} = \\mathbf{5{,}714} \\;(\\text{descarta } 0{,}286) \\;;\\; p_c = 11\\cdot 5{,}714 = \\mathbf{62{,}85}'
+      },
+      {
+        title: '4. Passo 5 — Ganho $K_c$ pela Condição de Módulo (Passo a Passo Completo)',
+        description: 'Aplicando $K_c = \\left.\\frac{1}{|\\bar{G}_c(s)L(s)|}\\right|_{s=-3+j3}$:',
+        latex:
+          'K_c = \\frac{1}{\\left|\\frac{s_d+5{,}714}{(s_d+62{,}85)s_d(s_d+3)}\\right|} = \\frac{|s_d+62{,}85|\\cdot|s_d|\\cdot|s_d+3|}{|s_d+5{,}714|} = \\frac{|-3+j3+62{,}85|\\cdot|-3+j3|\\cdot|-3+j3+3|}{|-3+j3+5{,}714|} \\;;\\; K_c = \\frac{|59{,}85+j3|\\cdot|-3+j3|\\cdot|j3|}{|2{,}714+j3|} = \\frac{\\sqrt{59{,}85^2+3^2}\\cdot\\sqrt{(-3)^2+3^2}\\cdot 3}{\\sqrt{2{,}714^2+3^2}} \\;;\\; K_c = \\frac{59{,}925 \\cdot 4{,}2426 \\cdot 3}{4{,}0455} = \\frac{762{,}72}{4{,}0455} \\approx \\mathbf{188{,}5} \\;;\\; \\mathbf{G_c(s) = 188{,}5\\frac{s+5{,}714}{s+62{,}85}}'
+      },
+      {
+        title: '5. Passo 6 — Parâmetros $K_p$, $T_d$, $K_d$ e Verificação em Malha Fechada',
+        description:
+          'Polos de malha fechada em $-3 \\pm j3$ e polo rápido em $-59{,}85$ ($20\\times$ mais rápido que $\\sigma_d = 3$). Sem pré-filtro $M_p = 7{,}0\\%$ e $t_p = 0{,}79\\text{ s}$; com pré-filtro $F(s) = \\frac{5{,}714}{s+5{,}714}$: $M_p = 4{,}3\\%$ e $t_p = 1{,}06\\text{ s}$:',
+        latex:
+          'K_p = \\frac{K_c}{r} = \\frac{188{,}5}{11} = 17{,}14 \\;;\\; T_d = \\frac{N}{p_c} = \\frac{10}{62{,}85} = 0{,}159\\text{ s} \\;;\\; K_d = K_p T_d = 2{,}73 \\;;\\; s^3 + 65{,}85s^2 + 377{,}1s + 1077{,}3 = (s^2+6s+18)(s+59{,}85) = 0'
       }
     ],
     scilabCode: `// Slide 02 - PD Real (N=10): L(s) = 1/(s(s+3)), sd = -3+j3
