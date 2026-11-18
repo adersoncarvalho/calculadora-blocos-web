@@ -12,9 +12,35 @@ interface MathViewProps {
   inline?: boolean;
 }
 
+const KatexHtml = React.memo(({ html }: { html: string }) => {
+  const contentRef = useRef<HTMLSpanElement>(null);
+  const markup = useMemo(() => ({ __html: html }), [html]);
+
+  useEffect(() => {
+    const root = contentRef.current;
+    if (!root) return;
+    const candidates = root.querySelectorAll<HTMLElement>('.katex-html .mord, .katex-html .mop');
+    candidates.forEach(el => {
+      if (el.closest('[data-glossary-key]')) return;
+      const txt = (el.textContent || '').replace(/[\u200b-\u200d\ufeff\s]+/g, '');
+      if (!txt || txt.length > 14) return;
+      if (Object.prototype.hasOwnProperty.call(CONTROL_GLOSSARY, txt)) {
+        const entry = CONTROL_GLOSSARY[txt];
+        el.setAttribute('data-glossary-key', txt);
+        el.setAttribute('title', `${entry.symbol} — ${entry.name}: ${entry.meaning}`);
+        el.style.cursor = 'help';
+        el.style.borderBottom = '1px dotted rgba(56, 189, 248, 0.55)';
+      }
+    });
+  }, [html]);
+
+  return <span ref={contentRef} dangerouslySetInnerHTML={markup} />;
+});
+
+KatexHtml.displayName = 'KatexHtml';
+
 export const MathView: React.FC<MathViewProps> = ({ math, block = false, inline = false, className = '' }) => {
   const isDisplay = block && !inline;
-  const contentRef = useRef<HTMLSpanElement>(null);
   const [hover, setHover] = useState<{ key: string; rect: DOMRect } | null>(null);
 
   const html = useMemo(() => {
@@ -39,24 +65,6 @@ export const MathView: React.FC<MathViewProps> = ({ math, block = false, inline 
       return `<span class="katex-error">${math}</span>`;
     }
   }, [math, isDisplay]);
-
-  useEffect(() => {
-    const root = contentRef.current;
-    if (!root) return;
-    const candidates = root.querySelectorAll<HTMLElement>('.katex-html .mord, .katex-html .mop');
-    candidates.forEach(el => {
-      if (el.closest('[data-glossary-key]')) return;
-      const txt = (el.textContent || '').replace(/[\u200b-\u200d\ufeff\s]+/g, '');
-      if (!txt || txt.length > 14) return;
-      if (Object.prototype.hasOwnProperty.call(CONTROL_GLOSSARY, txt)) {
-        const entry = CONTROL_GLOSSARY[txt];
-        el.setAttribute('data-glossary-key', txt);
-        el.setAttribute('title', `${entry.symbol} — ${entry.name}: ${entry.meaning}`);
-        el.style.cursor = 'help';
-        el.style.borderBottom = '1px dotted rgba(56, 189, 248, 0.55)';
-      }
-    });
-  }, [html]);
 
   const handleMouseMove = (e: React.MouseEvent) => {
     const target = e.target as HTMLElement | null;
@@ -89,7 +97,7 @@ export const MathView: React.FC<MathViewProps> = ({ math, block = false, inline 
         onMouseMove={handleMouseMove}
         onMouseLeave={() => setHover(null)}
       >
-        <span ref={contentRef} dangerouslySetInnerHTML={{ __html: html }} />
+        <KatexHtml html={html} />
         {hover && CONTROL_GLOSSARY[hover.key] && (
           <GlossaryTooltipCard entry={CONTROL_GLOSSARY[hover.key]} rect={hover.rect} />
         )}
@@ -103,7 +111,7 @@ export const MathView: React.FC<MathViewProps> = ({ math, block = false, inline 
       onMouseMove={handleMouseMove}
       onMouseLeave={() => setHover(null)}
     >
-      <span ref={contentRef} dangerouslySetInnerHTML={{ __html: html }} />
+      <KatexHtml html={html} />
       {hover && CONTROL_GLOSSARY[hover.key] && (
         <GlossaryTooltipCard entry={CONTROL_GLOSSARY[hover.key]} rect={hover.rect} />
       )}
