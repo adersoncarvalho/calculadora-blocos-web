@@ -1130,6 +1130,59 @@ xgrid();`
   // CONTROLADOR PROPORCIONAL-DERIVATIVO (PD)
   // ---------------------------------------------------------------------------
   {
+    id: 'pd-ex-slide-11-s2',
+    controllerId: 'PD',
+    badge: 'Slide 02 (11/31) • L(s) = 1/s²',
+    title: 'Exemplo Slide 11/31 — PD Real em L(s) = 1/s² (θ_def = +90°)',
+    source: 'Slide 02 (p. 11/31) — Controlador PD real pelo lugar das raízes',
+    statementLatex:
+      '\\text{Dada } L(s) = \\frac{1}{s^2}, \\text{ projete um controlador PD Real } (N = 10,\\; r = 11) \\text{ para posicionar os polos dominantes em } s_d = -3 + j3 \\; (\\zeta = 0{,}707).',
+    plantExpr: '1/(s^2)',
+    plantLatex: '\\frac{1}{s^2}',
+    controllerExpr: '157.3*(s+2.657)/(s+29.22)',
+    controllerLatex: 'G_c(s) = 157{,}3\\frac{s + 2{,}657}{s + 29{,}22}',
+    controllerBlockLabel: 'Controlador PD Real (N=10)',
+    inputType: 'step',
+    inputParams: { a0: 1, labelLatex: 'r(t) = u(t)' },
+    tMax: 3,
+    whyThisController:
+      'A planta $L(s) = 1/s^2$ (duplo integrador) oscila indefinidamente sem amortecimento com ganho P puro. Em $s_d = -3 + j3$, $\\angle L(s_d) = -2\\cdot 135^\\circ = -270^\\circ$, exigindo $\\theta_{\\text{def}} = +90^\\circ$. Com $N = 10$ ($r = 11$), $\\varphi_{\\max} = 104{,}7^\\circ > 90^\\circ$, permitindo resolver com 1 estágio PD Real ($m = 1$).',
+    diagnostics: {
+      systemType: 'Tipo 2 (2 polos na origem)',
+      systemOrder: '2ª Ordem → 3ª Ordem (com filtro)',
+      initialErrorLatex: 'e_{ss,(P)} \\text{ oscilatório } (\\zeta = 0)',
+      finalErrorLatex: 'e_{ss,(PD)} = 0 \\; (M_p = 26\\% \\text{ sem } F,\\; 4{,}2\\% \\text{ com } F)'
+    },
+    detailedSteps: [
+      {
+        title: '1. Deficiência Angular em $s_d = -3 + j3$',
+        description: 'Calculando o ângulo da planta $1/s^2$ e a deficiência $\\theta_{\\text{def}}$ ($\\varphi_{\\max} = 104{,}7^\\circ$ para $r=11$):',
+        latex: '\\angle L(s_d) = -2 \\cdot 135^\\circ = -270^\\circ \\implies \\theta_{\\text{def}} = -180^\\circ - (-270^\\circ) = \\mathbf{+90^\\circ} \\;(\\text{folga } 14{,}7^\\circ)'
+      },
+      {
+        title: '2. Polinômio em $z_c$ ($\\cot 90^\\circ = 0$, $c_2 = 11$, $c_1 = -\\sigma_d(r+1) = -36$, $c_0 = 18$)',
+        description: 'Descarta-se a menor raiz ($z_c = 0{,}616$, que gera polo lento em $-0{,}78$) e adota-se a maior raiz:',
+        latex:
+          '11 z_c^2 - 36 z_c + 18 = 0 \\implies \\Delta = 36^2 - 4\\cdot 11\\cdot 18 = 504 \\;(\\sqrt{504} = 22{,}45) \\;;\\; z_c = \\frac{36 + 22{,}45}{22} = \\mathbf{2{,}657} \\;;\\; p_c = 11 \\cdot 2{,}657 = \\mathbf{29{,}22}'
+      },
+      {
+        title: '3. Ganho $K_c$ pela Condição de Módulo (Passo a Passo Completo)',
+        description: 'Aplicando $K_c = \\left.\\frac{1}{|\\bar{G}_c(s)L(s)|}\\right|_{s=-3+j3}$ (polos MF em $-3 \\pm j3$ e $-23{,}22$):',
+        latex:
+          'K_c = \\frac{1}{\\left|\\frac{s_d+2{,}657}{(s_d+29{,}22)s_d^2}\\right|} = \\frac{|s_d+29{,}22|\\cdot|s_d|^2}{|s_d+2{,}657|} = \\frac{|-3+j3+29{,}22|\\cdot|-3+j3|^2}{|-3+j3+2{,}657|} \\;;\\; K_c = \\frac{|26{,}22+j3|\\cdot 18}{|-0{,}343+j3|} = \\frac{\\sqrt{26{,}22^2+3^2}\\cdot 18}{\\sqrt{(-0{,}343)^2+3^2}} = \\frac{26{,}396 \\cdot 18}{3{,}020} \\approx \\mathbf{157{,}3} \\;;\\; \\mathbf{G_c(s) = 157{,}3\\frac{s+2{,}657}{s+29{,}22}}'
+      }
+    ],
+    scilabCode: `// Slide 02 (11/31) - PD Real (N=10): L(s) = 1/s^2, sd = -3+j3
+s = %s;
+G = syslin('c', 1, s^2);
+Gc = syslin('c', 157.3*(s+2.657), s+29.22);
+T_com = (Gc*G) /. 1;
+t = 0:0.01:3; clf();
+plot(t, csim('step', t, T_com), 'b-', 'LineWidth', 2);
+legend(['Com PD Real (Kc=157.3)']);
+xgrid();`
+  },
+  {
     id: 'pd-ex-slide-s3',
     controllerId: 'PD',
     badge: 'Slide 02 • PD Real (N=10)',
