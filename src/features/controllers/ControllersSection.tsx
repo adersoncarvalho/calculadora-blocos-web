@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { MathView } from '@/components/MathView';
+import { GlossaryTerm } from '@/components/GlossaryTooltipCard';
 import { InteractiveTimeChart, ChartSeries } from '@/components/InteractiveTimeChart';
 import { SPlaneChart } from '@/components/SPlaneChart';
 import {
@@ -23,8 +24,25 @@ interface ControllersSectionProps {
 
 const CATEGORY_ORDER: ControllerCategoryId[] = ['P', 'PD', 'PI', 'Lead', 'Lag'];
 
+const PROSE_GLOSSARY_REGEX = /\b(Routh-Hurwitz|pré-filtro|amp-op|Kvel|Kpos|GBW|LGR|Lead|Lag|ess|PD|PI|Mp|tp|ts|sd|zc|pc|zi|Kc|Kp|Kd|Ki|Td|K0)\b/g;
+
+function renderProseWithGlossary(text: string, prefix: string): React.ReactNode {
+  const tokens = text.split(PROSE_GLOSSARY_REGEX);
+  return tokens.map((tok, i) => {
+    if (i % 2 === 1) {
+      return (
+        <GlossaryTerm key={`${prefix}-g-${i}`} termKey={tok}>
+          {tok}
+        </GlossaryTerm>
+      );
+    }
+    return <React.Fragment key={`${prefix}-p-${i}`}>{tok}</React.Fragment>;
+  });
+}
+
 /**
  * Renderiza texto em português contendo trechos inline delimitados por $...$ usando KaTeX (<MathView inline />)
+ * e destaca siglas/símbolos com tooltip explicativo ao passar o mouse.
  */
 function renderRichMathText(text: string): React.ReactNode {
   const parts = text.split(/(\$[^$]+\$)/g);
@@ -32,7 +50,7 @@ function renderRichMathText(text: string): React.ReactNode {
     if (part.startsWith('$') && part.endsWith('$') && part.length > 2) {
       return <MathView key={`m-${idx}`} math={part.slice(1, -1)} inline />;
     }
-    return <React.Fragment key={`t-${idx}`}>{part}</React.Fragment>;
+    return <React.Fragment key={`t-${idx}`}>{renderProseWithGlossary(part, `t-${idx}`)}</React.Fragment>;
   });
 }
 
