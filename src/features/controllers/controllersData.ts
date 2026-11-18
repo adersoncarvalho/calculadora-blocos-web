@@ -1092,23 +1092,28 @@ xgrid();`
     },
     detailedSteps: [
       {
-        title: '1. Soma dos Ângulos dos Polos em sd = -1,2 + j1,8',
-        description: 'Incluindo o integrador (1/s) e os dois polos da planta (-1 e -2):',
+        title: '1. Método dos Ângulos dos Polos em $s_d = -1{,}2 + j1{,}8$',
+        description:
+          'Traçando os vetores do integrador ($0$) e dos polos da planta ($-1$ e $-2$) até $s_d = -1{,}2 + j1{,}8$: para $s_d$ ($-1{,}2+j1{,}8$, 2º quadrante) usamos $180^\\circ - \\arctan(1{,}8/1{,}2) = 123{,}7^\\circ$; para $s_d+1$ ($-0{,}2+j1{,}8$, 2º quadrante) usamos $180^\\circ - \\arctan(1{,}8/0{,}2) = 96{,}34^\\circ$; para $s_d+2$ ($0{,}8+j1{,}8$, 1º quadrante) usamos $\\arctan(1{,}8/0{,}8) = 66{,}04^\\circ$:',
         latex: '\\angle s_d = 123{,}7^\\circ \\;;\\; \\angle(s_d+1) = 96{,}34^\\circ \\;;\\; \\angle(s_d+2) = 66{,}04^\\circ \\implies \\sum\\theta_p = 286{,}08^\\circ'
       },
       {
-        title: '2. Posição do Zero zc pela Condição de Ângulo',
-        description: 'O zero (s + zc) deve contribuir com 286,08° - 180° = 106,08°:',
-        latex: 'z_c = 1{,}2 - \\frac{1{,}8}{\\tan(106{,}08^\\circ)} = 1{,}2 + 0{,}519 \\implies \\mathbf{z_c = 0{,}68}'
+        title: '2. Posição do Zero $z_c$ pela Condição de Ângulo do LGR',
+        description:
+          'Para que $s_d$ pertença ao LGR, $\\theta_z - \\sum\\theta_p = -180^\\circ$, logo o zero $(s + z_c)$ deve contribuir com $\\theta_z = 286{,}08^\\circ - 180^\\circ = 106{,}08^\\circ$ (no 2º quadrante, onde $-1{,}2 + z_c < 0$, ou seja, $z_c < 1{,}2$). Usando $\\tan(180^\\circ - \\theta_z) = \\frac{\\omega_d}{\\sigma_d - z_c}$:',
+        latex: 'z_c = 1{,}2 - \\frac{1{,}8}{\\tan(106{,}08^\\circ)} = 1{,}2 - \\frac{1{,}8}{-3{,}469} = 1{,}2 + 0{,}519 \\implies \\mathbf{z_c = 0{,}68}'
       },
       {
-        title: '3. Cálculo de Kp pela Condição de Módulo',
-        description: 'Impondo |Gc(sd)·G(sd)| = 1:',
-        latex: 'K_p = \\frac{|s_d||s_d+1||s_d+2|}{|s_d+0{,}68|} = \\frac{2{,}163 \\cdot 1{,}811 \\cdot 1{,}970}{1{,}873} \\approx \\mathbf{4{,}12}'
+        title: '3. Cálculo de $K_p$ pela Condição de Módulo (Passo a Passo)',
+        description:
+          'Impondo $|G_c(s_d) G(s_d)| = 1$ e calculando cada módulo complexo por $|a + jb| = \\sqrt{a^2 + b^2}$:',
+        latex:
+          'K_p = \\frac{|s_d|\\cdot|s_d+1|\\cdot|s_d+2|}{|s_d+0{,}68|} = \\frac{|-1{,}2+j1{,}8|\\cdot|-0{,}2+j1{,}8|\\cdot|0{,}8+j1{,}8|}{|-0{,}52+j1{,}8|} = \\frac{2{,}163 \\cdot 1{,}811 \\cdot 1{,}970}{1{,}873} \\approx \\mathbf{4{,}12}'
       },
       {
-        title: '4. Forma Paralela Final do PI',
-        description: 'Calculando Ki = Kp · zc = 4,12 · 0,68 = 2,80:',
+        title: '4. Forma Paralela Final do Controlador PI ($K_p + K_i/s$)',
+        description:
+          'Expandindo $K_p\\frac{s+z_c}{s} = K_p + \\frac{K_p z_c}{s}$, obtemos $K_i = K_p \\cdot z_c = 4{,}12 \\cdot 0{,}68 = 2{,}80$:',
         latex: '\\mathbf{G_c(s) = 4{,}12 + \\frac{2{,}80}{s} = 4{,}12\\frac{s+0{,}68}{s}}'
       }
     ],
@@ -1155,19 +1160,23 @@ xgrid();`
     },
     detailedSteps: [
       {
-        title: '1. Deficiência Angular em $s_d = -3 + j3$',
-        description: 'Calculando o ângulo da planta $1/s^2$ e a deficiência $\\theta_{\\text{def}}$ ($\\varphi_{\\max} = 104{,}7^\\circ$ para $r=11$):',
-        latex: '\\angle L(s_d) = -2 \\cdot 135^\\circ = -270^\\circ \\implies \\theta_{\\text{def}} = -180^\\circ - (-270^\\circ) = \\mathbf{+90^\\circ} \\;(\\text{folga } 14{,}7^\\circ)'
-      },
-      {
-        title: '2. Polinômio em $z_c$ ($\\cot 90^\\circ = 0$, $c_2 = 11$, $c_1 = -\\sigma_d(r+1) = -36$, $c_0 = 18$)',
-        description: 'Descarta-se a menor raiz ($z_c = 0{,}616$, que gera polo lento em $-0{,}78$) e adota-se a maior raiz:',
+        title: '1. Método da Deficiência Angular em $s_d = -3 + j3$',
+        description:
+          'Pela condição de ângulo do LGR, $\\angle G_c(s_d) + \\angle L(s_d) = -180^\\circ$. Como $L(s) = 1/s^2$ tem dois polos na origem, cada polo contribui com $\\theta_p = \\operatorname{atan2}(3, -3) = 180^\\circ - \\arctan(3/3) = 135^\\circ$ (2º quadrante). Para $r = N+1 = 11$ e $s_d$ no 2º quadrante ($\\beta = 45^\\circ$), a fase máxima de 1 estágio PD Real é $\\varphi_{\\max} = 104{,}7^\\circ > 90^\\circ$, bastando $m = 1$ estágio:',
         latex:
-          '11 z_c^2 - 36 z_c + 18 = 0 \\implies \\Delta = 36^2 - 4\\cdot 11\\cdot 18 = 504 \\;(\\sqrt{504} = 22{,}45) \\;;\\; z_c = \\frac{36 + 22{,}45}{22} = \\mathbf{2{,}657} \\;;\\; p_c = 11 \\cdot 2{,}657 = \\mathbf{29{,}22}'
+          '\\angle L(s_d) = 0^\\circ - 2\\cdot 135^\\circ = -270^\\circ \\;;\\; \\theta_{\\text{def}} = -180^\\circ - (-270^\\circ) = \\mathbf{+90^\\circ} \\;(\\text{folga } 104{,}7^\\circ - 90^\\circ = 14{,}7^\\circ)'
       },
       {
-        title: '3. Ganho $K_c$ pela Condição de Módulo (Passo a Passo Completo)',
-        description: 'Aplicando $K_c = \\left.\\frac{1}{|\\bar{G}_c(s)L(s)|}\\right|_{s=-3+j3}$ (polos MF em $-3 \\pm j3$ e $-23{,}22$):',
+        title: '2. Derivação do Polinômio em $z_c$ ($\\varphi = 90^\\circ \\implies \\cot 90^\\circ = 0$)',
+        description:
+          'Impondo $\\angle(s_d + z_c) - \\angle(s_d + r z_c) = 90^\\circ$ em $s_d = -\\sigma_d + j\\omega_d$ ($\\sigma_d = 3,\\; \\omega_d = 3,\\; r = 11$), o produto escalar da parte real do quociente anula-se: $c_2 = r = 11$, $c_1 = -[\\sigma_d(r+1) + \\omega_d(r-1)\\cot 90^\\circ] = -3(12) = -36$ e $c_0 = \\sigma_d^2 + \\omega_d^2 = 18$. Resolvendo por Bhaskara e escolhendo a maior raiz (a menor $z_c = 0{,}616$ geraria polo lento em $-0{,}78$ quase cancelado pelo zero):',
+        latex:
+          '11 z_c^2 - 36 z_c + 18 = 0 \\implies \\Delta = (-36)^2 - 4\\cdot 11\\cdot 18 = 1296 - 792 = 504 \\;(\\sqrt{504} = 22{,}45) \\;;\\; z_c = \\frac{36 + 22{,}45}{2\\cdot 11} = \\mathbf{2{,}657} \\;;\\; p_c = r\\cdot z_c = 11 \\cdot 2{,}657 = \\mathbf{29{,}22}'
+      },
+      {
+        title: '3. Ganho $K_c$ pela Condição de Módulo e Polos de Malha Fechada',
+        description:
+          'Pela condição de módulo $|K_c \\bar{G}_c(s_d) L(s_d)| = 1$, isolamos $K_c$ e calculamos o módulo de cada fator complexo $|a + jb| = \\sqrt{a^2 + b^2}$. Pela soma das raízes da equação característica $s^3 + 29{,}22 s^2 + K_c s + 2{,}657 K_c = 0$, o 3º polo é $p_3 = -(29{,}22 - 6) = -23{,}22$:',
         latex:
           'K_c = \\frac{1}{\\left|\\frac{s_d+2{,}657}{(s_d+29{,}22)s_d^2}\\right|} = \\frac{|s_d+29{,}22|\\cdot|s_d|^2}{|s_d+2{,}657|} = \\frac{|-3+j3+29{,}22|\\cdot|-3+j3|^2}{|-3+j3+2{,}657|} \\;;\\; K_c = \\frac{|26{,}22+j3|\\cdot 18}{|-0{,}343+j3|} = \\frac{\\sqrt{26{,}22^2+3^2}\\cdot 18}{\\sqrt{(-0{,}343)^2+3^2}} = \\frac{26{,}396 \\cdot 18}{3{,}020} \\approx \\mathbf{157{,}3} \\;;\\; \\mathbf{G_c(s) = 157{,}3\\frac{s+2{,}657}{s+29{,}22}}'
       }
@@ -1208,48 +1217,51 @@ xgrid();`
     },
     detailedSteps: [
       {
-        title: '1. Passo 1 — Polo Desejado $s_d$ a partir de $\\zeta = 0{,}707$ e $\\omega_d = 3\\text{ rad/s}$',
-        description: 'Calculando $M_p$, $t_p$, $\\sigma_d$ e $t_s$:',
-        latex:
-          'M_p = e^{-\\frac{\\pi\\zeta}{\\sqrt{1-\\zeta^2}}} = e^{-\\pi} = 4{,}3\\% \\;;\\; t_p = \\frac{\\pi}{\\omega_d} = \\frac{\\pi}{3} = 1{,}05\\text{ s} \\;;\\; \\sigma_d = \\frac{\\zeta\\cdot\\omega_d}{\\sqrt{1-\\zeta^2}} = \\frac{0{,}707\\cdot 3}{0{,}707} = 3 \\;;\\; t_s \\approx \\frac{4}{\\sigma_d} = 1{,}33\\text{ s} \\;;\\; \\mathbf{s_d = -3 + j3}'
-      },
-      {
-        title: '2. Passo 2 — Deficiência de Fase ($\\theta_{\\text{def}}$) por Trigonometria',
-        description: 'Para $L(s) = \\frac{1}{s(s+3)}$ (polos em $0$ e $-3$): $s_d - 0 = -3+j3$ e $s_d - (-3) = j3$:',
-        latex:
-          '\\theta_1 = \\operatorname{atan2}(3, -3) = 135^\\circ \\;;\\; \\theta_2 = \\operatorname{atan2}(3, 0) = 90^\\circ \\;;\\; \\angle L(s_d) = 0^\\circ - (135^\\circ + 90^\\circ) = -225^\\circ \\;;\\; \\theta_{\\text{def}} = -180^\\circ - (-225^\\circ) = \\mathbf{+45^\\circ}'
-      },
-      {
-        title: '3. Passos 3 e 4 — Fator de Filtro $N = 10$ ($r = 11$) e Polinômio em $z_c$',
+        title: '1. Passo 1 — Método de Conversão das Especificações em Polo Desejado ($s_d$)',
         description:
-          'Com $m = 1$ estágio ($\\varphi = 45^\\circ,\\; \\cot 45^\\circ = 1$), calculando $c_2 = r$, $c_1 = -[\\sigma_d(r+1)+\\omega_d(r-1)\\cot\\varphi]$ e $c_0 = \\sigma_d^2+\\omega_d^2$:',
+          'A partir de $\\zeta = 0{,}707 = \\frac{\\sqrt{2}}{2}$ e $\\omega_d = 3\\text{ rad/s}$, notamos que $\\sqrt{1-\\zeta^2} = 0{,}707 = \\zeta$, logo $\\frac{\\zeta}{\\sqrt{1-\\zeta^2}} = 1$. Assim, a atenuação real $\\sigma_d = \\frac{\\zeta\\omega_d}{\\sqrt{1-\\zeta^2}}$ iguala $\\omega_d = 3$, formando $s_d = -\\sigma_d + j\\omega_d = -3 + j3$. O sobressinal $M_p$, tempo de pico $t_p$ e tempo de acomodação $t_s$ (critério $2\\%$) seguem diretamente:',
         latex:
-          'c_2 = 11 \\;;\\; c_1 = -[3\\cdot 12 + 3\\cdot 10\\cdot 1] = -66 \\;;\\; c_0 = 3^2 + 3^2 = 18 \\;;\\; 11 z_c^2 - 66 z_c + 18 = 0 \\implies \\Delta = 66^2 - 4\\cdot 11\\cdot 18 = 3564 \\;(\\sqrt{3564} = 59{,}70) \\;;\\; z_c = \\frac{66 + 59{,}70}{22} = \\mathbf{5{,}714} \\;(\\text{descarta } 0{,}286) \\;;\\; p_c = 11\\cdot 5{,}714 = \\mathbf{62{,}85}'
+          'M_p = e^{-\\frac{\\pi\\zeta}{\\sqrt{1-\\zeta^2}}} = e^{-\\pi} = 4{,}3\\% \\;;\\; t_p = \\frac{\\pi}{\\omega_d} = \\frac{\\pi}{3} = 1{,}05\\text{ s} \\;;\\; \\sigma_d = \\frac{0{,}707\\cdot 3}{0{,}707} = 3 \\;;\\; t_s \\approx \\frac{4}{\\sigma_d} = 1{,}33\\text{ s} \\;;\\; \\mathbf{s_d = -3 + j3}'
       },
       {
-        title: '4. Passo 5 — Ganho $K_c$ pela Condição de Módulo (Passo a Passo Completo)',
-        description: 'Aplicando $K_c = \\left.\\frac{1}{|\\bar{G}_c(s)L(s)|}\\right|_{s=-3+j3}$:',
+        title: '2. Passo 2 — Método da Deficiência Angular ($\\theta_{\\text{def}}$) por Trigonometria',
+        description:
+          'Um ponto $s_d$ só pertence ao LGR se $\\angle G_c(s_d) + \\angle L(s_d) = -180^\\circ$. Para $L(s) = \\frac{1}{s(s+3)}$ (polos em $0$ e $-3$), traçamos os vetores de cada polo até $s_d$: $s_d - 0 = -3 + j3$ (no 2º quadrante, onde $\\operatorname{atan2}(y,x) = 180^\\circ - \\arctan(y/|x|) = 180^\\circ - 45^\\circ = 135^\\circ$) e $s_d - (-3) = j3$ (sobre $+j\\omega$, logo $90^\\circ$). Como $\\theta_{\\text{def}} > 0$, falta avanço de fase $\\implies$ PD Real:',
+        latex:
+          '\\theta_1 = 180^\\circ - \\arctan\\left(\\frac{3}{3}\\right) = 135^\\circ \\;;\\; \\theta_2 = 90^\\circ \\;;\\; \\angle L(s_d) = 0^\\circ - (135^\\circ + 90^\\circ) = -225^\\circ \\;;\\; \\theta_{\\text{def}} = -180^\\circ - (-225^\\circ) = \\mathbf{+45^\\circ}'
+      },
+      {
+        title: '3. Passos 3 e 4 — Derivação do Polinômio em $z_c$ ($N = 10 \\implies r = 11$)',
+        description:
+          'Na forma padrão do PD Real $G_c(s) = K_p\\left(1 + \\frac{N s}{s + N/T_d}\\right) = K_c\\frac{s+z_c}{s+p_c}$, tem-se $r = \\frac{p_c}{z_c} = N + 1 = 11$. Impondo que o estágio forneça $\\varphi = 45^\\circ$ via $\\cot\\varphi = \\frac{\\operatorname{Re}[(s_d+z_c)(\\overline{s_d+p_c})]}{\\operatorname{Im}[(s_d+z_c)(\\overline{s_d+p_c})]}$ com $p_c = r z_c$, chega-se à equação quadrática $c_2 z_c^2 + c_1 z_c + c_0 = 0$, onde $c_2 = r$, $c_1 = -[\\sigma_d(r+1) + \\omega_d(r-1)\\cot\\varphi]$ e $c_0 = \\sigma_d^2 + \\omega_d^2$. Escolhemos a maior raiz ($5{,}714$), descartando $0{,}286$ para evitar um zero lento próximo à origem:',
+        latex:
+          'c_2 = 11 \\;;\\; c_1 = -[3\\cdot 12 + 3\\cdot 10\\cdot 1] = -66 \\;;\\; c_0 = 3^2 + 3^2 = 18 \\;;\\; 11 z_c^2 - 66 z_c + 18 = 0 \\implies \\Delta = (-66)^2 - 4\\cdot 11\\cdot 18 = 3564 \\;(\\sqrt{3564} = 59{,}70) \\;;\\; z_c = \\frac{66 + 59{,}70}{2\\cdot 11} = \\mathbf{5{,}714} \\;;\\; p_c = 11\\cdot 5{,}714 = \\mathbf{62{,}85}'
+      },
+      {
+        title: '4. Passo 5 — Método da Condição de Módulo para $K_c$ (Passo a Passo)',
+        description:
+          'Pela condição de módulo $|K_c \\bar{G}_c(s_d) L(s_d)| = 1$, isolamos $K_c = \\frac{1}{|\\bar{G}_c(s_d)L(s_d)|}$ e calculamos cada distância euclidiana no plano $s$ por $|a + jb| = \\sqrt{a^2 + b^2}$:',
         latex:
           'K_c = \\frac{1}{\\left|\\frac{s_d+5{,}714}{(s_d+62{,}85)s_d(s_d+3)}\\right|} = \\frac{|s_d+62{,}85|\\cdot|s_d|\\cdot|s_d+3|}{|s_d+5{,}714|} = \\frac{|-3+j3+62{,}85|\\cdot|-3+j3|\\cdot|-3+j3+3|}{|-3+j3+5{,}714|} \\;;\\; K_c = \\frac{|59{,}85+j3|\\cdot|-3+j3|\\cdot|j3|}{|2{,}714+j3|} = \\frac{\\sqrt{59{,}85^2+3^2}\\cdot\\sqrt{(-3)^2+3^2}\\cdot 3}{\\sqrt{2{,}714^2+3^2}} \\;;\\; K_c = \\frac{59{,}925 \\cdot 4{,}2426 \\cdot 3}{4{,}0455} = \\frac{762{,}72}{4{,}0455} \\approx \\mathbf{188{,}5} \\;;\\; \\mathbf{G_c(s) = 188{,}5\\frac{s+5{,}714}{s+62{,}85}}'
       },
       {
-        title: '5. Passo 6 — Parâmetros $K_p$, $T_d$, $K_d$ e Verificação em Malha Fechada',
+        title: '5. Passo 6 — Conversão para $(K_p, T_d, K_d)$ e Fatoração em Malha Fechada',
         description:
-          'Polos de malha fechada em $-3 \\pm j3$ e polo rápido em $-59{,}85$ ($20\\times$ mais rápido que $\\sigma_d = 3$). Sem pré-filtro $M_p = 7{,}0\\%$ e $t_p = 0{,}79\\text{ s}$; com pré-filtro $F(s) = \\frac{5{,}714}{s+5{,}714}$: $M_p = 4{,}3\\%$ e $t_p = 1{,}06\\text{ s}$:',
+          'Comparando $G_c(s) = K_c\\frac{s+z_c}{s+p_c}$ com a forma paralela filtrada $K_p\\left(1 + \\frac{Ns}{s+N/T_d}\\right)$, obtemos $K_p = K_c/r$, $T_d = N/p_c$ e $K_d = K_p T_d$. Expandindo $1 + G_c(s)L(s) = 0$ temos $s^3 + (3+p_c)s^2 + (3p_c+K_c)s + K_c z_c = 0$: como a soma das raízes é $-(3+p_c) = -65{,}85$ e duas raízes são $-3 \\pm j3$ (soma $-6$), o 3º polo rápido é $-65{,}85 - (-6) = -59{,}85$ ($20\\times$ mais rápido que $\\sigma_d = 3$). Sem pré-filtro $M_p = 7{,}0\\%$ ($t_p = 0{,}79\\text{ s}$) devido ao zero em $-5{,}714$; aplicando o pré-filtro $F(s) = \\frac{5{,}714}{s+5{,}714}$ na referência, cancela-se esse zero e recupera-se $M_p = 4{,}3\\%$ ($t_p = 1{,}06\\text{ s}$):',
         latex:
           'K_p = \\frac{K_c}{r} = \\frac{188{,}5}{11} = 17{,}14 \\;;\\; T_d = \\frac{N}{p_c} = \\frac{10}{62{,}85} = 0{,}159\\text{ s} \\;;\\; K_d = K_p T_d = 2{,}73 \\;;\\; s^3 + 65{,}85s^2 + 377{,}1s + 1077{,}3 = (s^2+6s+18)(s+59{,}85) = 0'
       },
       {
         title: '6. Regra dos 10 V (E9) e Erro em Regime Permanente (E10) — Slide 26',
         description:
-          'Sem pré-filtro o amp-op satura rápido ($\\Delta e$ admissível $12\\times$ menor); com o pré-filtro $F(s)$, atende à regra dos $\\pm 10\\text{ V}$ para $\\Delta e \\le 0{,}65\\text{ V}$. Como a planta é Tipo 1, o erro ao degrau é nulo e o erro à rampa é $0{,}175\\text{ V}$:',
+          'Pelo Teorema do Valor Inicial, um degrau de erro $\\Delta e$ gera impulso inicial de controle $u(0^+) = \\lim_{s\\to\\infty} G_c(s)\\Delta e = K_c\\Delta e = 188{,}5\\Delta e$; sem pré-filtro, o amp-op ($\\pm 10\\text{ V}$) satura para $\\Delta e > 0{,}053\\text{ V}$. Com $F(s)$, o pico simulado cai para $15{,}3\\Delta e$, aumentando em $12\\times$ a faixa linear ($\\Delta e \\le 0{,}65\\text{ V}$). Para o erro em regime, avaliamos $K_{\\text{vel}} = \\lim_{s\\to 0} s G_c(s) L(s) = G_c(0)\\lim_{s\\to 0} s L(s) = K_p \\cdot \\frac{1}{3}$:',
         latex:
-          'u(0^+) = K_c\\Delta e = 188{,}5\\,\\Delta e \\implies \\Delta e \\le \\frac{10}{188{,}5} = 0{,}053\\text{ V} \\;;\\; \\text{com } F(s):\\; u_{\\text{pico}} = 15{,}3\\,\\Delta e \\implies \\Delta e \\le \\frac{10}{15{,}3} = \\mathbf{0{,}65\\text{ V}} \\;;\\; K_{\\text{vel}} = K_p \\lim_{s\\to 0} s L(s) = 17{,}14 \\cdot \\frac{1}{3} = 5{,}71 \\;;\\; e_{ss,\\text{rampa}} = \\frac{1}{5{,}71} = \\mathbf{0{,}175\\text{ V}} \\;;\\; e_{ss,\\text{degrau}} = 0'
+          'u(0^+) = K_c\\Delta e = 188{,}5\\,\\Delta e \\implies \\Delta e \\le \\frac{10}{188{,}5} = 0{,}053\\text{ V} \\;;\\; \\text{com } F(s):\\; u_{\\text{pico}} = 15{,}3\\,\\Delta e \\implies \\Delta e \\le \\frac{10}{15{,}3} = \\mathbf{0{,}65\\text{ V}} \\;;\\; K_{\\text{vel}} = 17{,}14 \\cdot \\frac{1}{3} = 5{,}71 \\;;\\; e_{ss,\\text{rampa}} = \\frac{1}{5{,}71} = \\mathbf{0{,}175\\text{ V}} \\;;\\; e_{ss,\\text{degrau}} = 0'
       },
       {
-        title: '7. Implementação Analógica: Resistores, Capacitores (E11) e Banda do Amp-Op (E12) — Slides 27–28',
+        title: '7. Método de Síntese Analógica com Amp-Op (E11 e E12) — Slides 27–28',
         description:
-          'Escolhendo $C_1 = 10\\,\\mu\\text{F}$ (com estágio inversor $R_1\\parallel C_1$ e $R_2\\parallel C_2$, inversor unitário de $10\\text{ k}\\Omega$ e subtrator $e = r - y$). Valores comerciais (E96): $R_1 = 17{,}4\\text{ k}\\Omega$, $R_2 = 301\\text{ k}\\Omega$, $C_2 = 47\\text{ nF}\\parallel 6{,}8\\text{ nF} = 53{,}8\\text{ nF}$ (resultando em $z_c = 5{,}75$, $p_c = 61{,}75$, $K_p = 17{,}3$, desvios $<2\\%$):',
+          'No estágio inversor com $Z_1 = R_1\\parallel C_1$ na entrada e $Z_2 = R_2\\parallel C_2$ na realimentação, a função de transferência é $\\frac{Z_2(s)}{Z_1(s)} = \\frac{C_1}{C_2}\\cdot\\frac{s + 1/(R_1 C_1)}{s + 1/(R_2 C_2)}$. Igualando termo a termo a $K_c\\frac{s+z_c}{s+p_c}$ e escolhendo $C_1 = 10\\,\\mu\\text{F}$, determinamos $R_1$, $R_2$ e $C_2$ (seguidos de inversor unitário de $10\\text{ k}\\Omega$ e subtrator $e = r - y$). Valores comerciais (E96): $R_1 = 17{,}4\\text{ k}\\Omega$, $R_2 = 301\\text{ k}\\Omega$ e $C_2 = 47\\text{ nF}\\parallel 6{,}8\\text{ nF} = 53{,}8\\text{ nF}$ ($z_c = 5{,}75$, $p_c = 61{,}75$, $K_p = 17{,}3$, desvios $< 2\\%$):',
         latex:
           'R_1 = \\frac{1}{z_c C_1} = \\frac{1}{5{,}714\\cdot 10^{-5}} = \\mathbf{17{,}5\\text{ k}\\Omega} \\;;\\; R_2 = K_p R_1 = 17{,}14\\cdot 17{,}5\\text{ k}\\Omega = \\mathbf{300\\text{ k}\\Omega} \\;;\\; C_2 = \\frac{1}{p_c R_2} = \\frac{1}{62{,}85\\cdot 300\\cdot 10^3} = \\mathbf{53{,}0\\text{ nF}} \\;;\\; \\frac{C_1}{C_2} = \\frac{10\\,\\mu\\text{F}}{53{,}0\\text{ nF}} = 188{,}5 = K_c \\;;\\; \\frac{\\text{GBW}}{K_c} = \\frac{1\\text{ MHz}}{188{,}5} = 5{,}3\\text{ kHz} \\gg \\frac{p_c}{2\\pi} = 10\\text{ Hz}'
       }
@@ -1291,34 +1303,39 @@ xgrid();`
     },
     detailedSteps: [
       {
-        title: '1. Polo Desejado $s_d$ e Deficiência Angular $\\theta_{\\text{def}}$',
-        description: 'Com $\\sigma_d = 3$ e $\\omega_d = 3\\text{ rad/s}$ ($s_d = -3 + j3$), os polos em $0$ e $-3$ dão:',
+        title: '1. Polo Desejado $s_d$ e Método da Deficiência Angular ($\\theta_{\\text{def}}$)',
+        description:
+          'A partir de $\\zeta = 0{,}707$ e $\\omega_d = 3\\text{ rad/s}$, obtemos $\\sigma_d = \\frac{\\zeta\\omega_d}{\\sqrt{1-\\zeta^2}} = 3$ e $s_d = -3 + j3$. Para $L(s) = \\frac{1}{s(s+3)}$, os vetores dos polos $0$ e $-3$ até $s_d$ são $-3+j3$ (2º quadrante: $180^\\circ - \\arctan(3/3) = 135^\\circ$) e $j3$ ($90^\\circ$). Pela condição de ângulo do LGR ($\\angle G_c + \\angle L = -180^\\circ$):',
         latex:
-          '\\theta_1 = \\operatorname{atan2}(3, -3) = 135^\\circ \\;;\\; \\theta_2 = \\operatorname{atan2}(3, 0) = 90^\\circ \\;;\\; \\angle L(s_d) = -225^\\circ \\implies \\theta_{\\text{def}} = \\mathbf{+45{,}0^\\circ}'
+          '\\theta_1 = 180^\\circ - \\arctan(1) = 135^\\circ \\;;\\; \\theta_2 = 90^\\circ \\;;\\; \\angle L(s_d) = -(135^\\circ + 90^\\circ) = -225^\\circ \\implies \\theta_{\\text{def}} = -180^\\circ - (-225^\\circ) = \\mathbf{+45{,}0^\\circ}'
       },
       {
-        title: '2. Polinômio em $z_c$ para $N = 8$ ($r = 9$, $\\cot 45^\\circ = 1$)',
-        description: 'Calculando $c_2 = r$, $c_1 = -[\\sigma_d(r+1) + \\omega_d(r-1)\\cot\\varphi]$ e $c_0 = \\sigma_d^2 + \\omega_d^2$:',
+        title: '2. Derivação do Polinômio em $z_c$ para $N = 8$ ($r = N + 1 = 9$)',
+        description:
+          'Impondo $\\angle(s_d + z_c) - \\angle(s_d + r z_c) = \\varphi = 45^\\circ$ ($\\cot 45^\\circ = 1$), aplicamos as fórmulas do método: $c_2 = r = 9$, $c_1 = -[\\sigma_d(r+1) + \\omega_d(r-1)\\cot\\varphi] = -[3\\cdot 10 + 3\\cdot 8\\cdot 1] = -54{,}0$ e $c_0 = \\sigma_d^2 + \\omega_d^2 = 18$. Resolvemos por Bhaskara e escolhemos a maior raiz (evitando um zero lento em $0{,}354$):',
         latex:
-          'c_2 = 9 \\;;\\; c_1 = -[3\\cdot 10 + 3\\cdot 8\\cdot 1] = -54{,}0 \\;;\\; c_0 = 18 \\;;\\; 9z_c^2 - 54{,}0 z_c + 18 = 0 \\implies \\Delta = 2268 \\;(\\sqrt{\\Delta} = 47{,}62) \\;;\\; z_c = \\frac{54{,}0 + 47{,}62}{18} = \\mathbf{5{,}646} \\;(\\text{descarta } 0{,}354) \\;;\\; p_c = 9\\cdot 5{,}646 = \\mathbf{50{,}81}'
+          '9z_c^2 - 54{,}0 z_c + 18 = 0 \\implies \\Delta = (-54)^2 - 4\\cdot 9\\cdot 18 = 2916 - 648 = 2268 \\;(\\sqrt{\\Delta} = 47{,}62) \\;;\\; z_c = \\frac{54{,}0 + 47{,}62}{2\\cdot 9} = \\mathbf{5{,}646} \\;;\\; p_c = 9\\cdot 5{,}646 = \\mathbf{50{,}81}'
       },
       {
-        title: '3. Ganho $K_c$ pela Condição de Módulo',
-        description: 'Aplicando $K_c = \\left.\\frac{1}{|\\bar{G}_c(s)L(s)|}\\right|_{s=-3+j3}$:',
+        title: '3. Método da Condição de Módulo para o Ganho $K_c$',
+        description:
+          'Isolando $K_c$ em $|K_c \\bar{G}_c(s_d)L(s_d)| = 1$ e calculando cada módulo complexo por $|a+jb| = \\sqrt{a^2+b^2}$:',
         latex:
-          'K_c = \\frac{|s_d+50{,}81|\\cdot|s_d|\\cdot|s_d+3|}{|s_d+5{,}646|} = \\frac{|-3+j3+50{,}81|\\cdot|-3+j3|\\cdot|j3|}{|2{,}646+j3|} = \\frac{47{,}906\\cdot 4{,}2426\\cdot 3}{4{,}0000} \\approx \\mathbf{152{,}4} \\;;\\; \\mathbf{G_c(s) = 152{,}4\\frac{s+5{,}646}{s+50{,}81}}'
+          'K_c = \\frac{|s_d+50{,}81|\\cdot|s_d|\\cdot|s_d+3|}{|s_d+5{,}646|} = \\frac{|-3+j3+50{,}81|\\cdot|-3+j3|\\cdot|j3|}{|2{,}646+j3|} = \\frac{\\sqrt{47{,}81^2+3^2}\\cdot\\sqrt{(-3)^2+3^2}\\cdot 3}{\\sqrt{2{,}646^2+3^2}} = \\frac{47{,}906\\cdot 4{,}2426\\cdot 3}{4{,}0000} \\approx \\mathbf{152{,}4} \\;;\\; \\mathbf{G_c(s) = 152{,}4\\frac{s+5{,}646}{s+50{,}81}}'
       },
       {
-        title: '4. Parâmetros $K_p$, $T_d$, Polos de Malha Fechada e Pré-Filtro $F(s)$',
-        description: 'Sem $F(s)$: $M_p = 7{,}1\\%$ e $t_p = 0{,}79\\text{ s}$. Com pré-filtro $F(s) = \\frac{5{,}646}{s+5{,}646}$: $M_p = 4{,}3\\%$ e $t_p = 1{,}07\\text{ s}$:',
+        title: '4. Parâmetros $(K_p, T_d, K_d)$, Polo Rápido de Malha Fechada e Pré-Filtro $F(s)$',
+        description:
+          'Usamos $K_p = K_c/r$, $T_d = N/p_c$ e $K_d = K_p T_d$. Pela soma das raízes de $1 + G_c(s)L(s) = 0$, o 3º polo é $p_3 = -(3+p_c) - (-6) = -(53{,}81 - 6) = -47{,}81$. Sem $F(s)$: $M_p = 7{,}1\\%$, $t_p = 0{,}79\\text{ s}$; com $F(s) = \\frac{5{,}646}{s+5{,}646}$: $M_p = 4{,}3\\%$, $t_p = 1{,}07\\text{ s}$:',
         latex:
-          'K_p = \\frac{152{,}4}{9} = \\mathbf{16{,}94} \\;;\\; T_d = \\frac{8}{50{,}81} = \\mathbf{0{,}157\\text{ s}} \\;;\\; K_d = 2{,}67 \\;;\\; \\text{Polos MF: } -3 \\pm j3 \\text{ e } -47{,}81'
+          'K_p = \\frac{152{,}4}{9} = \\mathbf{16{,}94} \\;;\\; T_d = \\frac{8}{50{,}81} = \\mathbf{0{,}157\\text{ s}} \\;;\\; K_d = 16{,}94\\cdot 0{,}157 = 2{,}67 \\;;\\; \\text{Polos MF: } -3 \\pm j3 \\text{ e } -47{,}81'
       },
       {
-        title: '5. Regra dos 10 V, Erro em Regime e Componentes ($C_1 = 10\\,\\mu\\text{F}$)',
-        description: 'Pico de $u$ por volt de $\\Delta e$: $152{,}4$ (sem $F$) e $14{,}8$ (com $F$). Erro à rampa e circuito RC:',
+        title: '5. Regra dos 10 V, Erro à Rampa ($K_{\\text{vel}}$) e Dimensionamento RC ($C_1 = 10\\,\\mu\\text{F}$)',
+        description:
+          'Pico de atuação por volt de $\\Delta e$: $u(0^+) = K_c\\Delta e = 152{,}4\\Delta e$ sem filtro ($\\Delta e \\le 0{,}066\\text{ V}$) e $14{,}8\\Delta e$ com $F(s)$ ($\\Delta e \\le 0{,}68\\text{ V}$). Calculando $K_{\\text{vel}} = K_p \\lim_{s\\to 0} s L(s)$ e os componentes a partir de $z_c = 1/(R_1 C_1)$, $K_p = R_2/R_1$ e $p_c = 1/(R_2 C_2)$:',
         latex:
-          'K_{\\text{vel}} = \\frac{16{,}94}{3} = 5{,}65 \\;;\\; e_{ss,\\text{rampa}} = \\frac{1}{5{,}65} = 0{,}177\\text{ V} \\;;\\; R_1 = \\frac{1}{z_c C_1} = \\mathbf{17{,}7\\text{ k}\\Omega} \\;;\\; R_2 = K_p R_1 = \\mathbf{300\\text{ k}\\Omega} \\;;\\; C_2 = \\frac{1}{p_c R_2} = \\mathbf{65{,}6\\text{ nF}}'
+          'K_{\\text{vel}} = 16{,}94\\cdot\\frac{1}{3} = 5{,}65 \\;;\\; e_{ss,\\text{rampa}} = \\frac{1}{5{,}65} = 0{,}177\\text{ V} \\;;\\; R_1 = \\frac{1}{5{,}646\\cdot 10^{-5}} = \\mathbf{17{,}7\\text{ k}\\Omega} \\;;\\; R_2 = 16{,}94\\cdot 17{,}7\\text{ k}\\Omega = \\mathbf{300\\text{ k}\\Omega} \\;;\\; C_2 = \\frac{1}{50{,}81\\cdot 300\\cdot 10^3} = \\mathbf{65{,}6\\text{ nF}}'
       }
     ],
     scilabCode: `// Slide 31 - Proposto 1: N = 8, L(s) = 1/(s(s+3)), sd = -3+j3
@@ -1356,34 +1373,39 @@ xgrid();`
     },
     detailedSteps: [
       {
-        title: '1. Polo Desejado $s_d$ e Deficiência Angular $\\theta_{\\text{def}}$',
-        description: 'Para $s_d = -3 + j3$ e $L(s) = \\frac{1}{s(s+3)}$:',
+        title: '1. Polo Desejado $s_d$ e Método da Deficiência Angular ($\\theta_{\\text{def}}$)',
+        description:
+          'Com $\\zeta = 0{,}707$ e $\\omega_d = 3\\text{ rad/s}$, $\\sigma_d = 3$ e $s_d = -3 + j3$. Os polos da planta em $0$ e $-3$ contribuem com $\\theta_1 = 180^\\circ - \\arctan(3/3) = 135^\\circ$ e $\\theta_2 = 90^\\circ$. Pela condição de ângulo $\\angle G_c(s_d) + \\angle L(s_d) = -180^\\circ$:',
         latex:
-          '\\theta_1 = 135^\\circ \\;;\\; \\theta_2 = 90^\\circ \\;;\\; \\angle L(s_d) = -225^\\circ \\implies \\theta_{\\text{def}} = \\mathbf{+45{,}0^\\circ}'
+          '\\angle L(s_d) = 0^\\circ - (135^\\circ + 90^\\circ) = -225^\\circ \\implies \\theta_{\\text{def}} = -180^\\circ - (-225^\\circ) = \\mathbf{+45{,}0^\\circ}'
       },
       {
-        title: '2. Polinômio em $z_c$ para $N = 12$ ($r = 13$, $\\cot 45^\\circ = 1$)',
-        description: 'Calculando $c_2 = 13$, $c_1 = -[3\\cdot 14 + 3\\cdot 12\\cdot 1] = -78{,}0$ e $c_0 = 18$:',
+        title: '2. Derivação do Polinômio em $z_c$ para $N = 12$ ($r = N + 1 = 13$)',
+        description:
+          'Impondo $\\varphi = 45^\\circ$ ($\\cot 45^\\circ = 1$) na equação quadrática do PD Real: $c_2 = r = 13$, $c_1 = -[\\sigma_d(r+1) + \\omega_d(r-1)\\cot\\varphi] = -[3\\cdot 14 + 3\\cdot 12\\cdot 1] = -78{,}0$ e $c_0 = \\sigma_d^2 + \\omega_d^2 = 18$. Resolvendo por Bhaskara e escolhendo a maior raiz (evitando $z_c = 0{,}240$ perto da origem):',
         latex:
-          '13z_c^2 - 78{,}0 z_c + 18 = 0 \\implies \\Delta = 5148 \\;(\\sqrt{\\Delta} = 71{,}75) \\;;\\; z_c = \\frac{78{,}0 + 71{,}75}{26} = \\mathbf{5{,}760} \\;(\\text{descarta } 0{,}240) \\;;\\; p_c = 13\\cdot 5{,}760 = \\mathbf{74{,}87}'
+          '13z_c^2 - 78{,}0 z_c + 18 = 0 \\implies \\Delta = (-78)^2 - 4\\cdot 13\\cdot 18 = 6084 - 936 = 5148 \\;(\\sqrt{\\Delta} = 71{,}75) \\;;\\; z_c = \\frac{78{,}0 + 71{,}75}{2\\cdot 13} = \\mathbf{5{,}760} \\;;\\; p_c = 13\\cdot 5{,}760 = \\mathbf{74{,}87}'
       },
       {
-        title: '3. Ganho $K_c$ pela Condição de Módulo',
-        description: 'Aplicando $K_c = \\left.\\frac{1}{|\\bar{G}_c(s)L(s)|}\\right|_{s=-3+j3}$:',
+        title: '3. Método da Condição de Módulo para o Ganho $K_c$',
+        description:
+          'Isolando $K_c$ em $|K_c \\bar{G}_c(s_d) L(s_d)| = 1$ e calculando cada distância $|a+jb| = \\sqrt{a^2+b^2}$:',
         latex:
-          'K_c = \\frac{|s_d+74{,}87|\\cdot|s_d|\\cdot|s_d+3|}{|s_d+5{,}760|} = \\frac{71{,}937\\cdot 4{,}2426\\cdot 3}{4{,}0762} \\approx \\mathbf{224{,}6} \\;;\\; \\mathbf{G_c(s) = 224{,}6\\frac{s+5{,}760}{s+74{,}87}}'
+          'K_c = \\frac{|s_d+74{,}87|\\cdot|s_d|\\cdot|s_d+3|}{|s_d+5{,}760|} = \\frac{|-3+j3+74{,}87|\\cdot|-3+j3|\\cdot|j3|}{|2{,}760+j3|} = \\frac{\\sqrt{71{,}87^2+3^2}\\cdot\\sqrt{(-3)^2+3^2}\\cdot 3}{\\sqrt{2{,}760^2+3^2}} = \\frac{71{,}937\\cdot 4{,}2426\\cdot 3}{4{,}0762} \\approx \\mathbf{224{,}6} \\;;\\; \\mathbf{G_c(s) = 224{,}6\\frac{s+5{,}760}{s+74{,}87}}'
       },
       {
-        title: '4. Parâmetros $K_p$, $T_d$, Polos de Malha Fechada e Pré-Filtro $F(s)$',
-        description: 'Sem $F(s)$: $M_p = 7{,}0\\%$ e $t_p = 0{,}79\\text{ s}$. Com pré-filtro $F(s) = \\frac{5{,}760}{s+5{,}760}$: $M_p = 4{,}3\\%$ e $t_p = 1{,}06\\text{ s}$:',
+        title: '4. Parâmetros $(K_p, T_d, K_d)$, Polo Rápido de Malha Fechada e Pré-Filtro $F(s)$',
+        description:
+          'Calculando $K_p = K_c/r$, $T_d = N/p_c$ e $K_d = K_p T_d$. Pela soma dos polos de $1 + G_c(s)L(s) = 0$, $p_3 = -(3+p_c) - (-6) = -(77{,}87 - 6) = -71{,}87$. Sem $F(s)$: $M_p = 7{,}0\\%$, $t_p = 0{,}79\\text{ s}$; com $F(s) = \\frac{5{,}760}{s+5{,}760}$: $M_p = 4{,}3\\%$, $t_p = 1{,}06\\text{ s}$:',
         latex:
-          'K_p = \\frac{224{,}6}{13} = \\mathbf{17{,}28} \\;;\\; T_d = \\frac{12}{74{,}87} = \\mathbf{0{,}160\\text{ s}} \\;;\\; K_d = 2{,}77 \\;;\\; \\text{Polos MF: } -3 \\pm j3 \\text{ e } -71{,}87'
+          'K_p = \\frac{224{,}6}{13} = \\mathbf{17{,}28} \\;;\\; T_d = \\frac{12}{74{,}87} = \\mathbf{0{,}160\\text{ s}} \\;;\\; K_d = 17{,}28\\cdot 0{,}160 = 2{,}77 \\;;\\; \\text{Polos MF: } -3 \\pm j3 \\text{ e } -71{,}87'
       },
       {
-        title: '5. Regra dos 10 V, Erro em Regime e Componentes ($C_1 = 10\\,\\mu\\text{F}$)',
-        description: 'Pico de $u$ por volt de $\\Delta e$: $224{,}6$ (sem $F$) e $15{,}6$ (com $F$). Erro à rampa e circuito RC:',
+        title: '5. Regra dos 10 V, Erro à Rampa ($K_{\\text{vel}}$) e Dimensionamento RC ($C_1 = 10\\,\\mu\\text{F}$)',
+        description:
+          'Pico de atuação por volt de $\\Delta e$: $u(0^+) = 224{,}6\\Delta e$ sem filtro ($\\Delta e \\le 0{,}045\\text{ V}$) e $15{,}6\\Delta e$ com $F(s)$ ($\\Delta e \\le 0{,}64\\text{ V}$). Calculando $K_{\\text{vel}} = K_p \\lim_{s\\to 0} s L(s)$ e os componentes via $z_c = 1/(R_1 C_1)$, $K_p = R_2/R_1$ e $p_c = 1/(R_2 C_2)$:',
         latex:
-          'K_{\\text{vel}} = \\frac{17{,}28}{3} = 5{,}76 \\;;\\; e_{ss,\\text{rampa}} = \\frac{1}{5{,}76} = 0{,}174\\text{ V} \\;;\\; R_1 = \\frac{1}{z_c C_1} = \\mathbf{17{,}4\\text{ k}\\Omega} \\;;\\; R_2 = K_p R_1 = \\mathbf{300\\text{ k}\\Omega} \\;;\\; C_2 = \\frac{1}{p_c R_2} = \\mathbf{44{,}5\\text{ nF}}'
+          'K_{\\text{vel}} = 17{,}28\\cdot\\frac{1}{3} = 5{,}76 \\;;\\; e_{ss,\\text{rampa}} = \\frac{1}{5{,}76} = 0{,}174\\text{ V} \\;;\\; R_1 = \\frac{1}{5{,}760\\cdot 10^{-5}} = \\mathbf{17{,}4\\text{ k}\\Omega} \\;;\\; R_2 = 17{,}28\\cdot 17{,}4\\text{ k}\\Omega = \\mathbf{300\\text{ k}\\Omega} \\;;\\; C_2 = \\frac{1}{74{,}87\\cdot 300\\cdot 10^3} = \\mathbf{44{,}5\\text{ nF}}'
       }
     ],
     scilabCode: `// Slide 31 - Proposto 2: N = 12, L(s) = 1/(s(s+3)), sd = -3+j3
@@ -1421,34 +1443,39 @@ xgrid();`
     },
     detailedSteps: [
       {
-        title: '1. Polo Desejado $s_d = -2 + j2$ e Deficiência Angular $\\theta_{\\text{def}}$',
-        description: 'Vetores dos polos $0$ e $-3$ até $s_d = -2 + j2$: $s_d - 0 = -2 + j2$ e $s_d - (-3) = 1 + j2$:',
+        title: '1. Polo Desejado $s_d = -2 + j2$ e Método da Deficiência Angular ($\\theta_{\\text{def}}$)',
+        description:
+          'Com $\\zeta = 0{,}707$ e $\\omega_d = 2\\text{ rad/s}$, $\\sigma_d = 2$ e $s_d = -2 + j2$. Traçamos os vetores dos polos $0$ e $-3$ até $s_d$: $s_d - 0 = -2 + j2$ (2º quadrante: $180^\\circ - \\arctan(2/2) = 135^\\circ$) e $s_d - (-3) = 1 + j2$ (1º quadrante: $\\arctan(2/1) = 63{,}43^\\circ$). Pela condição de ângulo $\\angle G_c(s_d) + \\angle L(s_d) = -180^\\circ$:',
         latex:
-          '\\theta_1 = \\operatorname{atan2}(2, -2) = 135^\\circ \\;;\\; \\theta_2 = \\operatorname{atan2}(2, 1) = 63{,}43^\\circ \\;;\\; \\angle L(s_d) = -198{,}43^\\circ \\implies \\theta_{\\text{def}} = -180^\\circ - (-198{,}43^\\circ) = \\mathbf{+18{,}4^\\circ}'
+          '\\theta_1 = 180^\\circ - 45^\\circ = 135^\\circ \\;;\\; \\theta_2 = \\arctan(2) = 63{,}43^\\circ \\;;\\; \\angle L(s_d) = -(135^\\circ + 63{,}43^\\circ) = -198{,}43^\\circ \\implies \\theta_{\\text{def}} = -180^\\circ - (-198{,}43^\\circ) = \\mathbf{+18{,}4^\\circ}'
       },
       {
-        title: '2. Polinômio em $z_c$ para $N = 10$ ($r = 11$, $\\cot 18{,}43^\\circ = 3$)',
-        description: 'Com $\\sigma_d = 2$, $\\omega_d = 2$ e $\\cot\\varphi = 3$: $c_2 = 11$, $c_1 = -[2\\cdot 12 + 2\\cdot 10\\cdot 3] = -84{,}0$ e $c_0 = 2^2 + 2^2 = 8$:',
+        title: '2. Derivação do Polinômio em $z_c$ para $N = 10$ ($r = 11$, $\\cot 18{,}43^\\circ = 3$)',
+        description:
+          'Como $\\tan\\theta_{\\text{def}} = 1/3$, temos $\\cot\\varphi = 3$. Aplicando as fórmulas do polinômio com $\\sigma_d = 2$, $\\omega_d = 2$ e $r = 11$: $c_2 = 11$, $c_1 = -[2\\cdot 12 + 2\\cdot 10\\cdot 3] = -84{,}0$ e $c_0 = 2^2 + 2^2 = 8$. Resolvendo por Bhaskara e escolhendo a maior raiz (evitando $z_c = 0{,}096$ perto da origem):',
         latex:
-          '11z_c^2 - 84{,}0 z_c + 8 = 0 \\implies \\Delta = 6704 \\;(\\sqrt{\\Delta} = 81{,}88) \\;;\\; z_c = \\frac{84{,}0 + 81{,}88}{22} = \\mathbf{7{,}540} \\;(\\text{descarta } 0{,}096) \\;;\\; p_c = 11\\cdot 7{,}540 = \\mathbf{82{,}94}'
+          '11z_c^2 - 84{,}0 z_c + 8 = 0 \\implies \\Delta = (-84)^2 - 4\\cdot 11\\cdot 8 = 7056 - 352 = 6704 \\;(\\sqrt{\\Delta} = 81{,}88) \\;;\\; z_c = \\frac{84{,}0 + 81{,}88}{2\\cdot 11} = \\mathbf{7{,}540} \\;;\\; p_c = 11\\cdot 7{,}540 = \\mathbf{82{,}94}'
       },
       {
-        title: '3. Ganho $K_c$ pela Condição de Módulo',
-        description: 'Aplicando $K_c = \\left.\\frac{1}{|\\bar{G}_c(s)L(s)|}\\right|_{s=-2+j2}$:',
+        title: '3. Método da Condição de Módulo para o Ganho $K_c$',
+        description:
+          'Isolando $K_c$ em $|K_c \\bar{G}_c(s_d) L(s_d)| = 1$ e calculando cada distância $|a+jb| = \\sqrt{a^2+b^2}$:',
         latex:
-          'K_c = \\frac{|s_d+82{,}94|\\cdot|s_d|\\cdot|s_d+3|}{|s_d+7{,}540|} = \\frac{80{,}964\\cdot 2{,}8284\\cdot 2{,}2361}{5{,}8899} \\approx \\mathbf{86{,}9} \\;;\\; \\mathbf{G_c(s) = 86{,}9\\frac{s+7{,}540}{s+82{,}94}}'
+          'K_c = \\frac{|s_d+82{,}94|\\cdot|s_d|\\cdot|s_d+3|}{|s_d+7{,}540|} = \\frac{|-2+j2+82{,}94|\\cdot|-2+j2|\\cdot|1+j2|}{|5{,}540+j2|} = \\frac{\\sqrt{80{,}94^2+2^2}\\cdot\\sqrt{(-2)^2+2^2}\\cdot\\sqrt{1^2+2^2}}{\\sqrt{5{,}540^2+2^2}} = \\frac{80{,}964\\cdot 2{,}8284\\cdot 2{,}2361}{5{,}8899} \\approx \\mathbf{86{,}9} \\;;\\; \\mathbf{G_c(s) = 86{,}9\\frac{s+7{,}540}{s+82{,}94}}'
       },
       {
-        title: '4. Parâmetros $K_p$, $T_d$, Polos de Malha Fechada e Pré-Filtro $F(s)$',
-        description: 'Sem $F(s)$: $M_p = 4{,}8\\%$ e $t_p = 1{,}41\\text{ s}$. Com pré-filtro $F(s) = \\frac{7{,}540}{s+7{,}540}$: $M_p = 4{,}3\\%$ e $t_p = 1{,}58\\text{ s}$:',
+        title: '4. Parâmetros $(K_p, T_d, K_d)$, Polo Rápido de Malha Fechada e Pré-Filtro $F(s)$',
+        description:
+          'Calculando $K_p = K_c/r$, $T_d = N/p_c$ e $K_d = K_p T_d$. Pela soma dos polos de $1 + G_c(s)L(s) = 0$, $p_3 = -(3+p_c) - (-4) = -(85{,}94 - 4) = -81{,}94$. Sem $F(s)$: $M_p = 4{,}8\\%$, $t_p = 1{,}41\\text{ s}$; com $F(s) = \\frac{7{,}540}{s+7{,}540}$: $M_p = 4{,}3\\%$, $t_p = 1{,}58\\text{ s}$:',
         latex:
-          'K_p = \\frac{86{,}9}{11} = \\mathbf{7{,}90} \\;;\\; T_d = \\frac{10}{82{,}94} = \\mathbf{0{,}121\\text{ s}} \\;;\\; K_d = 0{,}95 \\;;\\; \\text{Polos MF: } -2 \\pm j2 \\text{ e } -81{,}94'
+          'K_p = \\frac{86{,}9}{11} = \\mathbf{7{,}90} \\;;\\; T_d = \\frac{10}{82{,}94} = \\mathbf{0{,}121\\text{ s}} \\;;\\; K_d = 7{,}90\\cdot 0{,}121 = 0{,}95 \\;;\\; \\text{Polos MF: } -2 \\pm j2 \\text{ e } -81{,}94'
       },
       {
-        title: '5. Regra dos 10 V, Erro em Regime e Componentes ($C_1 = 10\\,\\mu\\text{F}$)',
-        description: 'Pico de $u$ por volt de $\\Delta e$: $86{,}9$ (sem $F$) e $7{,}5$ (com $F$). Erro à rampa e circuito RC:',
+        title: '5. Regra dos 10 V, Erro à Rampa ($K_{\\text{vel}}$) e Dimensionamento RC ($C_1 = 10\\,\\mu\\text{F}$)',
+        description:
+          'Pico de atuação por volt de $\\Delta e$: $u(0^+) = 86{,}9\\Delta e$ sem filtro ($\\Delta e \\le 0{,}115\\text{ V}$) e apenas $7{,}5\\Delta e$ com $F(s)$ ($\\Delta e \\le 1{,}33\\text{ V}$). Calculando $K_{\\text{vel}} = K_p \\lim_{s\\to 0} s L(s)$ e os componentes via $z_c = 1/(R_1 C_1)$, $K_p = R_2/R_1$ e $p_c = 1/(R_2 C_2)$:',
         latex:
-          'K_{\\text{vel}} = \\frac{7{,}90}{3} = 2{,}63 \\;;\\; e_{ss,\\text{rampa}} = \\frac{1}{2{,}63} = 0{,}380\\text{ V} \\;;\\; R_1 = \\frac{1}{z_c C_1} = \\mathbf{13{,}3\\text{ k}\\Omega} \\;;\\; R_2 = K_p R_1 = \\mathbf{105\\text{ k}\\Omega} \\;;\\; C_2 = \\frac{1}{p_c R_2} = \\mathbf{115{,}0\\text{ nF}}'
+          'K_{\\text{vel}} = 7{,}90\\cdot\\frac{1}{3} = 2{,}63 \\;;\\; e_{ss,\\text{rampa}} = \\frac{1}{2{,}63} = 0{,}380\\text{ V} \\;;\\; R_1 = \\frac{1}{7{,}540\\cdot 10^{-5}} = \\mathbf{13{,}3\\text{ k}\\Omega} \\;;\\; R_2 = 7{,}90\\cdot 13{,}3\\text{ k}\\Omega = \\mathbf{105\\text{ k}\\Omega} \\;;\\; C_2 = \\frac{1}{82{,}94\\cdot 105\\cdot 10^3} = \\mathbf{115{,}0\\text{ nF}}'
       }
     ],
     scilabCode: `// Slide 31 - Proposto 3: N = 10, L(s) = 1/(s(s+3)), sd = -2+j2
@@ -1486,24 +1513,28 @@ xgrid();`
     },
     detailedSteps: [
       {
-        title: '1. Cálculo dos Polos Dominantes Desejados (sd)',
-        description: 'Com ζ = 0,5 e σd = 4 / Ts = 4 / 1,33 = 3:',
-        latex: '\\omega_d = \\sigma_d \\frac{\\sqrt{1-\\zeta^2}}{\\zeta} = 3\\sqrt{3} \\approx 5{,}196 \\implies \\mathbf{s_d = -3 + j5{,}196}'
+        title: '1. Método de Cálculo dos Polos Dominantes Desejados ($s_d$)',
+        description:
+          'Pelo critério de $2\\%$, $T_s \\approx \\frac{4}{\\sigma_d} \\implies \\sigma_d = \\frac{4}{1{,}33} = 3$. Como $\\sigma_d = \\zeta\\omega_n$ e $\\omega_d = \\omega_n\\sqrt{1-\\zeta^2}$, dividindo as duas expressões temos $\\omega_d = \\sigma_d\\frac{\\sqrt{1-\\zeta^2}}{\\zeta}$. Para $\\zeta = 0{,}5$, $\\frac{\\sqrt{1-0{,}25}}{0{,}5} = \\sqrt{3}$:',
+        latex: '\\omega_d = 3\\sqrt{3} \\approx 5{,}196\\text{ rad/s} \\implies \\mathbf{s_d = -3 + j5{,}196}'
       },
       {
-        title: '2. Cálculo da Deficiência Angular em sd',
-        description: 'Somando os ângulos dos polos da planta (0, -4, -6) em sd = -3 + j5,196:',
-        latex: '\\theta_1 = 120^\\circ \\;;\\; \\theta_2 = 79{,}11^\\circ \\;;\\; \\theta_3 = 60^\\circ \\implies \\phi_d = (120 + 79{,}11 + 60) - 180^\\circ = 79{,}11^\\circ'
+        title: '2. Método da Deficiência Angular em $s_d = -3 + j5{,}196$',
+        description:
+          'Calculando o ângulo de cada polo ($0$, $-4$, $-6$) até $s_d$: em $0$ ($-3+j5{,}196$, 2º quad.): $180^\\circ - \\arctan(5{,}196/3) = 120^\\circ$; em $-4$ ($1+j5{,}196$, 1º quad.): $\\arctan(5{,}196/1) = 79{,}11^\\circ$; em $-6$ ($3+j5{,}196$, 1º quad.): $\\arctan(5{,}196/3) = 60^\\circ$. Pela condição $\\phi_d - \\sum\\theta_p = -180^\\circ$:',
+        latex: '\\theta_1 = 120^\\circ \\;;\\; \\theta_2 = 79{,}11^\\circ \\;;\\; \\theta_3 = 60^\\circ \\implies \\phi_d = (120^\\circ + 79{,}11^\\circ + 60^\\circ) - 180^\\circ = \\mathbf{79{,}11^\\circ}'
       },
       {
-        title: '3. Posicionamento do Zero zc do PD',
-        description: 'Aplicando a relação trigonométrica no ponto sd:',
-        latex: 'z_c = 3 + \\frac{5{,}196}{\\tan(79{,}11^\\circ)} = 3 + 1{,}00 = \\mathbf{4{,}00} \\; (\\text{cancela o polo em } -4)'
+        title: '3. Posicionamento do Zero $z_c$ do PD por Trigonometria',
+        description:
+          'Como $\\phi_d = 79{,}11^\\circ < 90^\\circ$, o zero $-z_c$ fica à esquerda de $-\\sigma_d$ ($z_c > 3$) no triângulo retângulo de altura $\\omega_d = 5{,}196$ e base $(z_c - 3) = \\frac{\\omega_d}{\\tan\\phi_d}$:',
+        latex: 'z_c = 3 + \\frac{5{,}196}{\\tan(79{,}11^\\circ)} = 3 + 1{,}00 = \\mathbf{4{,}00} \\; (\\text{cancela exatamente o polo em } -4)'
       },
       {
-        title: '4. Ajuste do Ganho Kd pela Condição de Módulo',
-        description: 'Com zc = 4, o fator (s+4) simplifica com o polo da planta:',
-        latex: 'K_d = |s_d| \\cdot |s_d + 6| = 6 \\cdot 6 = \\mathbf{36} \\implies \\mathbf{G_c(s) = 36(s+4) = 144 + 36s}'
+        title: '4. Ajuste do Ganho $K_d$ pela Condição de Módulo (Passo a Passo)',
+        description:
+          'Impondo $|K_d(s_d+4) \\cdot \\frac{1}{s_d(s_d+4)(s_d+6)}| = 1$, o fator $(s_d+4)$ simplifica-se e calculamos $|s_d| = \\sqrt{(-3)^2 + 5{,}196^2} = 6$ e $|s_d+6| = \\sqrt{3^2 + 5{,}196^2} = 6$:',
+        latex: 'K_d = |s_d| \\cdot |s_d + 6| = \\sqrt{9 + 27}\\cdot\\sqrt{9 + 27} = 6 \\cdot 6 = \\mathbf{36} \\implies \\mathbf{G_c(s) = 36(s+4) = 144 + 36s}'
       }
     ],
     scilabCode: `// Exemplo Clássico - Controlador PD via LGR
@@ -1545,19 +1576,24 @@ xgrid();`
     },
     detailedSteps: [
       {
-        title: '1. Cálculo dos Ângulos da Planta em sd = -2,828 + j2,828',
-        description: 'Ângulos dos polos s = 0 e s = -2:',
-        latex: '\\angle s_d = 135^\\circ \\;;\\; \\angle(s_d+2) = 106{,}33^\\circ \\implies \\phi_d = 241{,}33^\\circ - 180^\\circ = 61{,}33^\\circ'
+        title: '1. Método da Deficiência Angular em $s_d = -2{,}828 + j2{,}828$',
+        description:
+          'A partir de $\\zeta = 0{,}707$ e $\\omega_n = 4\\text{ rad/s}$, temos $\\sigma_d = \\zeta\\omega_n = 2{,}828$ e $\\omega_d = \\omega_n\\sqrt{1-\\zeta^2} = 2{,}828$. Para os polos em $0$ ($-2{,}828+j2{,}828$, 2º quad.) e $-2$ ($-0{,}828+j2{,}828$, 2º quad.), aplicamos $180^\\circ - \\arctan(\\text{Im}/|\\text{Re}|)$:',
+        latex:
+          '\\theta_1 = 180^\\circ - \\arctan\\left(\\frac{2{,}828}{2{,}828}\\right) = 135^\\circ \\;;\\; \\theta_2 = 180^\\circ - \\arctan\\left(\\frac{2{,}828}{0{,}828}\\right) = 106{,}33^\\circ \\implies \\phi_d = (135^\\circ + 106{,}33^\\circ) - 180^\\circ = \\mathbf{61{,}33^\\circ}'
       },
       {
-        title: '2. Posição do Zero zc do PD',
-        description: 'Calculando zc para fornecer +61,33°:',
+        title: '2. Posição do Zero $z_c$ do PD por Trigonometria',
+        description:
+          'Como $\\phi_d = 61{,}33^\\circ < 90^\\circ$, o zero $-z_c$ fica à esquerda de $-2{,}828$, formando um triângulo retângulo de altura $\\omega_d = 2{,}828$ e base $(z_c - 2{,}828) = \\frac{\\omega_d}{\\tan\\phi_d}$:',
         latex: 'z_c = 2{,}828 + \\frac{2{,}828}{\\tan(61{,}33^\\circ)} = 2{,}828 + 1{,}546 = \\mathbf{4{,}374}'
       },
       {
-        title: '3. Ganho Kd pela Condição de Módulo',
-        description: 'Impondo |Gc(sd)·G(sd)| = 1:',
-        latex: 'K_d = \\frac{4 \\cdot 2{,}947}{10 \\cdot 3{,}223} = \\mathbf{0{,}366} \\implies \\mathbf{G_c(s) = 1{,}60 + 0{,}366s}'
+        title: '3. Ganho $K_d$ pela Condição de Módulo (Passo a Passo)',
+        description:
+          'Impondo $|K_d(s_d+4{,}374)\\cdot\\frac{10}{s_d(s_d+2)}| = 1$ e calculando cada módulo complexo $|a+jb| = \\sqrt{a^2+b^2}$:',
+        latex:
+          'K_d = \\frac{|s_d|\\cdot|s_d+2|}{10\\cdot|s_d+4{,}374|} = \\frac{|-2{,}828+j2{,}828|\\cdot|-0{,}828+j2{,}828|}{10\\cdot|1{,}546+j2{,}828|} = \\frac{4{,}000 \\cdot 2{,}947}{10 \\cdot 3{,}223} = \\mathbf{0{,}366} \\implies \\mathbf{G_c(s) = 1{,}60 + 0{,}366s}'
       }
     ],
     scilabCode: `// Proposto Servo Motor - Controlador PD
@@ -2120,18 +2156,21 @@ xgrid();`
     },
     detailedSteps: [
       {
-        title: '1. Deficiência Angular em sd = -3 + j3',
-        description: 'Ângulos dos polos em s = 0 e s = -3:',
-        latex: '\\angle s_d = 135^\\circ \\;;\\; \\angle(s_d+3) = 90^\\circ \\implies \\phi = (135^\\circ + 90^\\circ) - 180^\\circ = \\mathbf{45^\\circ}'
+        title: '1. Método da Deficiência Angular em $s_d = -3 + j3$',
+        description:
+          'Para os polos da planta em $0$ e $-3$, os vetores até $s_d = -3 + j3$ são $-3+j3$ (2º quadrante: $180^\\circ - \\arctan(3/3) = 135^\\circ$) e $j3$ (eixo imaginário positivo: $90^\\circ$). Pela condição de ângulo $\\phi - (\\theta_1 + \\theta_2) = -180^\\circ$, o compensador deve fornecer o avanço $\\phi$:',
+        latex: '\\angle s_d = 180^\\circ - 45^\\circ = 135^\\circ \\;;\\; \\angle(s_d+3) = 90^\\circ \\implies \\phi = (135^\\circ + 90^\\circ) - 180^\\circ = \\mathbf{+45^\\circ}'
       },
       {
-        title: '2. Posição do Zero e Polo (z = 3, p = 6)',
-        description: 'Cancelando o polo em -3 (z = 3 contribui +90°) e fornecendo +45° pelo polo em -6 (∠(-3+j3+6) = ∠(3+j3) = 45°):',
-        latex: 'z = \\mathbf{3} \\;;\\; p = 3 + \\frac{3}{\\tan(45^\\circ)} = \\mathbf{6}'
+        title: '2. Posição do Zero e Polo ($z = 3,\\; p = 6$) por Cancelamento + Trigonometria',
+        description:
+          'Escolhendo $z = 3$ para cancelar o polo da planta em $-3$, o zero $(s+3)$ contribui com $+90^\\circ$. Para que a diferença líquida $\\theta_z - \\theta_p$ seja $+45^\\circ$, o polo $(s+p)$ deve contribuir com $\\theta_p = 90^\\circ - 45^\\circ = 45^\\circ$ (1º quadrante, logo $p > 3$): no triângulo retângulo de altura $\\omega_d = 3$ e base $(p - 3) = \\frac{3}{\\tan 45^\\circ} = 3$:',
+        latex: 'z = \\mathbf{3} \\;;\\; p = 3 + \\frac{3}{\\tan(45^\\circ)} = 3 + 3 = \\mathbf{6}'
       },
       {
-        title: '3. Cálculo do Ganho Kc pela Condição de Módulo (Passo a Passo Completo)',
-        description: 'Aplicando $K_c = \\left.\\frac{1}{|\\bar{G}_c(s)G(s)|}\\right|_{s=-3+j3}$ após o cancelamento de $(s+3)$:',
+        title: '3. Cálculo do Ganho $K_c$ pela Condição de Módulo (Passo a Passo Completo)',
+        description:
+          'Aplicando $K_c = \\left.\\frac{1}{|\\bar{G}_c(s)G(s)|}\\right|_{s=-3+j3}$ após o cancelamento de $(s+3)$ e calculando $|a+jb| = \\sqrt{a^2+b^2}$:',
         latex:
           'K_c = \\frac{1}{\\left|\\frac{s_d+3}{s_d+6}\\cdot\\frac{1}{s_d(s_d+3)}\\right|} = \\frac{1}{\\left|\\frac{1}{s_d(s_d+6)}\\right|} = |s_d|\\cdot|s_d+6| \\;;\\; K_c = |-3+j3|\\cdot|-3+j3+6| = |-3+j3|\\cdot|3+j3| \\;;\\; K_c = \\sqrt{(-3)^2+3^2}\\cdot\\sqrt{3^2+3^2} = \\sqrt{18}\\cdot\\sqrt{18} = \\mathbf{18} \\;;\\; \\mathbf{G_c(s) = 18\\frac{s+3}{s+6}}'
       }
@@ -2174,18 +2213,21 @@ xgrid();`
     },
     detailedSteps: [
       {
-        title: '1. Escolha do Zero z para Cancelar o Polo Lento',
-        description: 'Adotando z = 2, cancela-se o polo da planta em s = -2, deixando apenas 10/(s(s+p)):',
-        latex: 'G_c(s)G(s) = \\frac{10 K_c}{s(s+p)}'
+        title: '1. Escolha do Zero $z$ para Cancelar o Polo Lento da Planta',
+        description:
+          'Adotando $z = 2$, o zero do compensador cancela o polo da planta em $s = -2$, reduzindo a função de transferência de malha aberta para um sistema de 2ª ordem em $s$ e $(s+p)$:',
+        latex: '\\bar{G}_c(s)G(s) = \\frac{s+2}{s+p}\\cdot\\frac{10}{s(s+2)} = \\frac{10}{s(s+p)}'
       },
       {
-        title: '2. Posição do Polo p pela Condição de Ângulo em sd = -3 + j5,196',
-        description: 'Como ∠sd = 120°, o polo (s+p) deve contribuir com 180° - 120° = 60°:',
+        title: '2. Posição do Polo $p$ pela Condição de Ângulo em $s_d = -3 + j5{,}196$',
+        description:
+          'Para o polo na origem, $s_d = -3 + j5{,}196$ está no 2º quadrante com $\\angle s_d = 180^\\circ - \\arctan(5{,}196/3) = 120^\\circ$. Pela condição de ângulo $-(\\angle s_d + \\theta_p) = -180^\\circ$, o polo $(s+p)$ deve contribuir com $\\theta_p = 180^\\circ - 120^\\circ = 60^\\circ$ (1º quadrante, logo $p > 3$), com base $(p - 3) = \\frac{\\omega_d}{\\tan 60^\\circ} = \\frac{5{,}196}{\\sqrt{3}} = 3$:',
         latex: 'p = 3 + \\frac{5{,}196}{\\tan(60^\\circ)} = 3 + 3 = \\mathbf{6}'
       },
       {
-        title: '3. Ajuste do Ganho Kc pela Condição de Módulo (Passo a Passo)',
-        description: 'Aplicando $K_c = \\left.\\frac{1}{|\\bar{G}_c(s)G(s)|}\\right|_{s=-3+j5{,}196}$ após o cancelamento de $(s+2)$:',
+        title: '3. Ajuste do Ganho $K_c$ pela Condição de Módulo (Passo a Passo)',
+        description:
+          'Aplicando $K_c = \\left.\\frac{1}{|\\bar{G}_c(s)G(s)|}\\right|_{s=-3+j5{,}196}$ após o cancelamento de $(s+2)$ e calculando $|a+jb| = \\sqrt{a^2+b^2}$:',
         latex:
           'K_c = \\frac{1}{\\left|\\frac{10}{s_d(s_d+6)}\\right|} = \\frac{|s_d|\\cdot|s_d+6|}{10} = \\frac{|-3+j5{,}196|\\cdot|-3+j5{,}196+6|}{10} \\;;\\; K_c = \\frac{|-3+j5{,}196|\\cdot|3+j5{,}196|}{10} = \\frac{\\sqrt{(-3)^2+5{,}196^2}\\cdot\\sqrt{3^2+5{,}196^2}}{10} = \\frac{6\\cdot 6}{10} = \\mathbf{3{,}6} \\;;\\; \\mathbf{G_c(s) = 3{,}6\\frac{s+2}{s+6}}'
       }
