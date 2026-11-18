@@ -376,8 +376,18 @@ export const ListaP2View: React.FC = () => {
         {activeQuestion.practicalData && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <ControllerBlockDiagram
-              title="Diagrama de Blocos do Enunciado (Planta Original em Malha Fechada)"
-              showControllerBlock={false}
+              title={
+                activeQuestion.id === 'q20'
+                  ? 'Diagrama de Blocos do Enunciado (Planta com Controlador K a Projetar)'
+                  : activeQuestion.id === 'q21'
+                    ? 'Diagrama de Blocos do Enunciado (Sistema com Ganho Inicial K0)'
+                    : 'Diagrama de Blocos do Enunciado (Planta com Controlador Gc(s) a Projetar)'
+              }
+              showControllerBlock={true}
+              controllerLabel={activeQuestion.id === 'q21' ? 'Controlador Inicial' : 'Controlador'}
+              controllerLatex={
+                activeQuestion.id === 'q20' ? 'K' : activeQuestion.id === 'q21' ? 'K_0 = 164{,}6' : 'G_c(s)'
+              }
               plantLatex={activeQuestion.practicalData.plantLatex}
               plantExpr={activeQuestion.practicalData.plantExpr}
             />
