@@ -1358,7 +1358,7 @@ xgrid();`
         description:
           'Isolando $K_c$ em $|K_c \\bar{G}_c(s_d) L(s_d)| = 1$ e calculando o 3º polo pela soma das raízes de $s^3 + p_c s^2 + K_c s + K_c z_c = 0$:',
         latex:
-          'K_c = \\frac{1}{|\\bar{G}_c(s_d)L(s_d)|} = \\frac{1}{\\left|\\frac{s_d+z_c}{s_d+p_c}\\cdot\\frac{1}{s_d^2}\\right|} = \\frac{1}{\\left|\\frac{-3+j3+2{,}657}{-3+j3+29{,}22}\\cdot\\frac{1}{(-3+j3)^2}\\right|} \\;;\\; K_c = \\frac{1}{\\left|\\frac{-0{,}343+j3}{26{,}22+j3}\\cdot\\frac{1}{(-3+j3)^2}\\right|} = \\frac{1}{\\frac{|-0{,}343+j3|}{|26{,}22+j3|\\cdot|-3+j3|^2}} = \\frac{1}{\\frac{\\sqrt{(-0{,}343)^2+3^2}}{\\sqrt{26{,}22^2+3^2}\\cdot(3^2+3^2)}} \\;;\\; K_c = \\frac{1}{\\frac{\\sqrt{0{,}118+9}}{\\sqrt{687{,}49+9}\\cdot 18}} = \\frac{1}{\\frac{\\sqrt{9{,}118}}{\\sqrt{696{,}49}\\cdot 18}} = \\frac{1}{\\frac{3{,}020}{26{,}391\\cdot 18}} = \\frac{1}{\\frac{3{,}020}{475{,}04}} = \\frac{1}{0{,}006356} \\approx \\mathbf{157{,}3} \\;;\\; p_3 = -p_c - (-2\\sigma_d) = -29{,}22 + 6 = \\mathbf{-23{,}22} \\;;\\; \\mathbf{G_c(s) = 157{,}3\\frac{s+2{,}657}{s+29{,}22}}'
+          'K_c = \\frac{1}{|\\bar{G}_c(s_d)L(s_d)|} = \\frac{1}{\\left|\\frac{s_d+z_c}{s_d+p_c}\\cdot\\frac{1}{s_d^2}\\right|} = \\frac{1}{\\left|\\frac{-3+j3+2{,}657}{-3+j3+29{,}22}\\cdot\\frac{1}{(-3+j3)^2}\\right|} \\;;\\; K_c = \\frac{1}{\\left|\\frac{-0{,}343+j3}{26{,}22+j3}\\cdot\\frac{1}{(-3+j3)^2}\\right|} = \\frac{1}{\\frac{|-0{,}343+j3|}{|26{,}22+j3|\\cdot|-3+j3|^2}} = \\frac{1}{\\frac{\\sqrt{(-0{,}343)^2+3^2}}{\\sqrt{26{,}22^2+3^2}\\cdot(3^2+3^2)}} \\;;\\; K_c = \\frac{1}{\\frac{\\sqrt{0{,}118+9}}{\\sqrt{687{,}49+9}\\cdot 18}} = \\frac{1}{\\frac{\\sqrt{9{,}118}}{\\sqrt{696{,}49}\\cdot 18}} = \\frac{1}{\\frac{3{,}020}{26{,}391\\cdot 18}} = \\frac{1}{\\frac{3{,}020}{475{,}04}} = \\frac{1}{0{,}006356} \\approx \\mathbf{157{,}3} \\;;\\; 1 + G_c(s)L(s) = 0 \\implies s^2(s+p_c) + K_c(s+z_c) = s^3 + p_c s^2 + K_c s + K_c z_c = 0 \\;;\\; p_1 + p_2 + p_3 = -p_c \\implies (-2\\sigma_d) + p_3 = -p_c \\implies p_3 = -p_c - (-2\\sigma_d) = -29{,}22 + 6 = \\mathbf{-23{,}22} \\;;\\; \\mathbf{G_c(s) = 157{,}3\\frac{s+2{,}657}{s+29{,}22}}'
       }
     ],
     scilabCode: `// Slide 02 (11/31) - PD Real (N=10): L(s) = 1/s^2, sd = -3+j3
@@ -1429,7 +1429,7 @@ xgrid();`
         description:
           'Comparando $G_c(s) = K_c\\frac{s+z_c}{s+p_c}$ com $K_p\\left(1 + \\frac{Ns}{s+N/T_d}\\right)$ e usando a soma das raízes de $s(s+3)(s+p_c) + K_c(s+z_c) = 0$. Sem pré-filtro $M_p = 7{,}0\\%$ ($t_p = 0{,}79\\text{ s}$); com pré-filtro $F(s) = \\frac{z_c}{s+z_c}$: $M_p = 4{,}3\\%$ ($t_p = 1{,}06\\text{ s}$):',
         latex:
-          'K_p = \\frac{K_c}{r} = \\frac{188{,}5}{11} = 17{,}14 \\;;\\; T_d = \\frac{N}{p_c} = \\frac{10}{62{,}85} = 0{,}159\\text{ s} \\;;\\; K_d = K_p T_d = 17{,}14\\cdot 0{,}159 = 2{,}73 \\;;\\; p_3 = -(3 + p_c) - (-2\\sigma_d) = -(3 + 62{,}85) + 6 = -59{,}85 \\;;\\; s^3 + 65{,}85s^2 + 377{,}1s + 1077{,}3 = (s^2+6s+18)(s+59{,}85) = 0'
+          'K_p = \\frac{K_c}{r} = \\frac{188{,}5}{11} = 17{,}14 \\;;\\; T_d = \\frac{N}{p_c} = \\frac{10}{62{,}85} = 0{,}159\\text{ s} \\;;\\; K_d = K_p T_d = 17{,}14\\cdot 0{,}159 = 2{,}73 \\;;\\; 1 + G_c(s)L(s) = 0 \\implies s(s+3)(s+p_c) + K_c(s+z_c) = 0 \\implies s^3 + (3 + p_c)s^2 + (3p_c + K_c)s + K_c z_c = 0 \\;;\\; p_1 + p_2 + p_3 = -(3 + p_c) \\;\\text{ com }\\; p_{1,2} = -\\sigma_d \\pm j\\omega_d \\implies (-2\\sigma_d) + p_3 = -(3 + p_c) \\;;\\; p_3 = -(3 + p_c) - (-2\\sigma_d) = -(3 + 62{,}85) + 6 = \\mathbf{-59{,}85} \\;;\\; s^3 + 65{,}85s^2 + 377{,}1s + 1077{,}3 = (s^2+6s+18)(s+59{,}85) = 0'
       },
       {
         title: '6. Regra dos 10 V (E9) e Erro em Regime Permanente (E10) — Slide 26',
@@ -1508,7 +1508,7 @@ xgrid();`
         description:
           'Sem $F(s)$: $M_p = 7{,}1\\%$, $t_p = 0{,}79\\text{ s}$; com $F(s) = \\frac{5{,}646}{s+5{,}646}$: $M_p = 4{,}3\\%$, $t_p = 1{,}07\\text{ s}$:',
         latex:
-          'K_p = \\frac{K_c}{r} = \\frac{152{,}4}{9} = \\mathbf{16{,}94} \\;;\\; T_d = \\frac{N}{p_c} = \\frac{8}{50{,}81} = \\mathbf{0{,}157\\text{ s}} \\;;\\; K_d = K_p T_d = 16{,}94\\cdot 0{,}157 = 2{,}67 \\;;\\; p_3 = -(3 + p_c) - (-2\\sigma_d) = -(3 + 50{,}81) + 6 = \\mathbf{-47{,}81}'
+          'K_p = \\frac{K_c}{r} = \\frac{152{,}4}{9} = \\mathbf{16{,}94} \\;;\\; T_d = \\frac{N}{p_c} = \\frac{8}{50{,}81} = \\mathbf{0{,}157\\text{ s}} \\;;\\; K_d = K_p T_d = 16{,}94\\cdot 0{,}157 = 2{,}67 \\;;\\; s(s+3)(s+p_c) + K_c(s+z_c) = 0 \\implies p_1 + p_2 + p_3 = -(3+p_c) \\implies p_3 = -(3 + p_c) - (-2\\sigma_d) = -(3 + 50{,}81) + 6 = \\mathbf{-47{,}81}'
       },
       {
         title: '5. Regra dos 10 V, Erro à Rampa ($K_{\\text{vel}}$) e Dimensionamento RC ($C_1 = 10\\,\\mu\\text{F}$)',
@@ -1578,7 +1578,7 @@ xgrid();`
         description:
           'Sem $F(s)$: $M_p = 7{,}0\\%$, $t_p = 0{,}79\\text{ s}$; com $F(s) = \\frac{5{,}760}{s+5{,}760}$: $M_p = 4{,}3\\%$, $t_p = 1{,}06\\text{ s}$:',
         latex:
-          'K_p = \\frac{K_c}{r} = \\frac{224{,}6}{13} = \\mathbf{17{,}28} \\;;\\; T_d = \\frac{N}{p_c} = \\frac{12}{74{,}87} = \\mathbf{0{,}160\\text{ s}} \\;;\\; K_d = K_p T_d = 17{,}28\\cdot 0{,}160 = 2{,}77 \\;;\\; p_3 = -(3 + p_c) - (-2\\sigma_d) = -(3 + 74{,}87) + 6 = \\mathbf{-71{,}87}'
+          'K_p = \\frac{K_c}{r} = \\frac{224{,}6}{13} = \\mathbf{17{,}28} \\;;\\; T_d = \\frac{N}{p_c} = \\frac{12}{74{,}87} = \\mathbf{0{,}160\\text{ s}} \\;;\\; K_d = K_p T_d = 17{,}28\\cdot 0{,}160 = 2{,}77 \\;;\\; s(s+3)(s+p_c) + K_c(s+z_c) = 0 \\implies p_1 + p_2 + p_3 = -(3+p_c) \\implies p_3 = -(3 + p_c) - (-2\\sigma_d) = -(3 + 74{,}87) + 6 = \\mathbf{-71{,}87}'
       },
       {
         title: '5. Regra dos 10 V, Erro à Rampa ($K_{\\text{vel}}$) e Dimensionamento RC ($C_1 = 10\\,\\mu\\text{F}$)',
@@ -1648,7 +1648,7 @@ xgrid();`
         description:
           'Sem $F(s)$: $M_p = 4{,}8\\%$, $t_p = 1{,}41\\text{ s}$; com $F(s) = \\frac{7{,}540}{s+7{,}540}$: $M_p = 4{,}3\\%$, $t_p = 1{,}58\\text{ s}$:',
         latex:
-          'K_p = \\frac{K_c}{r} = \\frac{86{,}9}{11} = \\mathbf{7{,}90} \\;;\\; T_d = \\frac{N}{p_c} = \\frac{10}{82{,}94} = \\mathbf{0{,}121\\text{ s}} \\;;\\; K_d = K_p T_d = 7{,}90\\cdot 0{,}121 = 0{,}95 \\;;\\; p_3 = -(3 + p_c) - (-2\\sigma_d) = -(3 + 82{,}94) + 4 = \\mathbf{-81{,}94}'
+          'K_p = \\frac{K_c}{r} = \\frac{86{,}9}{11} = \\mathbf{7{,}90} \\;;\\; T_d = \\frac{N}{p_c} = \\frac{10}{82{,}94} = \\mathbf{0{,}121\\text{ s}} \\;;\\; K_d = K_p T_d = 7{,}90\\cdot 0{,}121 = 0{,}95 \\;;\\; s(s+3)(s+p_c) + K_c(s+z_c) = 0 \\implies p_1 + p_2 + p_3 = -(3+p_c) \\implies p_3 = -(3 + p_c) - (-2\\sigma_d) = -(3 + 82{,}94) + 4 = \\mathbf{-81{,}94}'
       },
       {
         title: '5. Regra dos 10 V, Erro à Rampa ($K_{\\text{vel}}$) e Dimensionamento RC ($C_1 = 10\\,\\mu\\text{F}$)',
@@ -2603,7 +2603,7 @@ xgrid();`
         description:
           'Aplicando $K_c = \\frac{|s_d+p_c|\\cdot|s_d|\\cdot|s_d+3|}{|s_d+z_c|}$ com $|a+jb| = \\sqrt{a^2+b^2}$ e $p_3 = -(3 + p_c) - (-2\\sigma_d) = -(6{,}24) + 4 = -2{,}24$:',
         latex:
-          'K_c = \\frac{1}{|\\bar{G}_c(s_d)L(s_d)|} = \\frac{1}{\\left|\\frac{s_d+z_c}{s_d+p_c}\\cdot\\frac{1}{s_d(s_d+3)}\\right|} = \\frac{1}{\\left|\\frac{-2+j2+2{,}472}{-2+j2+3{,}24}\\cdot\\frac{1}{(-2+j2)(-2+j2+3)}\\right|} \\;;\\; K_c = \\frac{1}{\\frac{|0{,}472+j2|}{|1{,}24+j2|\\cdot|-2+j2|\\cdot|1+j2|}} = \\frac{1}{\\frac{\\sqrt{0{,}472^2+2^2}}{\\sqrt{1{,}24^2+2^2}\\cdot\\sqrt{(-2)^2+2^2}\\cdot\\sqrt{1^2+2^2}}} = \\frac{1}{\\frac{2{,}055}{2{,}353\\cdot 2{,}828\\cdot 2{,}236}} = \\frac{1}{\\frac{2{,}055}{14{,}88}} = \\frac{1}{0{,}1381} \\approx \\mathbf{7{,}2} \\;;\\; K_p = \\frac{K_c}{r} = \\frac{7{,}24}{1{,}31} = \\mathbf{5{,}53} \\;;\\; \\text{Polos MF: } -2\\pm j2 \\text{ e } -2{,}24'
+          'K_c = \\frac{1}{|\\bar{G}_c(s_d)L(s_d)|} = \\frac{1}{\\left|\\frac{s_d+z_c}{s_d+p_c}\\cdot\\frac{1}{s_d(s_d+3)}\\right|} = \\frac{1}{\\left|\\frac{-2+j2+2{,}472}{-2+j2+3{,}24}\\cdot\\frac{1}{(-2+j2)(-2+j2+3)}\\right|} \\;;\\; K_c = \\frac{1}{\\frac{|0{,}472+j2|}{|1{,}24+j2|\\cdot|-2+j2|\\cdot|1+j2|}} = \\frac{1}{\\frac{\\sqrt{0{,}472^2+2^2}}{\\sqrt{1{,}24^2+2^2}\\cdot\\sqrt{(-2)^2+2^2}\\cdot\\sqrt{1^2+2^2}}} = \\frac{1}{\\frac{2{,}055}{2{,}353\\cdot 2{,}828\\cdot 2{,}236}} = \\frac{1}{\\frac{2{,}055}{14{,}88}} = \\frac{1}{0{,}1381} \\approx \\mathbf{7{,}2} \\;;\\; K_p = \\frac{K_c}{r} = \\frac{7{,}24}{1{,}31} = \\mathbf{5{,}53} \\;;\\; s(s+3)(s+p_c) + K_c(s+z_c) = 0 \\implies p_1 + p_2 + p_3 = -(3 + p_c) \\implies p_3 = -(3 + 3{,}24) - (-4) = \\mathbf{-2{,}24} \\;\\text{(Polos MF: } -2\\pm j2 \\text{ e } -2{,}24\\text{)}'
       },
       {
         title: '4. Limites Práticos e Componentes ($C_1 = 10\\,\\mu\\text{F}$) — Slide 14',
