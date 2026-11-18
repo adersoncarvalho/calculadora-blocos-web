@@ -1653,7 +1653,7 @@ function buildScilabReport(
 
   lines.push('// =========================================================================');
   lines.push('// Script de Verificação e Simulação no Scilab (.sce)');
-  lines.push('// Gerado automaticamente pelo Laboratório de Sistemas de Controle (EEL6005)');
+  lines.push('// Gerado automaticamente pelo Laboratório de Sistemas de Controle (Controle Clássico)');
   lines.push('// =========================================================================');
   lines.push('');
   lines.push('clear;');
@@ -1872,7 +1872,7 @@ function buildScilabReport(
 }
 
 /**
- * Biblioteca de Estudos de Caso e Exercícios Didáticos da Disciplina EEL6005 (Seção 6)
+ * Biblioteca de Estudos de Caso e Exercícios Didáticos da Disciplina Engenharia de Controle (Seção 6)
  * Todos os circuitos são carregados como grafos reais e editáveis no Construtor Livre.
  */
 export interface ClassroomCaseStudy {

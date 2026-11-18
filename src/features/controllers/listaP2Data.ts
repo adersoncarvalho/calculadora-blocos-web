@@ -1,6 +1,6 @@
 /**
  * Lista P2 Controle 1 — Todas as 23 Questões Resolvidas Passo a Passo
- * Métodos do Prof. Dr. Leandro C. Brolin (EEL6005 — Lugar das Raízes: P, PD Real, PI, Avanço e Atraso de Fase)
+ * Métodos do Prof. Dr. Leandro C. Brolin (Engenharia de Controle — Lugar das Raízes: P, PD Real, PI, Avanço e Atraso de Fase)
  */
 
 export type ListaCategory = 'all' | 'transitorio' | 'teorica' | 'pratica';

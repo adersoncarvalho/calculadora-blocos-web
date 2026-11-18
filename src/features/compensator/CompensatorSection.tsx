@@ -67,7 +67,7 @@ const PRESETS: PresetItem[] = [
     plant: { num: [1], den: [1, 3, 0], label: '1 / [s(s+3)]', poles: [0, -3] }
   },
 
-  // --- AULA 19: CONTROLADOR PI PARA ERRO NULO AO DEGRAU (EEL6005) ---
+  // --- AULA 19: CONTROLADOR PI PARA ERRO NULO AO DEGRAU (Controle Clássico) ---
   {
     id: 'aula19_ex1',
     name: '📌 Aula 19 - Exemplo 1: G(s) = 1/[(s+1)(s+5)], sd = -3+j3, φ=10° (Ângulo limita: zi=0.899)',
@@ -125,7 +125,7 @@ const PRESETS: PresetItem[] = [
   // --- AULA 18: COMPENSADOR POR AVANÇO DE FASE (PD REAL) ---
   {
     id: 'aula18',
-    name: '📌 Aula 18 - PD Real EEL6005 (PO=4.32%, Tp=1.047s, N=10, r=11, 1/[s(s+3)])',
+    name: '📌 Aula 18 - PD Real Engenharia de Controle (PO=4.32%, Tp=1.047s, N=10, r=11, 1/[s(s+3)])',
     type: 'lead',
     leadCriterion: 'r_fixo',
     Tp: 1.047,
@@ -284,7 +284,7 @@ export const CompensatorSection: React.FC<CompensatorSectionProps> = ({ onBack }
               🎛️ Projetista de Compensadores pelo Lugar das Raízes (LGR)
             </h1>
             <p style={{ margin: '2px 0 0 0', fontSize: '0.82rem', color: 'var(--text-muted)' }}>
-              Método Analítico Completo (EEL6005) • Avanço (PD Real - Aula 18), Controlador PI para Erro Nulo (Aula 19) e Avanço-Atraso
+              Método Analítico Completo (Controle Clássico) • Avanço (PD Real - Aula 18), Controlador PI para Erro Nulo (Aula 19) e Avanço-Atraso
             </p>
           </div>
         </div>
@@ -377,7 +377,7 @@ export const CompensatorSection: React.FC<CompensatorSectionProps> = ({ onBack }
                 fontWeight: 600
               }}
             >
-              <option value="pi">📌 Controlador PI para Erro Nulo ao Degrau (Aula 19 - EEL6005)</option>
+              <option value="pi">📌 Controlador PI para Erro Nulo ao Degrau (Aula 19)</option>
               <option value="lead">1. Avanço de Fase (Lead / PD Real - Aula 18)</option>
               <option value="lag">2. Atraso de Fase (Lag / PI Real)</option>
               <option value="lead-lag">3. Avanço-Atraso (Lead-Lag / PID)</option>
@@ -663,7 +663,7 @@ export const CompensatorSection: React.FC<CompensatorSectionProps> = ({ onBack }
         <div style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)', borderRadius: '12px', padding: '20px', marginBottom: '24px' }}>
           <div style={{ borderBottom: '1px solid var(--card-border)', paddingBottom: '12px', marginBottom: '18px' }}>
             <span style={{ fontSize: '0.76rem', fontWeight: 800, color: '#10B981', textTransform: 'uppercase' }}>
-              Memorial Didático Oficial • Aula 19 (EEL6005)
+              Memorial Didático Oficial • Aula 19 (Controle Clássico)
             </span>
             <h2 style={{ margin: '4px 0 0 0', fontSize: '1.35rem', color: 'var(--text)' }}>
               Projeto Completo de Controlador PI para Erro Nulo ao Degrau pelo LGR
@@ -830,7 +830,7 @@ export const CompensatorSection: React.FC<CompensatorSectionProps> = ({ onBack }
           <div style={{ borderBottom: '1px solid var(--card-border)', paddingBottom: '12px', marginBottom: '18px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
               <span style={{ fontSize: '0.76rem', fontWeight: 800, color: '#38BDF8', textTransform: 'uppercase' }}>
-                Memorial Didático Oficial • Aula 20 (EEL6005)
+                Memorial Didático Oficial • Aula 20 (Controle Clássico)
               </span>
               <span style={{ fontSize: '0.74rem', background: 'rgba(56,189,248,0.15)', color: '#38BDF8', padding: '4px 10px', borderRadius: '6px', fontWeight: 700 }}>
                 {result.leadCriterion === 'bissetriz' ? '📐 Critério da Bissetriz (Menor r e Menor Kc)' : '🎯 Cancelamento de Polo Real (2ª Ordem Pura)'}

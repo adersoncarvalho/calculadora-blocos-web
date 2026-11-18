@@ -898,7 +898,7 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
     }
   };
 
-  // Carregar Cenários / Modelos e Estudos de Caso da Disciplina (EEL6005)
+  // Carregar Cenários / Modelos e Estudos de Caso da Disciplina (Controle Clássico)
   const handleLoadTemplate = (tpl: string) => {
     setSelectedTemplate(tpl);
     setAnalysisResult(null);
@@ -2133,7 +2133,7 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
                 <option value="cascata">Associação em Cascata G1 · G2</option>
                 <option value="paralelo">Associação em Paralelo G1 + G2</option>
               </optgroup>
-              <optgroup label="Estudos de Caso e Exercícios (Aulas EEL6005)">
+              <optgroup label="Estudos de Caso e Exercícios (Aulas de Controle)">
                 {CLASSROOM_CASE_STUDIES.map(cs => (
                   <option key={cs.id} value={cs.id}>
                     {cs.title}

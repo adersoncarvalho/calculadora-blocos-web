@@ -115,7 +115,7 @@ export const FundamentosView: React.FC = () => {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
           <div>
             <span style={{ fontSize: '0.73rem', fontWeight: 800, color: 'var(--primary)', textTransform: 'uppercase' }}>
-              Aula 13 • EEL6005
+              Aula 13 • Controle Clássico
             </span>
             <h2 style={{ margin: '2px 0 0 0', fontSize: '1.15rem', color: 'var(--text)' }}>
               Fundamentos de Controladores, Casos Práticos &amp; PD Realizável

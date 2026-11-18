@@ -1,5 +1,5 @@
 /**
- * Base de Conhecimento, Teoria, Roteiros Padrão (EEL6005) e Exercícios Completos
+ * Base de Conhecimento, Teoria, Roteiros Padrão (Controle Clássico) e Exercícios Completos
  * dos 5 Controladores Principais: P, PI, PD, PID e Fase (Atraso / Avanço).
  *
  * Inclui simulador numérico RK4 para qualquer entrada (degrau, rampa, parábola, combinada)
@@ -194,7 +194,7 @@ export const CONTROLLERS_THEORY: Record<ControllerCategoryId, ControllerTheory> 
       'Quando o sistema é lento, oscilatório ou instável e precisa cumprir especificações severas de transitório (%OS e Ts).',
       'Quando o erro estacionário já é aceitável (ou o Tipo já atende à entrada), mas os polos dominantes desejados sd não pertencem ao LGR original.'
     ],
-    professorMethodTitle: 'Roteiro Padrão — Projeto do Controlador PD via LGR',
+    professorMethodTitle: 'Roteiro Padrão — Projeto do Controlador PD via LGR (Lugar Geométrico das Raízes)',
     professorMethodSteps: [
       {
         step: 'Passo 1',
@@ -607,7 +607,7 @@ xgrid();`
     controllerId: 'P',
     badge: 'Exercício Adicional • Ex. 1.3 • Tipo 0',
     title: 'Exercício Adicional 1.3 — Tipo 0 com Controlador Proporcional (P)',
-    source: 'Lista EEL6005 — Sistemas Tipo 0',
+    source: 'Lista Adicional — Sistemas Tipo 0',
     statementLatex:
       '\\text{Dado } G(s) = \\frac{1}{(s+2)(s+4)}, \\text{ projete um controlador proporcional } G_c(s) = K \\text{ para que o erro a um degrau unitário seja de } 10\\% \\; (e_{ss} = 0{,}1).',
     plantExpr: '1/((s+2)*(s+4))',
@@ -669,7 +669,7 @@ xgrid();`
     controllerId: 'P',
     badge: 'Exercício Adicional • Ex. 2.4 • Tipo 1',
     title: 'Exercício Adicional 2.4 — Tipo 1 com Controlador Proporcional (P)',
-    source: 'Lista EEL6005 — Sistemas Tipo 1',
+    source: 'Lista Adicional — Sistemas Tipo 1',
     statementLatex:
       '\\text{Dado } G(s) = \\frac{s+6}{s(s+2)(s+3)}, \\text{ determine o controlador proporcional } G_c(s) = K \\text{ para que o erro a uma rampa unitária seja } e_{ss} = 0{,}05.',
     plantExpr: '(s+6)/(s*(s+2)*(s+3))',
@@ -732,7 +732,7 @@ xgrid();`
     controllerId: 'P',
     badge: 'Exercício Adicional • Ex. 3.4 • Tipo 2',
     title: 'Exercício Adicional 3.4 — Tipo 2 com Controlador Proporcional (P)',
-    source: 'Lista EEL6005 — Sistemas Tipo 2',
+    source: 'Lista Adicional — Sistemas Tipo 2',
     statementLatex:
       '\\text{Dado } G(s) = \\frac{s+1}{s^2(s+10)}, \\text{ determine o controlador proporcional } G_c(s) = K \\text{ para que o erro à parábola unitária } (R(s) = 1/s^3) \\text{ seja } e_{ss} = 0{,}02.',
     plantExpr: '(s+1)/(s^2*(s+10))',
@@ -792,7 +792,7 @@ xgrid();`
     controllerId: 'P',
     badge: 'Exercício Adicional • Ex. 2.2 • Erro Nulo Natural',
     title: 'Exercício Adicional 2.2 — Tipo 1 com Entrada Degrau (Gc(s) = 1)',
-    source: 'Lista EEL6005 — Análise de Tipo vs. Controlador',
+    source: 'Lista Adicional — Análise de Tipo vs. Controlador',
     statementLatex:
       '\\text{Dado } G(s) = \\frac{40(s+2)}{s^2+8s}, \\text{ calcule o erro para } r(t) = 10u(t) \\text{ e indique o controlador necessário para erro nulo em regime permanente.}',
     plantExpr: '40*(s+2)/(s*(s+8))',
@@ -844,7 +844,7 @@ xgrid();`
     controllerId: 'P',
     badge: 'Exercício Adicional • Ex. 3.2 • Erro Nulo à Rampa',
     title: 'Exercício Adicional 3.2 — Tipo 2 com Entrada Rampa (Gc(s) = 1)',
-    source: 'Lista EEL6005 — Sistemas Tipo 2',
+    source: 'Lista Adicional — Sistemas Tipo 2',
     statementLatex:
       '\\text{Dado } G(s) = \\frac{50}{s^3 + 5s^2}, \\text{ calcule o erro para rampa } r(t) = 8t \\cdot u(t) \\text{ e indique o controlador necessário para erro nulo.}',
     plantExpr: '50/(s^2*(s+5))',
@@ -947,7 +947,7 @@ xgrid();`
     controllerId: 'PI',
     badge: 'Exercício Adicional • Ex. 1.4 • Tipo 0 → Tipo 1',
     title: 'Exercício Adicional 1.4 — Tipo 0 com Controlador PI (Mudança de Tipo)',
-    source: 'Lista EEL6005 — Projeto PI',
+    source: 'Lista Adicional — Projeto PI',
     statementLatex:
       '\\text{Dado } G(s) = \\frac{50}{s^2 + 6s + 25}, \\text{ determine o erro à rampa unitária e projete um controlador que torne esse erro finito e igual a } e_{ss} = 0{,}25.',
     plantExpr: '50/(s^2+6*s+25)',
@@ -1009,7 +1009,7 @@ xgrid();`
     controllerId: 'PI',
     badge: 'Exercício Adicional • Ex. 2.5 • Tipo 1 → Tipo 2',
     title: 'Exercício Adicional 2.5 — Tipo 1 com Controlador PI (Mudança para Tipo 2)',
-    source: 'Lista EEL6005 — Projeto PI',
+    source: 'Lista Adicional — Projeto PI',
     statementLatex:
       '\\text{Dado } G(s) = \\frac{100}{s(s+10)}, \\text{ calcule o erro para a parábola } r(t) = 3t^2 \\cdot u(t) \\; (A = 6) \\text{ e projete um controlador que torne esse erro finito e igual a } e_{ss} = 0{,}12.',
     plantExpr: '100/(s*(s+10))',
@@ -1071,7 +1071,7 @@ xgrid();`
     controllerId: 'PI',
     badge: 'Proposto LGR • Tipo 0 → Tipo 1',
     title: 'Proposto LGR — Controlador PI para Zerar Erro ao Degrau Mantendo Transitório',
-    source: 'Slides LGR / Projeto PI — EEL6005',
+    source: 'Slides LGR / Projeto PI — Controle Clássico',
     statementLatex:
       '\\text{Dada a planta } G(s) = \\frac{1}{(s+1)(s+2)}, \\text{ projete um controlador PI via LGR para zerar o erro ao degrau unitário } (e_{ss} = 0) \\text{ mantendo polos dominantes em } s_d = -1{,}2 + j1{,}8.',
     plantExpr: '1/((s+1)*(s+2))',
@@ -1187,7 +1187,7 @@ xgrid();`
     controllerId: 'PD',
     badge: 'Slide LGR • Transitório',
     title: 'Exemplo Clássico de Slide — Projeto de Controlador PD via LGR',
-    source: 'Slides EEL6005 — Projeto Controlador PD (LGR)',
+    source: 'Slides de Controle — Projeto Controlador PD (LGR)',
     statementLatex:
       '\\text{Dada a planta } G(s) = \\frac{1}{s(s+4)(s+6)}, \\text{ projete um controlador PD } G_c(s) = K_d(s + z_c) \\text{ para obter } \\%OS \\le 16{,}3\\% \\; (\\zeta = 0{,}5) \\text{ e tempo de acomodação } T_s = 1{,}33\\text{ s}.',
     plantExpr: '1/(s*(s+4)*(s+6))',
@@ -1365,7 +1365,7 @@ xgrid();`
     subType: 'Lag',
     badge: 'Exercício Adicional • Ex. 1.1 • Lag Tipo 0',
     title: 'Exercício Adicional 1.1 — Tipo 0 com Projeto de Compensador Lag',
-    source: 'Lista EEL6005 — Método Completo do Professor',
+    source: 'Lista Adicional — Método Completo do Professor',
     statementLatex:
       '\\text{Dado } G(s) = \\frac{20}{(s+2)(s+5)}, \\text{ determine tipo, ordem e erro ao degrau unitário sem compensação. Em seguida, projete um controlador pelo método do professor para manter } s_d = -3{,}5 + j3{,}5 \\text{ e reduzir o erro ao degrau para } e_{ss} \\le 5\\%.',
     plantExpr: '20/((s+2)*(s+5))',
@@ -1430,7 +1430,7 @@ xgrid();`
     subType: 'Lag',
     badge: 'Exercício Adicional • Ex. 1.2 • Lag 3ª Ordem',
     title: 'Exercício Adicional 1.2 — Tipo 0 (3ª Ordem) com Compensador Lag',
-    source: 'Lista EEL6005 — Método do Professor',
+    source: 'Lista Adicional — Método do Professor',
     statementLatex:
       '\\text{Dado } G(s) = \\frac{15(s+4)}{(s+1)(s+3)(s+10)}, \\text{ calcule o erro para } r(t) = 5u(t) \\text{ e projete um compensador de atraso para que } e_{ss} \\le 0{,}25 \\; (5\\% \\text{ de } 5) \\text{ mantendo } s_d = -2 + j2.',
     plantExpr: '15*(s+4)/((s+1)*(s+3)*(s+10))',
@@ -1488,7 +1488,7 @@ xgrid();`
     subType: 'Lag',
     badge: 'Exercício Adicional • Ex. 1.5 • Lag 3ª Ordem',
     title: 'Exercício Adicional 1.5 — Tipo 0 (3ª Ordem) com Compensador Lag',
-    source: 'Lista EEL6005 — Método do Professor',
+    source: 'Lista Adicional — Método do Professor',
     statementLatex:
       '\\text{Dado } G(s) = \\frac{10(s+2)}{s^3+4s^2+5s+2}, \\text{ calcule o erro para } r(t) = 3u(t) \\text{ e projete um compensador Lag para reduzir o erro para } e_{ss} \\le 0{,}06 \\; (2\\% \\text{ de } 3) \\text{ mantendo } s_d = -1{,}5 + j1{,}5.',
     plantExpr: '10*(s+2)/(s^3+4*s^2+5*s+2)',
@@ -1546,7 +1546,7 @@ xgrid();`
     subType: 'Lag',
     badge: 'Exercício Adicional • Ex. 2.1 • Lag Tipo 1',
     title: 'Exercício Adicional 2.1 — Tipo 1 com Projeto de Compensador Lag',
-    source: 'Lista EEL6005 — Método do Professor',
+    source: 'Lista Adicional — Método do Professor',
     statementLatex:
       '\\text{Dado } G(s) = \\frac{12}{s(s+3)(s+4)}, \\text{ determine tipo, ordem e erro à rampa unitária. Projete um compensador Lag pelo método do professor para manter } s_d = -1 + j1 \\text{ e reduzir o erro à rampa para } e_{ss} \\le 0{,}1.',
     plantExpr: '12/(s*(s+3)*(s+4))',
@@ -1605,7 +1605,7 @@ xgrid();`
     subType: 'Lag',
     badge: 'Exercício Adicional • Ex. 2.3 • Lag Tipo 1',
     title: 'Exercício Adicional 2.3 — Tipo 1 com Compensador Lag para Rampa',
-    source: 'Lista EEL6005 — Método do Professor',
+    source: 'Lista Adicional — Método do Professor',
     statementLatex:
       '\\text{Dado } G(s) = \\frac{25(s+4)}{s(s+5)(s+10)}, \\text{ calcule o erro para rampa } r(t) = 4t \\cdot u(t) \\text{ e projete um compensador Lag para reduzir o erro para } e_{ss} \\le 0{,}5 \\text{ mantendo } s_d = -2 + j2.',
     plantExpr: '25*(s+4)/(s*(s+5)*(s+10))',
@@ -1664,7 +1664,7 @@ xgrid();`
     subType: 'Lag',
     badge: 'Exercício Adicional • Ex. 3.1 • Lag Tipo 2',
     title: 'Exercício Adicional 3.1 — Tipo 2 com Projeto de Compensador Lag',
-    source: 'Lista EEL6005 — Método do Professor',
+    source: 'Lista Adicional — Método do Professor',
     statementLatex:
       '\\text{Dado } G(s) = \\frac{30(s+2)}{s^2(s+5)(s+6)}, \\text{ determine tipo, ordem e erro para parábola unitária } (A = 1 \\text{ em } R(s)=1/s^3). \\text{ Projete um compensador Lag para manter } s_d = -1{,}5 + j1{,}5 \\text{ e reduzir o erro para } e_{ss} \\le 0{,}1.',
     plantExpr: '30*(s+2)/(s^2*(s+5)*(s+6))',
@@ -1718,7 +1718,7 @@ xgrid();`
     subType: 'Lag',
     badge: 'Exercício Adicional • Ex. 3.3 • Lag 5ª Ordem',
     title: 'Exercício Adicional 3.3 — Tipo 2 (5ª Ordem) com Compensador Lag',
-    source: 'Lista EEL6005 — Método do Professor',
+    source: 'Lista Adicional — Método do Professor',
     statementLatex:
       '\\text{Dado } G(s) = \\frac{16(s+3)(s+5)}{s^2(s+2)(s+4)(s+6)}, \\text{ calcule o erro para } r(t) = 5t^2 \\cdot u(t) \\; (A = 10) \\text{ e projete um compensador Lag para reduzir o erro para } e_{ss} \\le 0{,}5 \\text{ mantendo } s_d = -1 + j1.',
     plantExpr: '16*(s+3)*(s+5)/(s^2*(s+2)*(s+4)*(s+6))',
@@ -1772,7 +1772,7 @@ xgrid();`
     subType: 'Lag',
     badge: 'Exercício Adicional • Ex. 3.5 • Entrada Combinada',
     title: 'Exercício Adicional 3.5 — Tipo 2 com Entrada Combinada e Compensador Lag',
-    source: 'Lista EEL6005 — Superposição + Lag',
+    source: 'Lista Adicional — Superposição + Lag',
     statementLatex:
       '\\text{Dado } G(s) = \\frac{40(s+2)}{s^2(s+4)}, \\text{ calcule o erro total para } r(t) = (5 + 3t + 2t^2)u(t) \\text{ e projete um compensador Lag para reduzir o erro total pela metade } (e_{ss,\\text{total}} \\le 0{,}1) \\text{ mantendo } s_d = -1{,}5 + j1{,}5.',
     plantExpr: '40*(s+2)/(s^2*(s+4))',
@@ -1821,7 +1821,7 @@ xgrid();`
     subType: 'Lead',
     badge: 'Aula 20 • Avanço Bissetriz',
     title: 'Exemplo Clássico de Slide (Aula 20) — Avanço de Fase pela Bissetriz',
-    source: 'Slides EEL6005 — Aula Avanço de Fase LGR',
+    source: 'Slides de Controle — Aula Avanço de Fase LGR',
     statementLatex:
       '\\text{Dada a planta } G(s) = \\frac{1}{s(s+3)}, \\text{ projete um controlador por avanço de fase } G_c(s) = K_c\\frac{s+z}{s+p} \\text{ para posicionar os polos dominantes em } s_d = -3 + j3 \\; (\\zeta = 0{,}707, T_p = 1{,}047\\text{ s}).',
     plantExpr: '1/(s*(s+3))',
@@ -1875,7 +1875,7 @@ xgrid();`
     subType: 'Lead',
     badge: 'Proposto • Avanço (Lead)',
     title: 'Exercício Proposto — Compensador por Avanço de Fase (Lead)',
-    source: 'Slides EEL6005 — Avanço de Fase via LGR',
+    source: 'Slides de Controle — Avanço de Fase via LGR',
     statementLatex:
       '\\text{Para a planta } G(s) = \\frac{10}{s(s+2)}, \\text{ projete um compensador por avanço de fase } G_c(s) = K_c\\frac{s+z}{s+p} \\; (z < p) \\text{ para obter polos dominantes em } s_d = -3 + j5{,}196 \\; (\\zeta = 0{,}5, T_s = 1{,}33\\text{ s}).',
     plantExpr: '10/(s*(s+2))',

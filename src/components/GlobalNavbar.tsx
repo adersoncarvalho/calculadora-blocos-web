@@ -137,7 +137,7 @@ export const GlobalNavbar: React.FC<GlobalNavbarProps> = ({
           </span>
           <span className="global-navbar-brand-text">
             <strong>ControleLab</strong>
-            <small>EEL6005</small>
+            <small>Eng. de Controle</small>
           </span>
         </a>
 

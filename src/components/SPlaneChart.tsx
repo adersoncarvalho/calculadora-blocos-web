@@ -50,7 +50,7 @@ function buildTicks(min: number, max: number, step: number): number[] {
 }
 
 export const SPlaneChart: React.FC<SPlaneChartProps> = ({
-  title = 'Plano s — Polos, Zeros e Lugar das Raízes (LGR)',
+  title = 'Plano s — Polos, Zeros e LGR (Lugar Geométrico das Raízes)',
   plantExpr,
   controllerExpr,
   zetaTarget

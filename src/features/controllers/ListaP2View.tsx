@@ -177,7 +177,7 @@ export const ListaP2View: React.FC = () => {
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
               <span style={{ fontSize: '0.73rem', fontWeight: 800, color: 'var(--primary)', textTransform: 'uppercase' }}>
-                Lista Oficial EEL6005 • 23 Questões Verificadas
+                Lista Oficial • 23 Questões Verificadas
               </span>
               <span
                 style={{

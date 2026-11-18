@@ -1,5 +1,5 @@
 /**
- * Conteúdo das Aulas Introdutórias de Controladores (EEL6005):
+ * Conteúdo das Aulas Introdutórias de Controladores (Controle Clássico):
  * - 0000.1: Ações de Controle (On/Off, P, I, PI, PD, PID e Tabela Resumo)
  * - 0000.2: 3 Estudos de Caso separados em 7 exercícios individuais
  * - 0000.3: Controlador Derivativo Puro vs. PD Teórico vs. PD Prático com Filtro (N = 8 a 20)

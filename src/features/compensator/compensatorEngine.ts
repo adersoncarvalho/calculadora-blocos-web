@@ -2,11 +2,11 @@
  * Motor Matemático e Algorítmico para Projeto e Simulação de Compensadores no LGR
  * Modelos:
  * 1. Avanço de Fase (Lead / PD Real - Aula 18)
- * 2. Controlador PI para Erro Nulo ao Degrau (Aula 19 - EEL6005)
+ * 2. Controlador PI para Erro Nulo ao Degrau (Aula 19)
  * 3. Atraso de Fase (Lag / PI Real)
  * 4. Avanço-Atraso de Fase (Lead-Lag / PID Real)
  *
- * Em total conformidade com a metodologia didática da disciplina EEL6005 (Aulas 18 e 19).
+ * Em total conformidade com a metodologia didática da disciplina Engenharia de Controle (Aulas 18 e 19).
  */
 
 export type CompensatorType = 'lead' | 'pi' | 'lag' | 'lead-lag';
@@ -528,7 +528,7 @@ export function calculateCompensator(inputs: CompensatorInputs): CompensatorResu
     const scilabScript = `// ============================================================
 //  Projeto de Controlador PI para Erro Nulo ao Degrau - Aula 19
 //  Planta: ${plant.label} | sd = -${sigmaD.toFixed(2)} + ${wd.toFixed(2)}*%i
-//  Gerado Automaticamente pela Calculadora de Controle EEL6005
+//  Gerado Automaticamente pela Calculadora de Controle Engenharia de Controle
 // ============================================================
 clear; clc; xdel(winsid());
 
@@ -872,7 +872,7 @@ xtitle("Resposta ao Degrau - Avanço por Bissetriz (Aula 20)", "Tempo (s)", "Sai
     scilabScript = `// ============================================================
 //  Projeto de Controlador por Lugar das Raízes — Aula 18
 //  Modelo: ${type.toUpperCase()} | Planta: ${plant.label}
-//  Gerado Automaticamente pela Calculadora de Controle EEL6005
+//  Gerado Automaticamente pela Calculadora de Controle Engenharia de Controle
 // ============================================================
 clear; clc; xdel(winsid());
 deff("y=ev(c,x)","y=sum(c.*x.^(length(c)-1:-1:0))");

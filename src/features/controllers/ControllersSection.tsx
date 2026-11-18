@@ -384,7 +384,7 @@ export const ControllersSection: React.FC<ControllersSectionProps> = ({ onBack, 
           </button>
           <div>
             <h1 style={{ margin: 0, fontSize: '1.35rem', color: 'var(--primary)', fontWeight: 800 }}>
-              🎛️ Controladores de Sistemas de Controle (EEL6005)
+              🎛️ Controladores de Sistemas de Controle (Controle Clássico)
             </h1>
             <p style={{ margin: '2px 0 0 0', fontSize: '0.82rem', color: 'var(--text-muted)' }}>
               Teoria, Roteiro Passo a Passo do Professor, Todos os Exercícios dos Slides/Propostos, Diagramas e Simulações
@@ -540,7 +540,7 @@ export const ControllersSection: React.FC<ControllersSectionProps> = ({ onBack, 
         >
           <div>
             <span style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--primary)', textTransform: 'uppercase' }}>
-              Teoria Geral de Projeto (EEL6005)
+              Teoria Geral de Projeto (Controle Clássico)
             </span>
             <div style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--text)', marginTop: '2px' }}>
               🧭 Como Escolher o Controlador Ideal? — Guia de Decisão Rápida
@@ -846,7 +846,7 @@ export const ControllersSection: React.FC<ControllersSectionProps> = ({ onBack, 
           >
             <div>
               <span style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--primary)', textTransform: 'uppercase' }}>
-                Metodologia de Aula (EEL6005)
+                Metodologia de Aula (Controle Clássico)
               </span>
               <div style={{ fontSize: '1.02rem', fontWeight: 800, color: 'var(--text)' }}>
                 {theory.professorMethodTitle}
