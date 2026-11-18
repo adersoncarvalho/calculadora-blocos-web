@@ -43,10 +43,10 @@ export const MathView: React.FC<MathViewProps> = ({ math, block = false, inline 
   useEffect(() => {
     const root = contentRef.current;
     if (!root) return;
-    const candidates = root.querySelectorAll<HTMLElement>('.katex .mord, .katex .mop');
+    const candidates = root.querySelectorAll<HTMLElement>('.katex-html .mord, .katex-html .mop');
     candidates.forEach(el => {
       if (el.closest('[data-glossary-key]')) return;
-      const txt = (el.textContent || '').trim();
+      const txt = (el.textContent || '').replace(/[\u200b-\u200d\ufeff\s]+/g, '');
       if (!txt || txt.length > 14) return;
       if (Object.prototype.hasOwnProperty.call(CONTROL_GLOSSARY, txt)) {
         const entry = CONTROL_GLOSSARY[txt];
