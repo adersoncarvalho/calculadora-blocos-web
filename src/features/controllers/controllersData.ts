@@ -280,35 +280,63 @@ export const CONTROLLERS_THEORY: Record<ControllerCategoryId, ControllerTheory> 
       'Quando o desempenho transitório (%OS, Tp, Ts) precisa ser melhorado e o LGR original não passa pelos polos dominantes desejados sd.',
       'Quando se busca acelerar a resposta e aumentar a margem de estabilidade com filtro real em alta frequência (razão r = p/z ajustável, ex.: Bissetriz ou Cancelamento).'
     ],
-    professorMethodTitle: 'Roteiro Padrão — Controlador por Avanço de Fase (LGR)',
+    professorMethodTitle: 'Procedimento Padrão — Compensador por Avanço de Fase via LGR (Slide 04)',
     professorMethodSteps: [
       {
         step: 'Passo 1',
-        title: 'Determinar os Polos Dominantes Desejados (sd)',
+        title: 'Especificações → Polo Desejado (sd)',
         description:
-          'A partir dos requisitos de sobressinal (%OS) e tempo de pico (Tp) ou acomodação (Ts), calcular ζ, ωn e sd = -σd + jωd.',
-        formulaLatex: '\\zeta = \\frac{-\\ln(\\%OS/100)}{\\sqrt{\\pi^2 + \\ln^2(\\%OS/100)}} \\;;\\; \\omega_d = \\frac{\\pi}{T_p} \\;;\\; s_d = -\\sigma_d + j\\omega_d'
+          'Converter os requisitos de sobressinal (Mp), tempo de pico (tp) ou acomodação (ts) em ζ, σd, ωd e sd = −σd + jωd.',
+        formulaLatex: '\\zeta = \\frac{-\\ln(M_p)}{\\sqrt{\\pi^2 + \\ln^2(M_p)}} \\;;\\; \\sigma_d = \\frac{4}{t_s} \\;;\\; \\omega_d = \\frac{\\pi}{t_p} \\;;\\; s_d = -\\sigma_d + j\\omega_d'
       },
       {
         step: 'Passo 2',
-        title: 'Calcular a Deficiência Angular (φ)',
+        title: 'Deficiência Angular: θdef = −180° − ∠L(sd)',
         description:
-          'Avaliar a fase de G(sd) no ponto desejado. A diferença para ±180° é o ângulo positivo φ que o controlador de avanço deve fornecer.',
-        formulaLatex: '\\phi = 180^\\circ - \\angle G(s_d)'
+          'Avaliar a fase da planta L(sd) e calcular quanto ângulo positivo falta para satisfazer a condição de ângulo do LGR.',
+        formulaLatex: '\\theta_{\\text{def}} = -180^\\circ - \\angle L(s_d)'
       },
       {
         step: 'Passo 3',
-        title: 'Posicionar Zero (z) e Polo (p) — Bissetriz ou Cancelamento',
+        title: 'Tipo de Controlador pelo Sinal de θdef',
         description:
-          'Escolher o critério de projeto: (a) Método da Bissetriz (z = |sd|/q, p = |sd|·q, r = q²) para minimizar Kc; (b) Cancelamento de polo lento; ou (c) r = N+1 fixo.',
-        formulaLatex: 'q = \\frac{1 + \\frac{\\sqrt{1-\\zeta^2}}{\\sin\\varphi}}{\\zeta + \\sqrt{1-\\zeta^2}\\cot\\varphi} \\;;\\; z_c = \\frac{|s_d|}{q},\\; p_c = |s_d|\\cdot q \\;;\\; \\angle(s_d + z_c) - \\angle(s_d + p_c) = \\varphi'
+          'Confirmar que θdef > 0 (falta avanço de fase); caso contrário, avaliar atraso de fase ou ajuste proporcional.',
+        formulaLatex: '\\theta_{\\text{def}} > 0 \\implies \\text{Avanço de Fase (Lead) ou PD Real}'
       },
       {
         step: 'Passo 4',
-        title: 'Ajustar o Ganho Kc pela Condição de Módulo e Conferir Limites',
+        title: 'Escolher o Critério: Bissetriz, Cancelamento, r Fixo ou Erro',
         description:
-          'Aplicar Kc = 1/|Gc_bar(sd)·G(sd)| (sem inverter antecipadamente), calcular Kp = Kc/r, conferir pré-filtro, regra dos 10 V, erro em regime e componentes RC.',
-        formulaLatex: 'K_c = \\frac{1}{|\\bar{G}_c(s_d)G(s_d)|} \\;;\\; K_p = \\frac{K_c}{r}'
+          'Definir a estratégia: bissetriz (minimiza Kc), cancelamento de polo lento, r = N + 1 fixo ou especificação de erro.',
+        formulaLatex: 'q = \\frac{1 + \\frac{\\sqrt{1-\\zeta^2}}{\\sin\\varphi}}{\\zeta + \\sqrt{1-\\zeta^2}\\cot\\varphi} \\;(\\text{bissetriz}) \\quad \\text{ou} \\quad r = N + 1 \\;(\\text{fixo})'
+      },
+      {
+        step: 'Passo 5',
+        title: 'Calcular zc e pc',
+        description:
+          'Determinar o zero −zc e o polo −pc conforme o critério escolhido e verificar ∠(sd + zc) − ∠(sd + pc) = φ.',
+        formulaLatex: 'z_c = \\frac{|s_d|}{q},\\; p_c = |s_d|\\cdot q \\quad \\text{ou} \\quad c_2 z_c^2 + c_1 z_c + c_0 = 0,\\; p_c = r\\cdot z_c'
+      },
+      {
+        step: 'Passo 6',
+        title: 'Kc pela Condição de Módulo e Kp = Kc / r',
+        description:
+          'Aplicar Kc = 1/|Gc_bar(sd)·L(sd)| pela regra dos 7 passos (sem inverter antecipadamente) e calcular Kp = Kc / r.',
+        formulaLatex: 'K_c = \\frac{1}{|\\bar{G}_c(s_d)L(s_d)|} \\;;\\; K_p = \\frac{K_c}{r}'
+      },
+      {
+        step: 'Passo 7',
+        title: 'Simulação, Pré-Filtro, Regra dos 10 V e Erro em Regime',
+        description:
+          'Conferir Mp, tp e dominância do 3º polo; avaliar necessidade de pré-filtro F(s) = zc/(s + zc), pico u(0+) ≤ 10 V e erro em regime.',
+        formulaLatex: 'u(0^+) = K_c\\Delta e \\le 10\\text{ V} \\;;\\; K_{\\text{vel}} = K_p\\lim_{s\\to 0} s L(s)'
+      },
+      {
+        step: 'Passo 8',
+        title: 'R1, R2, C1, C2 e Simulação com Saturação',
+        description:
+          'Escolher C1, calcular R1, R2 e C2 do estágio analógico, conferir banda GBW/Kc ≫ pc/(2π) e simular com saturação ±10 V.',
+        formulaLatex: 'R_1 = \\frac{1}{z_c C_1},\\; R_2 = K_p R_1,\\; C_2 = \\frac{1}{p_c R_2}'
       }
     ]
   },
@@ -2596,6 +2624,132 @@ y_sem = csim('step', t, G/(1+G));
 y_com = csim('step', t, (Gc*G)/(1+Gc*G));
 plot(t, y_sem, 'r--', t, y_com, 'b-', 'LineWidth', 2);
 legend(["Sem Lead (Lento)", "Com Lead: 18(s+3)/(s+6)"]);
+xgrid();`
+  },
+  {
+    id: 'lead-ex-slide-prop-r9',
+    controllerId: 'Lead',
+    subType: 'Lead',
+    badge: 'Slide 04 • Proposto (r = 9 fixo)',
+    title: 'Exercício Proposto 1 (Slide 14) — Avanço com r = 9 fixo (N = 8) em L(s) = 1/[s(s+3)] (sd = -3+j3)',
+    source: 'Slide 04 — Compensador por avanço de fase pelo lugar das raízes (Slides 13–14)',
+    statementLatex:
+      '\\text{Dada } L(s) = \\frac{1}{s(s+3)}, \\text{ refaça o projeto do compensador por avanço de fase pelo critério } r = N + 1 = 9 \\text{ fixo } (N = 8) \\text{ para } s_d = -3 + j3 \\; (\\zeta = 0{,}707,\\; \\theta_{\\text{def}} = +45^\\circ).',
+    plantExpr: '1/(s*(s+3))',
+    plantLatex: '\\frac{1}{s(s+3)}',
+    controllerExpr: '152.4*(s+5.646)/(s+50.81)',
+    controllerLatex: 'G_c(s) = 152{,}4\\frac{s + 5{,}646}{s + 50{,}81}',
+    controllerBlockLabel: 'Compensador Lead (r=9 fixo)',
+    inputType: 'step',
+    inputParams: { a0: 1, labelLatex: 'r(t) = u(t)' },
+    tMax: 3,
+    whyThisController:
+      'Usando o critério de razão fixa $r = 9$ ($N = 8$) em $s_d = -3 + j3$, o 3º polo em malha fechada fica em $-47{,}81$ (bem mais rápido que os polos dominantes $-3 \\pm j3$), garantindo dominância de 2ª ordem. Em contrapartida, exige $K_c = 152{,}4$ (maior que $K_c = 18$ da bissetriz) e pré-filtro $F(s)$ para reduzir $M_p$ de $7{,}1\\%$ para $4{,}3\\%$.',
+    diagnostics: {
+      systemType: 'Tipo 1 (1 polo na origem)',
+      systemOrder: '2ª Ordem → 3ª Ordem (3º polo em -47,81)',
+      initialErrorLatex: 'T_p(\\text{sem Lead}) \\text{ lento } (\\sigma = -1{,}5)',
+      finalErrorLatex: 'K_{\\text{vel}} = 5{,}65 \\; (e_{ss,\\text{rampa}} = 0{,}177\\text{ V})'
+    },
+    detailedSteps: [
+      {
+        title: '1. Deficiência Angular em $s_d = -3 + j3$',
+        description:
+          'Para os polos em $0$ ($-3+j3$, 2º quadrante) e $-3$ ($0+j3$, $+j\\omega$), aplicamos $\\theta_{\\text{def}} = -180^\\circ - \\angle L(s_d)$:',
+        latex:
+          '\\theta_1 = 180^\\circ - \\arctan\\left(\\frac{3}{3}\\right) = 135^\\circ \\;;\\; \\theta_2 = \\angle(-3+j3 - (-3)) = \\angle(0+j3) = 90^\\circ \\;;\\; \\angle L(s_d) = 0^\\circ - (135^\\circ + 90^\\circ) = -225^\\circ \\;;\\; \\theta_{\\text{def}} = -180^\\circ - (-225^\\circ) = \\mathbf{+45{,}0^\\circ}'
+      },
+      {
+        title: '2. Zero e Polo pelo Critério $r = 9$ Fixo (Polinômio em $z_c$, $\\cot 45^\\circ = 1$)',
+        description:
+          'Substituindo $\\sigma_d = 3$, $\\omega_d = 3$ e $r = 9$ em $c_2 z_c^2 + c_1 z_c + c_0 = 0$ e escolhendo a maior raiz (descarta-se $0{,}354$):',
+        latex:
+          'c_2 = r = 9 \\;;\\; c_1 = -[\\sigma_d(r+1) + \\omega_d(r-1)\\cot\\varphi] = -[3(10) + 3(8)(1)] = -54{,}0 \\;;\\; c_0 = \\sigma_d^2 + \\omega_d^2 = 3^2 + 3^2 = 18 \\;;\\; 9z_c^2 - 54{,}0z_c + 18 = 0 \\implies \\Delta = (-54)^2 - 4\\cdot 9\\cdot 18 = 2268 \\;(\\sqrt{\\Delta} = 47{,}62) \\;;\\; z_c = \\frac{54{,}0 + 47{,}62}{18} = \\mathbf{5{,}646} \\;;\\; p_c = r\\cdot z_c = 9\\cdot 5{,}646 = \\mathbf{50{,}81} \\;;\\; \\angle(s_d+z_c) - \\angle(s_d+p_c) = 48{,}59^\\circ - 3{,}59^\\circ = \\mathbf{45{,}00^\\circ}'
+      },
+      {
+        title: '3. Ganho $K_c$, $K_p$ e 3º Polo de Malha Fechada (Regra dos 7 Passos)',
+        description:
+          'Aplicando $K_c = \\frac{1}{|\\bar{G}_c(s_d)L(s_d)|}$ sem inverter antecipadamente e obtendo $p_3$ por Girard:',
+        latex:
+          'K_c = \\frac{1}{|\\bar{G}_c(s_d)L(s_d)|} = \\frac{1}{\\left|\\frac{s_d+z_c}{s_d+p_c}\\cdot\\frac{1}{s_d(s_d+3)}\\right|} = \\frac{1}{\\left|\\frac{2{,}646+j3}{47{,}81+j3}\\cdot\\frac{1}{(-3+j3)(j3)}\\right|} \\;;\\; K_c = \\frac{1}{\\frac{\\sqrt{7{,}001+9}}{\\sqrt{2285{,}80+9}\\cdot\\sqrt{9+9}\\cdot 3}} = \\frac{1}{\\frac{4{,}0002}{47{,}904\\cdot 4{,}2426\\cdot 3}} = \\frac{1}{\\frac{4{,}0002}{609{,}71}} = \\frac{1}{0{,}006561} \\approx \\mathbf{152{,}4} \\;;\\; K_p = \\frac{K_c}{r} = \\frac{152{,}4}{9} = \\mathbf{16{,}94} \\;;\\; p_3 = -(3 + p_c) - (-2\\sigma_d) = -(3 + 50{,}81) + 6 = \\mathbf{-47{,}81}'
+      },
+      {
+        title: '4. Simulação, Pré-Filtro, Regra dos 10 V e Componentes ($C_1 = 10\\,\\mu\\text{F}$) — Slide 14',
+        description:
+          'Sem $F(s)$: $M_p = 7{,}1\\%$, $t_p = 0{,}79\\text{ s}$, pico de $u = 152{,}4\\text{ V/V}$; com $F(s) = \\frac{5{,}646}{s+5{,}646}$: $M_p = 4{,}3\\%$, $t_p = 1{,}07\\text{ s}$, pico de $u = 14{,}8\\text{ V/V}$:',
+        latex:
+          'K_{\\text{vel}} = \\frac{K_p}{3} = \\frac{16{,}94}{3} = 5{,}65 \\implies e_{ss,\\text{rampa}} = \\frac{1}{5{,}65} = \\mathbf{0{,}177\\text{ V}} \\;;\\; R_1 = \\frac{1}{5{,}646\\cdot 10^{-5}} = \\mathbf{17{,}7\\text{ k}\\Omega} \\;;\\; R_2 = 16{,}94\\cdot 17{,}7\\text{ k}\\Omega = \\mathbf{300\\text{ k}\\Omega} \\;;\\; C_2 = \\frac{1}{50{,}81\\cdot 300\\cdot 10^3} = \\mathbf{65{,}6\\text{ nF}}'
+      }
+    ],
+    scilabCode: `// Slide 14 - Proposto Avanço r=9 fixo (N=8): sd = -3+j3
+s = %s;
+G = syslin('c', 1, s*(s+3));
+Gc = syslin('c', 152.4*(s+5.646), s+50.81);
+t = 0:0.01:3; clf();
+plot(t, csim('step', t, (Gc*G)/.1), 'b-', 'LineWidth', 2);
+xgrid();`
+  },
+  {
+    id: 'lead-ex-slide-prop-r13',
+    controllerId: 'Lead',
+    subType: 'Lead',
+    badge: 'Slide 04 • Proposto (r = 13 fixo)',
+    title: 'Exercício Proposto 2 (Slide 14) — Avanço com r = 13 fixo (N = 12) em L(s) = 1/[s(s+3)] (sd = -3+j3)',
+    source: 'Slide 04 — Compensador por avanço de fase pelo lugar das raízes (Slides 13–14)',
+    statementLatex:
+      '\\text{Dada } L(s) = \\frac{1}{s(s+3)}, \\text{ refaça o projeto do compensador por avanço de fase pelo critério } r = N + 1 = 13 \\text{ fixo } (N = 12) \\text{ para } s_d = -3 + j3 \\; (\\zeta = 0{,}707,\\; \\theta_{\\text{def}} = +45^\\circ).',
+    plantExpr: '1/(s*(s+3))',
+    plantLatex: '\\frac{1}{s(s+3)}',
+    controllerExpr: '224.6*(s+5.760)/(s+74.87)',
+    controllerLatex: 'G_c(s) = 224{,}6\\frac{s + 5{,}760}{s + 74{,}87}',
+    controllerBlockLabel: 'Compensador Lead (r=13 fixo)',
+    inputType: 'step',
+    inputParams: { a0: 1, labelLatex: 'r(t) = u(t)' },
+    tMax: 3,
+    whyThisController:
+      'Com $r = 13$ ($N = 12$) fixo, o 3º polo em malha fechada afasta-se ainda mais para $-71{,}87$, mas o ganho de alta frequência sobe para $K_c = 224{,}6$ (contra $152{,}4$ para $r=9$ e $18{,}0$ na bissetriz). O pré-filtro $F(s)$ reduz o pico de $u$ de $224{,}6$ para $15{,}6\\text{ V/V}$ e mantém $M_p = 4{,}3\\%$.',
+    diagnostics: {
+      systemType: 'Tipo 1 (1 polo na origem)',
+      systemOrder: '2ª Ordem → 3ª Ordem (3º polo em -71,87)',
+      initialErrorLatex: 'T_p(\\text{sem Lead}) \\text{ lento } (\\sigma = -1{,}5)',
+      finalErrorLatex: 'K_{\\text{vel}} = 5{,}76 \\; (e_{ss,\\text{rampa}} = 0{,}174\\text{ V})'
+    },
+    detailedSteps: [
+      {
+        title: '1. Deficiência Angular em $s_d = -3 + j3$',
+        description:
+          'Para os polos em $0$ e $-3$, obtemos a mesma deficiência angular:',
+        latex:
+          '\\theta_1 = 180^\\circ - \\arctan\\left(\\frac{3}{3}\\right) = 135^\\circ \\;;\\; \\theta_2 = \\angle(0+j3) = 90^\\circ \\;;\\; \\angle L(s_d) = -225^\\circ \\implies \\theta_{\\text{def}} = -180^\\circ - (-225^\\circ) = \\mathbf{+45{,}0^\\circ}'
+      },
+      {
+        title: '2. Zero e Polo pelo Critério $r = 13$ Fixo (Polinômio em $z_c$, $\\cot 45^\\circ = 1$)',
+        description:
+          'Substituindo $\\sigma_d = 3$, $\\omega_d = 3$ e $r = 13$ em $c_2 z_c^2 + c_1 z_c + c_0 = 0$ e escolhendo a maior raiz (descarta-se $0{,}240$):',
+        latex:
+          'c_2 = r = 13 \\;;\\; c_1 = -[\\sigma_d(r+1) + \\omega_d(r-1)\\cot\\varphi] = -[3(14) + 3(12)(1)] = -78{,}0 \\;;\\; c_0 = \\sigma_d^2 + \\omega_d^2 = 18 \\;;\\; 13z_c^2 - 78{,}0z_c + 18 = 0 \\implies \\Delta = (-78)^2 - 4\\cdot 13\\cdot 18 = 5148 \\;(\\sqrt{\\Delta} = 71{,}75) \\;;\\; z_c = \\frac{78{,}0 + 71{,}75}{26} = \\mathbf{5{,}760} \\;;\\; p_c = r\\cdot z_c = 13\\cdot 5{,}760 = \\mathbf{74{,}87} \\;;\\; \\angle(s_d+z_c) - \\angle(s_d+p_c) = 47{,}39^\\circ - 2{,}39^\\circ = \\mathbf{45{,}00^\\circ}'
+      },
+      {
+        title: '3. Ganho $K_c$, $K_p$ e 3º Polo de Malha Fechada (Regra dos 7 Passos)',
+        description:
+          'Aplicando $K_c = \\frac{1}{|\\bar{G}_c(s_d)L(s_d)|}$ sem inverter antecipadamente e obtendo $p_3$ por Girard:',
+        latex:
+          'K_c = \\frac{1}{|\\bar{G}_c(s_d)L(s_d)|} = \\frac{1}{\\left|\\frac{s_d+z_c}{s_d+p_c}\\cdot\\frac{1}{s_d(s_d+3)}\\right|} = \\frac{1}{\\left|\\frac{2{,}760+j3}{71{,}87+j3}\\cdot\\frac{1}{(-3+j3)(j3)}\\right|} \\;;\\; K_c = \\frac{1}{\\frac{\\sqrt{7{,}618+9}}{\\sqrt{5165{,}30+9}\\cdot\\sqrt{9+9}\\cdot 3}} = \\frac{1}{\\frac{4{,}0765}{71{,}933\\cdot 4{,}2426\\cdot 3}} = \\frac{1}{\\frac{4{,}0765}{915{,}54}} = \\frac{1}{0{,}004453} \\approx \\mathbf{224{,}6} \\;;\\; K_p = \\frac{K_c}{r} = \\frac{224{,}6}{13} = \\mathbf{17{,}28} \\;;\\; p_3 = -(3 + p_c) - (-2\\sigma_d) = -(3 + 74{,}87) + 6 = \\mathbf{-71{,}87}'
+      },
+      {
+        title: '4. Simulação, Pré-Filtro, Regra dos 10 V e Componentes ($C_1 = 10\\,\\mu\\text{F}$) — Slide 14',
+        description:
+          'Sem $F(s)$: $M_p = 7{,}0\\%$, $t_p = 0{,}79\\text{ s}$, pico de $u = 224{,}6\\text{ V/V}$; com $F(s) = \\frac{5{,}760}{s+5{,}760}$: $M_p = 4{,}3\\%$, $t_p = 1{,}06\\text{ s}$, pico de $u = 15{,}6\\text{ V/V}$:',
+        latex:
+          'K_{\\text{vel}} = \\frac{K_p}{3} = \\frac{17{,}28}{3} = 5{,}76 \\implies e_{ss,\\text{rampa}} = \\frac{1}{5{,}76} = \\mathbf{0{,}174\\text{ V}} \\;;\\; R_1 = \\frac{1}{5{,}760\\cdot 10^{-5}} = \\mathbf{17{,}4\\text{ k}\\Omega} \\;;\\; R_2 = 17{,}28\\cdot 17{,}4\\text{ k}\\Omega = \\mathbf{300\\text{ k}\\Omega} \\;;\\; C_2 = \\frac{1}{74{,}87\\cdot 300\\cdot 10^3} = \\mathbf{44{,}5\\text{ nF}}'
+      }
+    ],
+    scilabCode: `// Slide 14 - Proposto Avanço r=13 fixo (N=12): sd = -3+j3
+s = %s;
+G = syslin('c', 1, s*(s+3));
+Gc = syslin('c', 224.6*(s+5.760), s+74.87);
+t = 0:0.01:3; clf();
+plot(t, csim('step', t, (Gc*G)/.1), 'b-', 'LineWidth', 2);
 xgrid();`
   },
   {
