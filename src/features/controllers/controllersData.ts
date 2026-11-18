@@ -300,15 +300,15 @@ export const CONTROLLERS_THEORY: Record<ControllerCategoryId, ControllerTheory> 
         step: 'Passo 3',
         title: 'Posicionar Zero (z) e Polo (p) — Bissetriz ou Cancelamento',
         description:
-          'Escolher o critério de projeto: (a) Cancelamento de um polo lento da planta com z; ou (b) Método da Bissetriz dividindo o ângulo φ simetricamente para minimizar o ganho Kc.',
-        formulaLatex: '\\angle(s_d + z) - \\angle(s_d + p) = \\phi \\quad (z < p)'
+          'Escolher o critério de projeto: (a) Método da Bissetriz (z = |sd|/q, p = |sd|·q, r = q²) para minimizar Kc; (b) Cancelamento de polo lento; ou (c) r = N+1 fixo.',
+        formulaLatex: 'q = \\frac{1 + \\frac{\\sqrt{1-\\zeta^2}}{\\sin\\varphi}}{\\zeta + \\sqrt{1-\\zeta^2}\\cot\\varphi} \\;;\\; z_c = \\frac{|s_d|}{q},\\; p_c = |s_d|\\cdot q \\;;\\; \\angle(s_d + z_c) - \\angle(s_d + p_c) = \\varphi'
       },
       {
         step: 'Passo 4',
-        title: 'Ajustar o Ganho Kc pela Condição de Módulo',
+        title: 'Ajustar o Ganho Kc pela Condição de Módulo e Conferir Limites',
         description:
-          'Impor |Gc(sd)·G(sd)| = 1 para determinar o ganho Kc e validar a resposta em malha fechada.',
-        formulaLatex: 'K_c = \\frac{|s_d + p|}{|s_d + z| \\cdot |G(s_d)|}'
+          'Aplicar Kc = 1/|Gc_bar(sd)·G(sd)| (sem inverter antecipadamente), calcular Kp = Kc/r, conferir pré-filtro, regra dos 10 V, erro em regime e componentes RC.',
+        formulaLatex: 'K_c = \\frac{1}{|\\bar{G}_c(s_d)G(s_d)|} \\;;\\; K_p = \\frac{K_c}{r}'
       }
     ]
   },
@@ -2561,29 +2561,30 @@ xgrid();`
       {
         title: '1. Método da Deficiência Angular em $s_d = -3 + j3$',
         description:
-          'Para os polos da planta em $0$ e $-3$, os vetores até $s_d = -3 + j3$ são $-3+j3$ (2º quadrante: $180^\\circ - \\arctan(3/3) = 135^\\circ$) e $j3$ (eixo imaginário positivo: $90^\\circ$). Pela condição de ângulo $\\phi - (\\theta_1 + \\theta_2) = -180^\\circ$, o compensador deve fornecer o avanço $\\phi$:',
-        latex: '\\angle s_d = 180^\\circ - 45^\\circ = 135^\\circ \\;;\\; \\angle(s_d+3) = 90^\\circ \\implies \\phi = (135^\\circ + 90^\\circ) - 180^\\circ = \\mathbf{+45^\\circ}'
+          'Para os polos da planta em $0$ e $-3$, calculamos o ângulo de cada vetor até $s_d = -3 + j3$ e aplicamos $\\theta_{\\text{def}} = -180^\\circ - \\angle L(s_d)$:',
+        latex:
+          '\\theta_1 = 180^\\circ - \\arctan\\left(\\frac{3}{3}\\right) = 135^\\circ \\;;\\; \\theta_2 = \\angle(-3+j3 - (-3)) = \\angle(0+j3) = 90^\\circ \\;;\\; \\angle L(s_d) = 0^\\circ - (135^\\circ + 90^\\circ) = -225^\\circ \\;;\\; \\theta_{\\text{def}} = -180^\\circ - (-225^\\circ) = \\mathbf{+45^\\circ}'
       },
       {
         title: '2. Posição do Zero e Polo pela Fórmula da Bissetriz ($z_c = 3,\\; p_c = 6$)',
         description:
-          'Pelo método da bissetriz ($\\zeta = 0{,}707$, $\\sqrt{1-\\zeta^2} = 0{,}707$, $\\varphi = 45^\\circ$), calcula-se $q = \\frac{1 + \\sqrt{1-\\zeta^2}/\\sin\\varphi}{\\zeta + \\sqrt{1-\\zeta^2}\\cot\\varphi}$, $r = q^2$, $z_c = |s_d|/q$ e $p_c = |s_d|\\cdot q$. Verificação angular: $\\angle(s_d+3) = \\angle(j3) = 90^\\circ$ e $\\angle(s_d+6) = \\angle(3+j3) = 45^\\circ \\implies 90^\\circ - 45^\\circ = 45^\\circ$:',
+          'Com $\\zeta = 0{,}707$, $\\sqrt{1-\\zeta^2} = 0{,}707$, $\\sin 45^\\circ = 0{,}707$ e $\\cot 45^\\circ = 1$, aplicamos a fórmula da bissetriz e conferimos a diferença angular $\\angle(s_d+z_c) - \\angle(s_d+p_c)$:',
         latex:
-          'q = \\frac{1 + \\frac{0{,}707}{0{,}707}}{0{,}707 + 0{,}707\\cdot 1} = \\frac{2}{1{,}414} = 1{,}414 \\;;\\; r = q^2 = 2 \\;;\\; |s_d| = \\sqrt{(-3)^2+3^2} = 4{,}243 \\;;\\; z_c = \\frac{|s_d|}{q} = \\frac{4{,}243}{1{,}414} = \\mathbf{3{,}000} \\;;\\; p_c = |s_d|\\cdot q = 4{,}243\\cdot 1{,}414 = \\mathbf{6{,}000}'
+          'q = \\frac{1 + \\frac{\\sqrt{1-\\zeta^2}}{\\sin\\varphi}}{\\zeta + \\sqrt{1-\\zeta^2}\\cot\\varphi} = \\frac{1 + \\frac{0{,}707}{0{,}707}}{0{,}707 + 0{,}707\\cdot 1} = \\frac{2}{1{,}414} = 1{,}414 \\;;\\; r = q^2 = \\mathbf{2} \\;;\\; |s_d| = \\sqrt{(-3)^2+3^2} = \\sqrt{9+9} = \\sqrt{18} = 4{,}243 \\;;\\; z_c = \\frac{|s_d|}{q} = \\frac{4{,}243}{1{,}414} = \\mathbf{3{,}000} \\;;\\; p_c = |s_d|\\cdot q = 4{,}243\\cdot 1{,}414 = \\mathbf{6{,}000} \\;;\\; \\angle(s_d+3) - \\angle(s_d+6) = \\angle(0+j3) - \\angle(3+j3) = 90^\\circ - \\arctan\\left(\\frac{3}{3}\\right) = 90^\\circ - 45^\\circ = \\mathbf{45^\\circ}'
       },
       {
-        title: '3. Cálculo do Ganho $K_c$ pela Condição de Módulo (Passo a Passo Completo)',
+        title: '3. Cálculo do Ganho $K_c$ pela Condição de Módulo (Regra dos 7 Passos)',
         description:
-          'Aplicando $K_c = \\left.\\frac{1}{|\\bar{G}_c(s)G(s)|}\\right|_{s=-3+j3}$ após o cancelamento de $(s+3)$ ($K_p = K_c/r = 18/2 = 9{,}0$):',
+          'Aplicando $K_c = \\left.\\frac{1}{|\\bar{G}_c(s)G(s)|}\\right|_{s=-3+j3}$ após o cancelamento de $(s+3)$ ($K_p = K_c/r$):',
         latex:
-          'K_c = \\frac{1}{|\\bar{G}_c(s_d)G(s_d)|} = \\frac{1}{\\left|\\frac{s_d+3}{s_d+6}\\cdot\\frac{1}{s_d(s_d+3)}\\right|} = \\frac{1}{\\left|\\frac{1}{s_d(s_d+6)}\\right|} = \\frac{1}{\\left|\\frac{1}{(-3+j3)(-3+j3+6)}\\right|} \\;;\\; K_c = \\frac{1}{\\frac{1}{|-3+j3|\\cdot|3+j3|}} = \\frac{1}{\\frac{1}{\\sqrt{(-3)^2+3^2}\\cdot\\sqrt{3^2+3^2}}} = \\frac{1}{\\frac{1}{\\sqrt{18}\\cdot\\sqrt{18}}} = \\frac{1}{\\frac{1}{18}} = \\mathbf{18{,}0} \\;;\\; \\mathbf{G_c(s) = 18\\frac{s+3}{s+6}}'
+          'K_c = \\frac{1}{|\\bar{G}_c(s_d)G(s_d)|} = \\frac{1}{\\left|\\frac{s_d+3}{s_d+6}\\cdot\\frac{1}{s_d(s_d+3)}\\right|} = \\frac{1}{\\left|\\frac{1}{s_d(s_d+6)}\\right|} = \\frac{1}{\\left|\\frac{1}{(-3+j3)(-3+j3+6)}\\right|} \\;;\\; K_c = \\frac{1}{\\frac{1}{|-3+j3|\\cdot|3+j3|}} = \\frac{1}{\\frac{1}{\\sqrt{(-3)^2+3^2}\\cdot\\sqrt{3^2+3^2}}} = \\frac{1}{\\frac{1}{\\sqrt{9+9}\\cdot\\sqrt{9+9}}} = \\frac{1}{\\frac{1}{\\sqrt{18}\\cdot\\sqrt{18}}} = \\frac{1}{\\frac{1}{18}} = \\mathbf{18{,}0} \\;;\\; K_p = \\frac{K_c}{r} = \\frac{18{,}0}{2} = \\mathbf{9{,}0} \\;;\\; \\mathbf{G_c(s) = 18\\frac{s+3}{s+6}}'
       },
       {
         title: '4. Regra dos 10 V, Erro à Rampa ($K_{\\text{vel}}$), Componentes ($C_1 = 10\\,\\mu\\text{F}$) e Banda — Slide 9',
         description:
-          'Sem zeros em malha fechada ($T(s) = \\frac{18}{s^2+6s+18}$), tem-se $M_p = 4{,}3\\%$ e $t_p = 1{,}05\\text{ s}$ sem pré-filtro. Limites práticos e circuito RC:',
+          'Como $(s+3)$ cancela, $T(s) = \\frac{18}{s^2+6s+18}$ é de 2ª ordem pura sem zeros ($M_p = 4{,}3\\%$, $t_p = 1{,}05\\text{ s}$ sem pré-filtro). Limites práticos e síntese analógica:',
         latex:
-          'u(0^+) = K_c\\Delta e = 18\\Delta e \\implies \\Delta e \\le \\frac{10}{18} = \\mathbf{0{,}56\\text{ V}} \\;;\\; K_{\\text{vel}} = \\frac{K_p}{3} = \\frac{9{,}0}{3} = 3{,}00 \\implies e_{ss,\\text{rampa}} = \\frac{1}{3{,}00} = \\mathbf{0{,}333\\text{ V}} \\;;\\; R_1 = \\frac{1}{z_c C_1} = \\mathbf{33{,}3\\text{ k}\\Omega} \\;;\\; R_2 = K_p R_1 = \\mathbf{300\\text{ k}\\Omega} \\;;\\; C_2 = \\frac{1}{p_c R_2} = \\mathbf{556\\text{ nF}} \\;;\\; \\frac{\\text{GBW}}{K_c} = 55{,}6\\text{ kHz} \\gg \\frac{p_c}{2\\pi} = 0{,}95\\text{ Hz}'
+          'u(0^+) = K_c\\Delta e = 18\\Delta e \\implies \\Delta e \\le \\frac{10}{K_c} = \\frac{10}{18} = \\mathbf{0{,}56\\text{ V}} \\;;\\; K_{\\text{vel}} = K_p\\lim_{s\\to 0}\\frac{1}{s+3} = \\frac{9{,}0}{3} = 3{,}00 \\implies e_{ss,\\text{rampa}} = \\frac{1}{K_{\\text{vel}}} = \\frac{1}{3{,}00} = \\mathbf{0{,}333\\text{ V}} \\;;\\; R_1 = \\frac{1}{z_c C_1} = \\frac{1}{3\\cdot 10^{-5}} = \\mathbf{33{,}3\\text{ k}\\Omega} \\;;\\; R_2 = K_p R_1 = 9{,}0\\cdot 33{,}3\\text{ k}\\Omega = \\mathbf{300\\text{ k}\\Omega} \\;;\\; C_2 = \\frac{1}{p_c R_2} = \\frac{1}{6\\cdot 300\\cdot 10^3} = \\mathbf{556\\text{ nF}} \\;;\\; \\frac{\\text{GBW}}{K_c} = \\frac{1\\text{ MHz}}{18} = 55{,}6\\text{ kHz} \\gg \\frac{p_c}{2\\pi} = \\frac{6}{6{,}283} = 0{,}95\\text{ Hz}'
       }
     ],
     scilabCode: `// Aula 20 - Avanço de Fase (Lead)
@@ -2626,30 +2627,30 @@ xgrid();`
       {
         title: '1. Deficiência Angular em $s_d = -2 + j2$',
         description:
-          'Para os polos em $0$ ($-2+j2$, 2º quadrante) e $-3$ ($1+j2$, 1º quadrante):',
+          'Para os polos em $0$ ($-2+j2$, 2º quadrante) e $-3$ ($-2+j2+3 = 1+j2$, 1º quadrante), aplicamos $\\theta_{\\text{def}} = -180^\\circ - \\angle L(s_d)$:',
         latex:
-          '\\theta_1 = 180^\\circ - \\arctan\\left(\\frac{2}{2}\\right) = 135^\\circ \\;;\\; \\theta_2 = \\arctan\\left(\\frac{2}{1}\\right) = 63{,}43^\\circ \\;;\\; \\angle L(s_d) = -198{,}43^\\circ \\implies \\theta_{\\text{def}} = -180^\\circ - (-198{,}43^\\circ) = \\mathbf{+18{,}4^\\circ}'
+          '\\theta_1 = 180^\\circ - \\arctan\\left(\\frac{2}{2}\\right) = 135^\\circ \\;;\\; \\theta_2 = \\arctan\\left(\\frac{2}{1}\\right) = 63{,}43^\\circ \\;;\\; \\angle L(s_d) = 0^\\circ - (135^\\circ + 63{,}43^\\circ) = -198{,}43^\\circ \\;;\\; \\theta_{\\text{def}} = -180^\\circ - (-198{,}43^\\circ) = \\mathbf{+18{,}4^\\circ}'
       },
       {
         title: '2. Zero e Polo pela Fórmula da Bissetriz ($\\zeta = 0{,}707,\\; \\varphi = 18{,}43^\\circ$)',
         description:
-          'Com $|s_d| = \\sqrt{(-2)^2+2^2} = 2{,}828$, $\\sin(18{,}43^\\circ) = 0{,}3162$ e $\\cot(18{,}43^\\circ) = 3{,}000$:',
+          'Calculando $|s_d|$ por Pitágoras, $\\sin(18{,}43^\\circ) = 0{,}3162$, $\\cot(18{,}43^\\circ) = 3{,}000$, e aplicando a fórmula da bissetriz:',
         latex:
-          'q = \\frac{1 + \\frac{0{,}707}{0{,}3162}}{0{,}707 + 0{,}707\\cdot 3} = \\frac{3{,}236}{2{,}828} = 1{,}144 \\;;\\; r = q^2 = \\mathbf{1{,}31} \\;;\\; z_c = \\frac{2{,}828}{1{,}144} = \\mathbf{2{,}472} \\;;\\; p_c = 2{,}828\\cdot 1{,}144 = \\mathbf{3{,}24}'
+          '|s_d| = \\sqrt{(-2)^2+2^2} = \\sqrt{4+4} = \\sqrt{8} = 2{,}828 \\;;\\; q = \\frac{1 + \\frac{\\sqrt{1-\\zeta^2}}{\\sin\\varphi}}{\\zeta + \\sqrt{1-\\zeta^2}\\cot\\varphi} = \\frac{1 + \\frac{0{,}707}{0{,}3162}}{0{,}707 + 0{,}707\\cdot 3} = \\frac{3{,}236}{2{,}828} = 1{,}144 \\;;\\; r = q^2 = \\mathbf{1{,}31} \\;;\\; z_c = \\frac{|s_d|}{q} = \\frac{2{,}828}{1{,}144} = \\mathbf{2{,}472} \\;;\\; p_c = |s_d|\\cdot q = 2{,}828\\cdot 1{,}144 = \\mathbf{3{,}24}'
       },
       {
-        title: '3. Ganho $K_c$, $K_p$ e Polos de Malha Fechada (Passo a Passo)',
+        title: '3. Ganho $K_c$, $K_p$ e Polos de Malha Fechada (Regra dos 7 Passos)',
         description:
-          'Aplicando $K_c = \\frac{|s_d+p_c|\\cdot|s_d|\\cdot|s_d+3|}{|s_d+z_c|}$ com $|a+jb| = \\sqrt{a^2+b^2}$ e $p_3 = -(3 + p_c) - (-2\\sigma_d) = -(6{,}24) + 4 = -2{,}24$:',
+          'Aplicando $K_c = \\frac{1}{|\\bar{G}_c(s_d)L(s_d)|}$ sem inverter antecipadamente e obtendo $p_3$ pela relação de Girard:',
         latex:
-          'K_c = \\frac{1}{|\\bar{G}_c(s_d)L(s_d)|} = \\frac{1}{\\left|\\frac{s_d+z_c}{s_d+p_c}\\cdot\\frac{1}{s_d(s_d+3)}\\right|} = \\frac{1}{\\left|\\frac{-2+j2+2{,}472}{-2+j2+3{,}24}\\cdot\\frac{1}{(-2+j2)(-2+j2+3)}\\right|} \\;;\\; K_c = \\frac{1}{\\frac{|0{,}472+j2|}{|1{,}24+j2|\\cdot|-2+j2|\\cdot|1+j2|}} = \\frac{1}{\\frac{\\sqrt{0{,}472^2+2^2}}{\\sqrt{1{,}24^2+2^2}\\cdot\\sqrt{(-2)^2+2^2}\\cdot\\sqrt{1^2+2^2}}} = \\frac{1}{\\frac{2{,}055}{2{,}353\\cdot 2{,}828\\cdot 2{,}236}} = \\frac{1}{\\frac{2{,}055}{14{,}88}} = \\frac{1}{0{,}1381} \\approx \\mathbf{7{,}2} \\;;\\; K_p = \\frac{K_c}{r} = \\frac{7{,}24}{1{,}31} = \\mathbf{5{,}53} \\;;\\; s(s+3)(s+p_c) + K_c(s+z_c) = 0 \\implies p_1 + p_2 + p_3 = -(3 + p_c) \\implies p_3 = -(3 + 3{,}24) - (-4) = \\mathbf{-2{,}24} \\;\\text{(Polos MF: } -2\\pm j2 \\text{ e } -2{,}24\\text{)}'
+          'K_c = \\frac{1}{|\\bar{G}_c(s_d)L(s_d)|} = \\frac{1}{\\left|\\frac{s_d+z_c}{s_d+p_c}\\cdot\\frac{1}{s_d(s_d+3)}\\right|} = \\frac{1}{\\left|\\frac{-2+j2+2{,}472}{-2+j2+3{,}24}\\cdot\\frac{1}{(-2+j2)(-2+j2+3)}\\right|} \\;;\\; K_c = \\frac{1}{\\frac{|0{,}472+j2|}{|1{,}24+j2|\\cdot|-2+j2|\\cdot|1+j2|}} = \\frac{1}{\\frac{\\sqrt{0{,}472^2+2^2}}{\\sqrt{1{,}24^2+2^2}\\cdot\\sqrt{(-2)^2+2^2}\\cdot\\sqrt{1^2+2^2}}} = \\frac{1}{\\frac{\\sqrt{0{,}223+4}}{\\sqrt{1{,}538+4}\\cdot\\sqrt{4+4}\\cdot\\sqrt{1+4}}} \\;;\\; K_c = \\frac{1}{\\frac{\\sqrt{4{,}223}}{\\sqrt{5{,}538}\\cdot\\sqrt{8}\\cdot\\sqrt{5}}} = \\frac{1}{\\frac{2{,}055}{2{,}353\\cdot 2{,}828\\cdot 2{,}236}} = \\frac{1}{\\frac{2{,}055}{14{,}88}} = \\frac{1}{0{,}1381} \\approx \\mathbf{7{,}2} \\;;\\; K_p = \\frac{K_c}{r} = \\frac{7{,}24}{1{,}31} = \\mathbf{5{,}53} \\;;\\; s(s+3)(s+p_c) + K_c(s+z_c) = 0 \\implies p_1 + p_2 + p_3 = -(3 + p_c) \\implies p_3 = -(3 + 3{,}24) - (-4) = \\mathbf{-2{,}24} \\;\\text{(Polos MF: } -2\\pm j2 \\text{ e } -2{,}24\\text{)}'
       },
       {
         title: '4. Limites Práticos e Componentes ($C_1 = 10\\,\\mu\\text{F}$) — Slide 14',
         description:
-          'Pico de atuação: $7{,}2\\text{ V/V}$ sem filtro ($3{,}4\\text{ V/V}$ com $F(s)$); erro à rampa $0{,}543\\text{ V}$:',
+          'Pico de atuação: $7{,}2\\text{ V/V}$ sem filtro ($3{,}4\\text{ V/V}$ com $F(s)$); erro à rampa $0{,}543\\text{ V}$ e conferência de banda:',
         latex:
-          'K_{\\text{vel}} = \\frac{K_p}{3} = \\frac{5{,}53}{3} = 1{,}84 \\;;\\; R_1 = \\frac{1}{z_c C_1} = \\frac{1}{2{,}472\\cdot 10^{-5}} = \\mathbf{40{,}5\\text{ k}\\Omega} \\;;\\; R_2 = K_p R_1 = 5{,}53\\cdot 40{,}5\\text{ k}\\Omega = \\mathbf{224\\text{ k}\\Omega} \\;;\\; C_2 = \\frac{1}{p_c R_2} = \\frac{1}{3{,}24\\cdot 224\\cdot 10^3} = \\mathbf{1382\\text{ nF}}'
+          'u(0^+) = K_c\\Delta e = 7{,}2\\Delta e \\implies \\Delta e \\le \\frac{10}{7{,}2} = \\mathbf{1{,}39\\text{ V}} \\;;\\; K_{\\text{vel}} = \\frac{K_p}{3} = \\frac{5{,}53}{3} = 1{,}84 \\implies e_{ss,\\text{rampa}} = \\frac{1}{1{,}84} = \\mathbf{0{,}543\\text{ V}} \\;;\\; R_1 = \\frac{1}{z_c C_1} = \\frac{1}{2{,}472\\cdot 10^{-5}} = \\mathbf{40{,}5\\text{ k}\\Omega} \\;;\\; R_2 = K_p R_1 = 5{,}53\\cdot 40{,}5\\text{ k}\\Omega = \\mathbf{224\\text{ k}\\Omega} \\;;\\; C_2 = \\frac{1}{p_c R_2} = \\frac{1}{3{,}24\\cdot 224\\cdot 10^3} = \\mathbf{1382\\text{ nF}} \\;;\\; \\frac{\\text{GBW}}{K_c} = \\frac{1\\text{ MHz}}{7{,}2} = 138{,}9\\text{ kHz} \\gg \\frac{p_c}{2\\pi} = 0{,}52\\text{ Hz}'
       }
     ],
     scilabCode: `// Slide 14 - Proposto Avanço Bissetriz: sd = -2+j2
@@ -2695,15 +2696,16 @@ xgrid();`
       {
         title: '2. Posição do Polo $p$ pela Condição de Ângulo em $s_d = -3 + j5{,}196$',
         description:
-          'Para o polo na origem, $s_d = -3 + j5{,}196$ está no 2º quadrante com $\\angle s_d = 180^\\circ - \\arctan(5{,}196/3) = 120^\\circ$. Pela condição de ângulo $-(\\angle s_d + \\theta_p) = -180^\\circ$, o polo $(s+p)$ deve contribuir com $\\theta_p = 180^\\circ - 120^\\circ = 60^\\circ$ (1º quadrante, logo $p > 3$), com base $(p - 3) = \\frac{\\omega_d}{\\tan 60^\\circ} = \\frac{5{,}196}{\\sqrt{3}} = 3$:',
-        latex: 'p = 3 + \\frac{5{,}196}{\\tan(60^\\circ)} = 3 + 3 = \\mathbf{6}'
+          'Calculando o ângulo do polo na origem e impondo a condição de ângulo $-(\\angle s_d + \\theta_p) = -180^\\circ$:',
+        latex:
+          '\\angle s_d = 180^\\circ - \\arctan\\left(\\frac{\\omega_d}{\\sigma_d}\\right) = 180^\\circ - \\arctan\\left(\\frac{5{,}196}{3}\\right) = 180^\\circ - 60^\\circ = 120^\\circ \\;;\\; \\theta_p = 180^\\circ - \\angle s_d = 180^\\circ - 120^\\circ = 60^\\circ \\;;\\; p = \\sigma_d + \\frac{\\omega_d}{\\tan\\theta_p} = 3 + \\frac{5{,}196}{\\tan(60^\\circ)} = 3 + \\frac{5{,}196}{1{,}732} = 3 + 3 = \\mathbf{6}'
       },
       {
-        title: '3. Ajuste do Ganho $K_c$ pela Condição de Módulo (Passo a Passo)',
+        title: '3. Ajuste do Ganho $K_c$ pela Condição de Módulo (Regra dos 7 Passos)',
         description:
-          'Aplicando $K_c = \\left.\\frac{1}{|\\bar{G}_c(s)G(s)|}\\right|_{s=-3+j5{,}196}$ após o cancelamento de $(s+2)$ e calculando $|a+jb| = \\sqrt{a^2+b^2}$:',
+          'Aplicando $K_c = \\left.\\frac{1}{|\\bar{G}_c(s)G(s)|}\\right|_{s=-3+j5{,}196}$ após o cancelamento de $(s+2)$:',
         latex:
-          'K_c = \\frac{1}{|\\bar{G}_c(s_d)G(s_d)|} = \\frac{1}{\\left|\\frac{s_d+2}{s_d+6}\\cdot\\frac{10}{s_d(s_d+2)}\\right|} = \\frac{1}{\\left|\\frac{10}{s_d(s_d+6)}\\right|} = \\frac{1}{\\left|\\frac{10}{(-3+j5{,}196)(-3+j5{,}196+6)}\\right|} \\;;\\; K_c = \\frac{1}{\\frac{10}{|-3+j5{,}196|\\cdot|3+j5{,}196|}} = \\frac{1}{\\frac{10}{\\sqrt{(-3)^2+5{,}196^2}\\cdot\\sqrt{3^2+5{,}196^2}}} = \\frac{1}{\\frac{10}{6\\cdot 6}} = \\frac{1}{\\frac{10}{36}} = \\frac{1}{0{,}2778} = \\mathbf{3{,}6} \\;;\\; \\mathbf{G_c(s) = 3{,}6\\frac{s+2}{s+6}}'
+          'K_c = \\frac{1}{|\\bar{G}_c(s_d)G(s_d)|} = \\frac{1}{\\left|\\frac{s_d+2}{s_d+6}\\cdot\\frac{10}{s_d(s_d+2)}\\right|} = \\frac{1}{\\left|\\frac{10}{s_d(s_d+6)}\\right|} = \\frac{1}{\\left|\\frac{10}{(-3+j5{,}196)(-3+j5{,}196+6)}\\right|} \\;;\\; K_c = \\frac{1}{\\frac{10}{|-3+j5{,}196|\\cdot|3+j5{,}196|}} = \\frac{1}{\\frac{10}{\\sqrt{(-3)^2+5{,}196^2}\\cdot\\sqrt{3^2+5{,}196^2}}} = \\frac{1}{\\frac{10}{\\sqrt{9+27}\\cdot\\sqrt{9+27}}} = \\frac{1}{\\frac{10}{\\sqrt{36}\\cdot\\sqrt{36}}} = \\frac{1}{\\frac{10}{6\\cdot 6}} = \\frac{1}{\\frac{10}{36}} = \\frac{1}{0{,}2778} = \\mathbf{3{,}6} \\;;\\; \\mathbf{G_c(s) = 3{,}6\\frac{s+2}{s+6}}'
       }
     ],
     scilabCode: `// Proposto - Compensador Avanço de Fase (Lead)
