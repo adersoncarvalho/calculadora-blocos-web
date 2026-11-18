@@ -1238,6 +1238,20 @@ xgrid();`
           'Polos de malha fechada em $-3 \\pm j3$ e polo rápido em $-59{,}85$ ($20\\times$ mais rápido que $\\sigma_d = 3$). Sem pré-filtro $M_p = 7{,}0\\%$ e $t_p = 0{,}79\\text{ s}$; com pré-filtro $F(s) = \\frac{5{,}714}{s+5{,}714}$: $M_p = 4{,}3\\%$ e $t_p = 1{,}06\\text{ s}$:',
         latex:
           'K_p = \\frac{K_c}{r} = \\frac{188{,}5}{11} = 17{,}14 \\;;\\; T_d = \\frac{N}{p_c} = \\frac{10}{62{,}85} = 0{,}159\\text{ s} \\;;\\; K_d = K_p T_d = 2{,}73 \\;;\\; s^3 + 65{,}85s^2 + 377{,}1s + 1077{,}3 = (s^2+6s+18)(s+59{,}85) = 0'
+      },
+      {
+        title: '6. Regra dos 10 V (E9) e Erro em Regime Permanente (E10) — Slide 26',
+        description:
+          'Sem pré-filtro o amp-op satura rápido ($\\Delta e$ admissível $12\\times$ menor); com o pré-filtro $F(s)$, atende à regra dos $\\pm 10\\text{ V}$ para $\\Delta e \\le 0{,}65\\text{ V}$. Como a planta é Tipo 1, o erro ao degrau é nulo e o erro à rampa é $0{,}175\\text{ V}$:',
+        latex:
+          'u(0^+) = K_c\\Delta e = 188{,}5\\,\\Delta e \\implies \\Delta e \\le \\frac{10}{188{,}5} = 0{,}053\\text{ V} \\;;\\; \\text{com } F(s):\\; u_{\\text{pico}} = 15{,}3\\,\\Delta e \\implies \\Delta e \\le \\frac{10}{15{,}3} = \\mathbf{0{,}65\\text{ V}} \\;;\\; K_{\\text{vel}} = K_p \\lim_{s\\to 0} s L(s) = 17{,}14 \\cdot \\frac{1}{3} = 5{,}71 \\;;\\; e_{ss,\\text{rampa}} = \\frac{1}{5{,}71} = \\mathbf{0{,}175\\text{ V}} \\;;\\; e_{ss,\\text{degrau}} = 0'
+      },
+      {
+        title: '7. Implementação Analógica: Resistores, Capacitores (E11) e Banda do Amp-Op (E12) — Slides 27–28',
+        description:
+          'Escolhendo $C_1 = 10\\,\\mu\\text{F}$ (com estágio inversor $R_1\\parallel C_1$ e $R_2\\parallel C_2$, inversor unitário de $10\\text{ k}\\Omega$ e subtrator $e = r - y$). Valores comerciais (E96): $R_1 = 17{,}4\\text{ k}\\Omega$, $R_2 = 301\\text{ k}\\Omega$, $C_2 = 47\\text{ nF}\\parallel 6{,}8\\text{ nF} = 53{,}8\\text{ nF}$ (resultando em $z_c = 5{,}75$, $p_c = 61{,}75$, $K_p = 17{,}3$, desvios $<2\\%$):',
+        latex:
+          'R_1 = \\frac{1}{z_c C_1} = \\frac{1}{5{,}714\\cdot 10^{-5}} = \\mathbf{17{,}5\\text{ k}\\Omega} \\;;\\; R_2 = K_p R_1 = 17{,}14\\cdot 17{,}5\\text{ k}\\Omega = \\mathbf{300\\text{ k}\\Omega} \\;;\\; C_2 = \\frac{1}{p_c R_2} = \\frac{1}{62{,}85\\cdot 300\\cdot 10^3} = \\mathbf{53{,}0\\text{ nF}} \\;;\\; \\frac{C_1}{C_2} = \\frac{10\\,\\mu\\text{F}}{53{,}0\\text{ nF}} = 188{,}5 = K_c \\;;\\; \\frac{\\text{GBW}}{K_c} = \\frac{1\\text{ MHz}}{188{,}5} = 5{,}3\\text{ kHz} \\gg \\frac{p_c}{2\\pi} = 10\\text{ Hz}'
       }
     ],
     scilabCode: `// Slide 02 - PD Real (N=10): L(s) = 1/(s(s+3)), sd = -3+j3
