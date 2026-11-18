@@ -930,6 +930,13 @@ disp("Polos de malha fechada com Gc=1:", roots(s^3 + 5*s^2 + 50));`
         description: 'Aplicando $K_c = \\left.\\frac{1}{|\\bar{G}_c(s)G(s)|}\\right|_{s=s_d}$ (polos MF em $-2{,}57 \\pm j3{,}00$ e $-0{,}868$):',
         latex:
           'K_c = \\frac{1}{\\left|\\frac{s_d+0{,}899}{s_d}\\cdot G(s_d)\\right|} = K_0\\cdot\\frac{|s_d|}{|s_d+0{,}899|} = 13\\cdot\\frac{|-3+j3|}{|-3+j3+0{,}899|} \\;;\\; K_c = 13\\cdot\\frac{|-3+j3|}{|-2{,}101+j3|} = 13\\cdot\\frac{\\sqrt{(-3)^2+3^2}}{\\sqrt{(-2{,}101)^2+3^2}} = 13\\cdot\\frac{\\sqrt{18}}{\\sqrt{13{,}414}} = 13\\cdot\\frac{4{,}2426}{3{,}6625} \\approx \\mathbf{15{,}06} \\;;\\; \\mathbf{G_c(s) = 15{,}06\\frac{s+0{,}899}{s}}'
+      },
+      {
+        title: '4. Verificação, Regra dos 10 V e Componentes ($R_1 = 47\\text{ k}\\Omega$) — Slide 11',
+        description:
+          'Comparando com P puro ($M_p = 4{,}3\\%$, $t_s = 1{,}41\\text{ s}$, $e_P = 27{,}8\\%$): com PI temos $M_p = 4{,}7\\%$, $t_s = 1{,}39\\text{ s}$, $e_{ss,\\text{degrau}} = 0$ e $e_{ss,\\text{rampa}} = 1/2{,}71 = 0{,}37$. Pela função do PI inversor $K_c\\frac{s + 1/(R_2 C)}{s}$ com $R_2 = K_c R_1$ e $C = 1/(z_i R_2)$:',
+        latex:
+          '\\Delta e \\le \\frac{10}{K_c} = \\frac{10}{15{,}06} = \\mathbf{0{,}66\\text{ V}} \\;;\\; R_2 = K_c R_1 = 15{,}06\\cdot 47\\text{ k}\\Omega = \\mathbf{708\\text{ k}\\Omega} \\;;\\; C = \\frac{1}{z_i R_2} = \\frac{1}{0{,}899\\cdot 708\\cdot 10^3} = \\mathbf{1{,}57\\,\\mu\\text{F}}'
       }
     ],
     scilabCode: `// Slide 03 - Exemplo 1: G(s) = 1/((s+1)(s+5)) com PI
@@ -940,6 +947,179 @@ t = 0:0.01:6;
 clf();
 plot(t, csim('step', t, (13*G)/.1), 'r--', t, csim('step', t, (Gc*G)/.1), 'b-', 'LineWidth', 2);
 legend(['Só P (K0=13, ess=27.8%)', 'Com PI (ess=0%)']);
+xgrid();`
+  },
+  {
+    id: 'pi-ex-slide-ex2',
+    controllerId: 'PI',
+    badge: 'Slide 03 • Exemplo 2',
+    title: 'Exemplo 2 (Slide 03) — PI em Planta com Zero G(s) = (s+3)/[(s+0,5)(s+4)(s+6)]',
+    source: 'Slide 03 — PI para erro nulo ao degrau pelo lugar das raízes (Slides 12–13)',
+    statementLatex:
+      '\\text{Para } G(s) = \\frac{s+3}{(s+0{,}5)(s+4)(s+6)} \\text{ com } s_d = -3{,}97 + j3{,}98 \\; (\\zeta = 0{,}707), \\text{ projete um controlador PI para zerar } e_{ss} \\text{ ao degrau preservando o transitório.}',
+    plantExpr: '(s+3)/((s+0.5)*(s+4)*(s+6))',
+    plantLatex: '\\frac{s+3}{(s+0{,}5)(s+4)(s+6)}',
+    controllerExpr: '24.26*(s+0.4545)/s',
+    controllerLatex: 'G_c(s) = 24{,}26\\frac{s + 0{,}4545}{s}',
+    controllerBlockLabel: 'Controlador PI (Limite Dipolo)',
+    inputType: 'step',
+    inputParams: { a0: 1, labelLatex: 'r(t) = u(t)' },
+    tMax: 3,
+    whyThisController:
+      'A planta é Tipo 0 com zero em $-3$ e polo mais lento em $-0{,}5$ ($|s_{\\text{lenta}}| = 0{,}5$). Com P puro ($K_0 = 22{,}92$), o erro ao degrau é $14{,}9\\%$. Aqui o limite do dipolo ($|s_{\\text{lenta}}|/1{,}1 = 0{,}4545$) é menor que o limite angular ($z_{i,\\max} = 1{,}191$): usar $z_i = 1{,}191$ faria o zero passar do polo $-0{,}5$ e degradar $t_s$ de $0{,}70\\text{ s}$ para $2{,}29\\text{ s}$ ($M_p = 15{,}3\\%$).',
+    diagnostics: {
+      systemType: 'Tipo 0 → Tipo 1 (após PI)',
+      systemOrder: '3ª Ordem → 4ª Ordem',
+      initialErrorLatex: 'K_a = 5{,}73 \\implies e_P = 14{,}9\\%',
+      finalErrorLatex: 'e_{ss,\\text{degrau}} = 0 \\; (M_p = 0{,}0\\%,\\; t_s = 0{,}82\\text{ s})'
+    },
+    detailedSteps: [
+      {
+        title: '1. Triagem Inicial e Ganho $K_0$ pela Condição de Módulo ($s_d = -3{,}97 + j3{,}98$)',
+        description:
+          'Singularidades em $0{,}5;\\, 3;\\, 4;\\, 6 \\implies |s_{\\text{lenta}}| = 0{,}5$. Calculando $K_0 = \\frac{1}{|G(s_d)|}$, o ganho estático $G(0) = \\frac{3}{0{,}5\\cdot 4\\cdot 6} = 0{,}25$ e o erro $e_P$:',
+        latex:
+          'K_0 = \\frac{|s_d+0{,}5|\\cdot|s_d+4|\\cdot|s_d+6|}{|s_d+3|} = \\frac{5{,}280\\cdot 3{,}980\\cdot 4{,}468}{4{,}097} = \\mathbf{22{,}92} \\;;\\; K_a = K_0 G(0) = 22{,}92\\cdot 0{,}25 = 5{,}73 \\;;\\; e_P = \\frac{1}{1+K_a} = \\frac{1}{6{,}73} = 14{,}9\\% > 2\\% \\implies \\varphi = 10^\\circ'
+      },
+      {
+        title: '2. Cálculo de $z_{i,\\max}$ e Restrição do Dipolo ($|s_{\\text{lenta}}|/1{,}1$)',
+        description:
+          'Com $|s_d| = \\sqrt{3{,}97^2 + 3{,}98^2} = 5{,}622$ e $\\beta = 180^\\circ - \\angle s_d = 45{,}1^\\circ$:',
+        latex:
+          'z_{i,\\max} = |s_d|\\frac{\\sin\\varphi}{\\sin(\\beta+\\varphi)} = 5{,}622\\frac{\\sin 10^\\circ}{\\sin 55{,}1^\\circ} = 1{,}191 \\;;\\; z_i = \\min\\left(z_{i,\\max}\\,;\\,\\frac{|s_{\\text{lenta}}|}{1{,}1}\\right) = \\min(1{,}191\\,;\\, 0{,}4545) = \\mathbf{0{,}4545}'
+      },
+      {
+        title: '3. Ganho $K_c$ pela Condição de Módulo (Passo a Passo)',
+        description:
+          'Aplicando $K_c = K_0\\frac{|s_d|}{|s_d+z_i|}$ com $s_d + z_i = -3{,}97 + j3{,}98 + 0{,}4545 = -3{,}5155 + j3{,}98$:',
+        latex:
+          'K_c = K_0\\frac{|s_d|}{|s_d+z_i|} = 22{,}92\\cdot\\frac{5{,}622}{\\sqrt{(-3{,}5155)^2+3{,}98^2}} = 22{,}92\\cdot\\frac{5{,}622}{5{,}310} \\approx \\mathbf{24{,}26} \\;;\\; \\mathbf{G_c(s) = 24{,}26\\frac{s+0{,}4545}{s}}'
+      },
+      {
+        title: '4. Verificação, Regra dos 10 V e Componentes ($R_1 = 22\\text{ k}\\Omega$) — Slide 13',
+        description:
+          'Polos MF com $z_i = 0{,}4545$: $-3{,}80 \\pm j3{,}96$, $-2{,}46$ e $-0{,}447$ ($M_p = 0{,}0\\%$, $t_s = 0{,}82\\text{ s}$). Usando $R_1 = 22\\text{ k}\\Omega$ para evitar $R_2 > 1\\text{ M}\\Omega$:',
+        latex:
+          '\\Delta e \\le \\frac{10}{K_c} = \\frac{10}{24{,}26} = \\mathbf{0{,}41\\text{ V}} \\;;\\; R_2 = K_c R_1 = 24{,}26\\cdot 22\\text{ k}\\Omega = \\mathbf{534\\text{ k}\\Omega} \\;;\\; C = \\frac{1}{z_i R_2} = \\frac{1}{0{,}4545\\cdot 534\\cdot 10^3} = \\mathbf{4{,}12\\,\\mu\\text{F}}'
+      }
+    ],
+    scilabCode: `// Slide 03 - Exemplo 2: G(s) = (s+3)/((s+0.5)(s+4)(s+6)) com PI
+s = %s;
+G = syslin('c', s+3, (s+0.5)*(s+4)*(s+6));
+Gc = syslin('c', 24.26*(s+0.4545), s);
+t = 0:0.01:3; clf();
+plot(t, csim('step', t, (22.92*G)/.1), 'r--', t, csim('step', t, (Gc*G)/.1), 'b-', 'LineWidth', 2);
+legend(['Só P (K0=22.92, ess=14.9%)', 'Com PI (zi=0.4545, ess=0%)']);
+xgrid();`
+  },
+  {
+    id: 'pi-ex-slide-propA',
+    controllerId: 'PI',
+    badge: 'Slide 03 • Proposto A',
+    title: 'Exercício Proposto A (Slide 22) — PI em G(s) = 1/[(s+0,1)(s+10)] (ζ = 0,707)',
+    source: 'Slide 03 — PI para erro nulo ao degrau pelo lugar das raízes (Slides 21–22)',
+    statementLatex:
+      '\\text{Para } G(s) = \\frac{1}{(s+0{,}1)(s+10)} \\text{ com } \\zeta = 0{,}707, \\text{ projete o PI para zerar } e_{ss} \\text{ ao degrau preservando o transitório do P.}',
+    plantExpr: '1/((s+0.1)*(s+10))',
+    plantLatex: '\\frac{1}{(s+0{,}1)(s+10)}',
+    controllerExpr: '50.46*(s+0.0909)/s',
+    controllerLatex: 'G_c(s) = 50{,}46\\frac{s + 0{,}0909}{s}',
+    controllerBlockLabel: 'Controlador PI (Proposto A)',
+    inputType: 'step',
+    inputParams: { a0: 1, labelLatex: 'r(t) = u(t)' },
+    tMax: 3,
+    whyThisController:
+      'Com P puro ($K_0 = 50{,}0$), o erro estacionário já é pequeno ($e_P = 1{,}96\\% \\le 2\\% \\implies \\varphi = 5^\\circ$), mas o polo lento em $-0{,}1$ impõe pelo critério do dipolo $z_i = |s_{\\text{lenta}}|/1{,}1 = 0{,}0909$. Isso mantém $M_p = 4{,}3\\%$ e $t_s = 0{,}83\\text{ s}$ intactos, ao custo de um capacitor grande ($21{,}8\\,\\mu\\text{F}$).',
+    diagnostics: {
+      systemType: 'Tipo 0 → Tipo 1 (após PI)',
+      systemOrder: '2ª Ordem → 3ª Ordem',
+      initialErrorLatex: 'K_a = 50{,}0 \\implies e_P = 1{,}96\\%',
+      finalErrorLatex: 'e_{ss,\\text{degrau}} = 0 \\; (M_p = 4{,}3\\%,\\; t_s = 0{,}83\\text{ s})'
+    },
+    detailedSteps: [
+      {
+        title: '1. Polo Desejado $s_d$ no LGR do P e Ganho $K_0$',
+        description:
+          'A mediatriz dos polos $-0{,}1$ e $-10$ fica em $\\sigma_d = \\frac{0{,}1 + 10}{2} = 5{,}05$; para $\\zeta = 0{,}707$, $\\omega_d = \\sigma_d = 5{,}05 \\implies s_d = -5{,}05 + j5{,}05$ ($|s_d| = 7{,}142$). Calculando $K_0$, $K_a$ e $e_P$:',
+        latex:
+          'K_0 = |s_d+0{,}1|\\cdot|s_d+10| = |-4{,}95+j5{,}05|\\cdot|4{,}95+j5{,}05| = \\mathbf{50{,}0} \\;;\\; K_a = K_0 G(0) = 50{,}0\\cdot\\frac{1}{0{,}1\\cdot 10} = 50{,}0 \\;;\\; e_P = \\frac{1}{1+50{,}0} = 1{,}96\\% \\le 2\\% \\implies \\varphi = 5^\\circ'
+      },
+      {
+        title: '2. Cálculo de $z_i$ pelo Limite Angular vs. Limite do Dipolo',
+        description:
+          'Com $\\beta = 45^\\circ$ e $|s_{\\text{lenta}}| = 0{,}1$, quem limita é o dipolo:',
+        latex:
+          'z_{i,\\max} = |s_d|\\frac{\\sin 5^\\circ}{\\sin 50^\\circ} = 7{,}142\\cdot\\frac{0{,}08716}{0{,}7660} = 0{,}813 \\;;\\; z_i = \\min\\left(0{,}813\\,;\\,\\frac{0{,}1}{1{,}1}\\right) = \\mathbf{0{,}0909}'
+      },
+      {
+        title: '3. Ganho $K_c$ pela Condição de Módulo e Componentes ($R_1 = 10\\text{ k}\\Omega$)',
+        description:
+          'Perda angular de apenas $0{,}5^\\circ$; polos MF: $-5{,}01 \\pm j5{,}05$ e $-0{,}091$ ($M_p = 4{,}3\\%$, $t_s = 0{,}83\\text{ s}$):',
+        latex:
+          'K_c = K_0\\frac{|s_d|}{|s_d+z_i|} = 50{,}0\\cdot\\frac{7{,}142}{|-4{,}959+j5{,}05|} = 50{,}0\\cdot\\frac{7{,}142}{7{,}078} = \\mathbf{50{,}46} \\;;\\; R_2 = K_c R_1 = \\mathbf{505\\text{ k}\\Omega} \\;;\\; C = \\frac{1}{z_i R_2} = \\mathbf{21{,}8\\,\\mu\\text{F}}'
+      }
+    ],
+    scilabCode: `// Slide 22 - Proposto A: G(s) = 1/((s+0.1)(s+10)) com PI
+s = %s;
+G = syslin('c', 1, (s+0.1)*(s+10));
+Gc = syslin('c', 50.46*(s+0.0909), s);
+t = 0:0.01:3; clf();
+plot(t, csim('step', t, (Gc*G)/.1), 'b-', 'LineWidth', 2);
+xgrid();`
+  },
+  {
+    id: 'pi-ex-slide-propB',
+    controllerId: 'PI',
+    badge: 'Slide 03 • Proposto B',
+    title: 'Exercício Proposto B (Slide 22) — PI em G(s) = (s+6)/[(s+2)(s+4)(s+12)] (ζ = 0,6)',
+    source: 'Slide 03 — PI para erro nulo ao degrau pelo lugar das raízes (Slides 21–22)',
+    statementLatex:
+      '\\text{Para } G(s) = \\frac{s+6}{(s+2)(s+4)(s+12)} \\text{ com } \\zeta = 0{,}6, \\text{ projete o PI para zerar } e_{ss} \\text{ ao degrau e compare } \\varphi = 10^\\circ \\text{ com } \\varphi = 5^\\circ.',
+    plantExpr: '(s+6)/((s+2)*(s+4)*(s+12))',
+    plantLatex: '\\frac{s+6}{(s+2)(s+4)(s+12)}',
+    controllerExpr: '92.0*(s+1.807)/s',
+    controllerLatex: 'G_c(s) = 92{,}0\\frac{s + 1{,}807}{s}',
+    controllerBlockLabel: 'Controlador PI (Proposto B)',
+    inputType: 'step',
+    inputParams: { a0: 1, labelLatex: 'r(t) = u(t)' },
+    tMax: 3,
+    whyThisController:
+      'Para $\\zeta = 0{,}6$ em $s_d = -5{,}57 + j7{,}42$, tem-se $K_0 = 82{,}5$ e $e_P = 16{,}2\\% > 2\\% \\implies \\varphi = 10^\\circ$. Nenhum orçamento preserva simultaneamente $M_p$ e $t_s$: com $\\varphi = 10^\\circ$ ($z_i = 1{,}807$), mantém-se $t_s$ ($0{,}93\\text{ s}$), mas $M_p$ sobe de $13{,}1\\%$ para $19{,}5\\%$; com $\\varphi = 5^\\circ$ ($z_i = 0{,}952$), $M_p$ cai para $8{,}6\\%$, mas $t_s$ alonga para $1{,}69\\text{ s}$.',
+    diagnostics: {
+      systemType: 'Tipo 0 → Tipo 1 (após PI)',
+      systemOrder: '3ª Ordem → 4ª Ordem',
+      initialErrorLatex: 'K_a = 5{,}16 \\implies e_P = 16{,}2\\%',
+      finalErrorLatex: 'e_{ss,\\text{degrau}} = 0 \\; (M_p = 19{,}5\\%,\\; t_s = 0{,}93\\text{ s})'
+    },
+    detailedSteps: [
+      {
+        title: '1. Polo Desejado $s_d$ para $\\zeta = 0{,}6$ e Ganho $K_0$',
+        description:
+          'No LGR do P para $\\zeta = 0{,}6$, obtém-se $s_d = -5{,}57 + j7{,}42$ ($|s_d| = 9{,}278$, $\\beta = \\arccos(0{,}6) = 53{,}13^\\circ$). Calculando $K_0$, $K_a$ e $e_P$:',
+        latex:
+          'K_0 = \\frac{|s_d+2|\\cdot|s_d+4|\\cdot|s_d+12|}{|s_d+6|} = \\mathbf{82{,}5} \\;;\\; K_a = K_0\\frac{6}{2\\cdot 4\\cdot 12} = 82{,}5\\cdot\\frac{1}{16} = 5{,}16 \\;;\\; e_P = \\frac{1}{1+5{,}16} = 16{,}2\\% > 2\\% \\implies \\varphi = 10^\\circ'
+      },
+      {
+        title: '2. Cálculo de $z_i$ ($\\varphi = 10^\\circ$ vs. $\\varphi = 5^\\circ$) e Dipolo',
+        description:
+          'Com $|s_{\\text{lenta}}| = 2$, o limite do dipolo é $2/1{,}1 = 1{,}818$:',
+        latex:
+          'z_{i,\\max}(10^\\circ) = 9{,}278\\frac{\\sin 10^\\circ}{\\sin 63{,}13^\\circ} = 1{,}807 \\implies z_i = \\min(1{,}807\\,;\\,1{,}818) = \\mathbf{1{,}807} \\;;\\; \\text{para } \\varphi = 5^\\circ:\\; z_i = \\mathbf{0{,}952}'
+      },
+      {
+        title: '3. Ganho $K_c$ e Componentes ($R_1 = 10\\text{ k}\\Omega$)',
+        description:
+          'Com $\\varphi = 10^\\circ$: polos MF em $-4{,}54 \\pm j7{,}60$, $-7{,}14$ e $-1{,}78$ ($M_p = 19{,}5\\%$, $t_s = 0{,}93\\text{ s}$):',
+        latex:
+          'K_c = K_0\\frac{|s_d|}{|s_d+z_i|} = 82{,}5\\cdot\\frac{9{,}278}{|-3{,}763+j7{,}42|} = \\mathbf{92{,}0} \\;;\\; R_2 = K_c R_1 = \\mathbf{920\\text{ k}\\Omega} \\;;\\; C = \\frac{1}{z_i R_2} = \\mathbf{0{,}60\\,\\mu\\text{F}}'
+      }
+    ],
+    scilabCode: `// Slide 22 - Proposto B: G(s) = (s+6)/((s+2)(s+4)(s+12)) com PI
+s = %s;
+G = syslin('c', s+6, (s+2)*(s+4)*(s+12));
+Gc = syslin('c', 92.0*(s+1.807), s);
+t = 0:0.01:3; clf();
+plot(t, csim('step', t, (Gc*G)/.1), 'b-', 'LineWidth', 2);
 xgrid();`
   },
   {
@@ -1228,7 +1408,7 @@ xgrid();`
         description:
           'Condição de ângulo do LGR: $\\angle G_c(s_d) + \\angle L(s_d) = -180^\\circ$. Calculando o ângulo de cada polo ($p_1 = 0$, $p_2 = -3$) até $s_d = -3 + j3$:',
         latex:
-          '\\theta_1 = 180^\\circ - \\arctan\\left(\\frac{\\omega_d}{|-\\sigma_d - p_1|}\\right) = 180^\\circ - \\arctan\\left(\\frac{3}{3}\\right) = 135^\\circ \\;;\\; \\theta_2 = \\operatorname{atan2}(\\omega_d,\\, -\\sigma_d - p_2) = \\operatorname{atan2}(3, 0) = 90^\\circ \\;;\\; \\angle L(s_d) = \\sum\\theta_z - \\sum\\theta_p = 0^\\circ - (\\theta_1 + \\theta_2) = -(135^\\circ + 90^\\circ) = -225^\\circ \\;;\\; \\theta_{\\text{def}} = -180^\\circ - \\angle L(s_d) = -180^\\circ - (-225^\\circ) = \\mathbf{+45^\\circ}'
+          '\\theta_1 = 180^\\circ - \\arctan\\left(\\frac{\\omega_d}{|-\\sigma_d - p_1|}\\right) = 180^\\circ - \\arctan\\left(\\frac{3}{3}\\right) = 135^\\circ \\;;\\; \\theta_2 = \\angle(s_d - p_2) = \\angle(-3+j3 - (-3)) = \\angle(0+j3) = 90^\\circ \\;;\\; \\angle L(s_d) = \\sum\\theta_z - \\sum\\theta_p = 0^\\circ - (\\theta_1 + \\theta_2) = -(135^\\circ + 90^\\circ) = -225^\\circ \\;;\\; \\theta_{\\text{def}} = -180^\\circ - \\angle L(s_d) = -180^\\circ - (-225^\\circ) = \\mathbf{+45^\\circ}'
       },
       {
         title: '3. Passos 3 e 4 — Equações do Polinômio em $z_c$ ($N = 10 \\implies r = N + 1$)',
@@ -1307,7 +1487,7 @@ xgrid();`
         description:
           'Calculando $\\sigma_d$ a partir de $\\zeta = 0{,}707$ e $\\omega_d = 3\\text{ rad/s}$, e aplicando a condição de ângulo do LGR $\\angle G_c(s_d) + \\angle L(s_d) = -180^\\circ$:',
         latex:
-          '\\sigma_d = \\frac{\\zeta\\omega_d}{\\sqrt{1-\\zeta^2}} = \\frac{0{,}707\\cdot 3}{0{,}707} = 3 \\implies s_d = -\\sigma_d + j\\omega_d = -3 + j3 \\;;\\; \\theta_1 = 180^\\circ - \\arctan\\left(\\frac{3}{3}\\right) = 135^\\circ \\;;\\; \\theta_2 = \\operatorname{atan2}(3, 0) = 90^\\circ \\;;\\; \\angle L(s_d) = -(135^\\circ + 90^\\circ) = -225^\\circ \\;;\\; \\theta_{\\text{def}} = -180^\\circ - \\angle L(s_d) = -180^\\circ - (-225^\\circ) = \\mathbf{+45{,}0^\\circ}'
+          '\\sigma_d = \\frac{\\zeta\\omega_d}{\\sqrt{1-\\zeta^2}} = \\frac{0{,}707\\cdot 3}{0{,}707} = 3 \\implies s_d = -\\sigma_d + j\\omega_d = -3 + j3 \\;;\\; \\theta_1 = 180^\\circ - \\arctan\\left(\\frac{3}{3}\\right) = 135^\\circ \\;;\\; \\theta_2 = \\angle(-3+j3 - (-3)) = \\angle(0+j3) = 90^\\circ \\;;\\; \\angle L(s_d) = -(135^\\circ + 90^\\circ) = -225^\\circ \\;;\\; \\theta_{\\text{def}} = -180^\\circ - \\angle L(s_d) = -180^\\circ - (-225^\\circ) = \\mathbf{+45{,}0^\\circ}'
       },
       {
         title: '2. Equações do Polinômio em $z_c$ para $N = 8$ ($r = N + 1$)',
@@ -1377,7 +1557,7 @@ xgrid();`
         description:
           'Calculando $\\sigma_d$ a partir de $\\zeta = 0{,}707$ e $\\omega_d = 3\\text{ rad/s}$, e aplicando $\\angle G_c(s_d) + \\angle L(s_d) = -180^\\circ$:',
         latex:
-          '\\sigma_d = \\frac{\\zeta\\omega_d}{\\sqrt{1-\\zeta^2}} = \\frac{0{,}707\\cdot 3}{0{,}707} = 3 \\implies s_d = -\\sigma_d + j\\omega_d = -3 + j3 \\;;\\; \\theta_1 = 180^\\circ - \\arctan\\left(\\frac{3}{3}\\right) = 135^\\circ \\;;\\; \\theta_2 = \\operatorname{atan2}(3, 0) = 90^\\circ \\;;\\; \\angle L(s_d) = -(135^\\circ + 90^\\circ) = -225^\\circ \\;;\\; \\theta_{\\text{def}} = -180^\\circ - \\angle L(s_d) = -180^\\circ - (-225^\\circ) = \\mathbf{+45{,}0^\\circ}'
+          '\\sigma_d = \\frac{\\zeta\\omega_d}{\\sqrt{1-\\zeta^2}} = \\frac{0{,}707\\cdot 3}{0{,}707} = 3 \\implies s_d = -\\sigma_d + j\\omega_d = -3 + j3 \\;;\\; \\theta_1 = 180^\\circ - \\arctan\\left(\\frac{3}{3}\\right) = 135^\\circ \\;;\\; \\theta_2 = \\angle(-3+j3 - (-3)) = \\angle(0+j3) = 90^\\circ \\;;\\; \\angle L(s_d) = -(135^\\circ + 90^\\circ) = -225^\\circ \\;;\\; \\theta_{\\text{def}} = -180^\\circ - \\angle L(s_d) = -180^\\circ - (-225^\\circ) = \\mathbf{+45{,}0^\\circ}'
       },
       {
         title: '2. Equações do Polinômio em $z_c$ para $N = 12$ ($r = N + 1$)',
@@ -1660,6 +1840,13 @@ xgrid();`
         description: 'Aplicando $K_c = K_0\\frac{|s_d+p|}{|s_d+z|}$ em $s_d = -3+j3$ ($z=0{,}909,\\; p=0{,}124$) e conferindo $K_{p,\\text{novo}}$ e $e_{ss}$:',
         latex:
           'K_c = 13\\cdot\\frac{|-3+j3+0{,}124|}{|-3+j3+0{,}909|} = 13\\cdot\\frac{|-2{,}876+j3|}{|-2{,}091+j3|} = 13\\cdot\\frac{\\sqrt{(-2{,}876)^2+3^2}}{\\sqrt{(-2{,}091)^2+3^2}} \\;;\\; K_c = 13\\cdot\\frac{\\sqrt{17{,}271}}{\\sqrt{13{,}372}} = 13\\cdot\\frac{4{,}156}{3{,}657} \\approx \\mathbf{14{,}77} \\;;\\; K_{p,\\text{novo}} = \\frac{14{,}77 \\cdot 7{,}31}{5} = 21{,}6 \\implies \\mathbf{e_{ss} = \\frac{1}{1+21{,}6} = 4{,}4\\% \\le 5\\%}'
+      },
+      {
+        title: '5. Verificação, Comparação com PI e Componentes ($C = 10\\,\\mu\\text{F},\\; R_3 = 10\\text{ k}\\Omega$) — Slide 14',
+        description:
+          'Polos MF com Atraso: $-2{,}62 \\pm j3{,}00$ e $-0{,}885$ ($M_p = 4{,}8\\%$, $t_s = 1{,}41\\text{ s}$, $e_{ss} = 4{,}4\\%$). Se precisar $e_{ss} = 0$, usa-se PI ($M_p = 4{,}7\\%$, $t_s = 1{,}39\\text{ s}$). Estágio 1 e Estágio 2 do circuito analógico:',
+        latex:
+          'R_1 = \\frac{1}{z C} = \\frac{1}{0{,}909\\cdot 10^{-5}} = \\mathbf{110\\text{ k}\\Omega} \\;;\\; R_2 = \\beta R_1 = 7{,}31\\cdot 110\\text{ k}\\Omega = \\mathbf{804\\text{ k}\\Omega} \\;;\\; R_4 = K_c R_3 = 14{,}77\\cdot 10\\text{ k}\\Omega = \\mathbf{148\\text{ k}\\Omega}'
       }
     ],
     scilabCode: `// Exemplo Completo Slide 13/21 - Lag
@@ -1671,6 +1858,182 @@ y_sem = csim('step', t, (13*G)/(1+13*G));
 y_com = csim('step', t, (Gc*G)/(1+Gc*G));
 plot(t, y_sem, 'r--', t, y_com, 'b-', 'LineWidth', 2);
 legend(["Com K0=13 (ess=27.8%)", "Com Lag (ess=4.4%)"]);
+xgrid();`
+  },
+  {
+    id: 'lag-ex-slide-exB',
+    controllerId: 'Lag',
+    subType: 'Lag',
+    badge: 'Slide 05 • Exemplo B (Tipo 1)',
+    title: 'Exemplo B (Slides 15–16) — Atraso de Fase em Tipo 1 G(s) = 1/[s(s+4)] (Regra da Cauda)',
+    source: 'Slide 05 — Compensador de atraso de fase pelo lugar das raízes (Slides 15–16)',
+    statementLatex:
+      '\\text{Para a planta Tipo 1 } G(s) = \\frac{1}{s(s+4)} \\text{ com } s_d = -2 + j2 \\; (\\zeta = 0{,}707), \\text{ projete um compensador por atraso de fase para obter } e_{ss}(\\text{rampa unitária}) \\le 0{,}1 \\; (K_{\\text{vel,req}} = 10) \\text{ preservando o transitório.}',
+    plantExpr: '1/(s*(s+4))',
+    plantLatex: '\\frac{1}{s(s+4)}',
+    controllerExpr: '8.08*(s+0.05)/(s+0.01)',
+    controllerLatex: 'G_c(s) = 8{,}08\\frac{s + 0{,}05}{s + 0{,}01}',
+    controllerBlockLabel: 'Compensador Lag (Tipo 1 • Cauda)',
+    inputType: 'ramp',
+    inputParams: { a0: 1, labelLatex: 'r(t) = t\\cdot u(t)' },
+    tMax: 8,
+    whyThisController:
+      'Em planta Tipo 1, usar apenas o critério angular ($z = 0{,}706$) gera uma cauda lenta de $+0{,}56$ e eleva $M_p$ para $27{,}7\\%$. A **regra da cauda** ($A = 2\\%$) limita $z_{\\text{cauda}} = \\frac{0{,}02}{1/K_{\\text{vel},a} - 1/K_{\\text{vel,req}}} = 0{,}05$, preservando o transitório do P ($M_p = 6{,}5\\%$, $t_s = 2{,}6\\text{ s}$).',
+    diagnostics: {
+      systemType: 'Tipo 1 (1 polo na origem)',
+      systemOrder: '2ª Ordem → 3ª Ordem',
+      initialErrorLatex: 'K_{\\text{vel},a} = 2 \\implies e_{ss}(\\text{rampa}) = 0{,}50',
+      finalErrorLatex: 'K_{\\text{vel,novo}} = 10{,}1 \\implies e_{ss}(\\text{rampa}) = 0{,}099 \\le 0{,}1'
+    },
+    detailedSteps: [
+      {
+        title: '1. Ganho $K_0$, $K_{\\text{vel},a}$ e Fator $\\beta$ ($s_d = -2 + j2$)',
+        description:
+          'Triagem: Tipo 1, $|s_{\\text{lenta}}| = 4 \\implies 4/1{,}1 = 3{,}64$ (o polo na origem não entra). Calculando $K_0 = |s_d|\\cdot|s_d+4|$ e $K_{\\text{vel},a} = K_0\\lim_{s\\to 0} s G(s)$:',
+        latex:
+          'K_0 = |-2+j2|\\cdot|2+j2| = 2{,}828\\cdot 2{,}828 = \\mathbf{8} \\;;\\; K_{\\text{vel},a} = \\frac{8}{4} = 2 \\;;\\; \\beta = \\frac{K_{\\text{vel,req}}}{K_{\\text{vel},a}} = \\frac{10}{2} = \\mathbf{5} \\;;\\; \\varphi = 10^\\circ'
+      },
+      {
+        title: '2. Três Limites para $z$: Ângulo, Dipolo e Regra da Cauda ($A = 2\\%$)',
+        description:
+          'Em plantas Tipo 1, a amplitude da cauda lenta limita $z$ muito mais fortemente que o ângulo ou o dipolo:',
+        latex:
+          '5p^2 - 57{,}37p + 8 = 0 \\implies z_{\\max} = 0{,}706 \\;;\\; z_{\\text{dipolo}} = \\frac{4}{1{,}1} = 3{,}64 \\;;\\; z_{\\text{cauda}} = \\frac{A}{\\frac{1}{K_{\\text{vel},a}} - \\frac{1}{K_{\\text{vel,req}}}} = \\frac{0{,}02}{\\frac{1}{2} - \\frac{1}{10}} = \\mathbf{0{,}05} \\;;\\; z = \\mathbf{0{,}05} \\;;\\; p = \\frac{z}{\\beta} = \\mathbf{0{,}01}'
+      },
+      {
+        title: '3. Ganho $K_c$ pela Condição de Módulo e Conferência de $K_{\\text{vel,novo}}$',
+        description:
+          'Aplicando $K_c = K_0\\frac{|s_d+p|}{|s_d+z|}$ em $s_d = -2 + j2$:',
+        latex:
+          'K_c = 8\\cdot\\frac{|-1{,}99+j2|}{|-1{,}95+j2|} = 8\\cdot\\frac{2{,}821}{2{,}793} = \\mathbf{8{,}08} \\;;\\; K_{\\text{vel,novo}} = K_c\\cdot\\beta\\cdot\\frac{K_{\\text{vel},a}}{K_0} = 8{,}08\\cdot 5\\cdot\\frac{2}{8} = 10{,}1 \\implies e_{ss} = \\frac{1}{10{,}1} = \\mathbf{0{,}099 \\le 0{,}1}'
+      },
+      {
+        title: '4. Implementação ($C = 10\\,\\mu\\text{F}$ vs. $47\\,\\mu\\text{F}$ ou Digital) — Slide 16',
+        description:
+          'Como $z = 0{,}05$ equivale a constante de tempo de $20\\text{ s}$, no analógico exige $R_1 = 2\\text{ M}\\Omega$ e $R_2 = 10\\text{ M}\\Omega$ para $C = 10\\,\\mu\\text{F}$ (ou $426\\text{ k}\\Omega$ e $2{,}1\\text{ M}\\Omega$ com $C = 47\\,\\mu\\text{F}$); em CLP/microcontrolador a constante longa não custa nada:',
+        latex:
+          'R_1 = \\frac{1}{z C} = \\frac{1}{0{,}05\\cdot 10^{-5}} = \\mathbf{2{,}0\\text{ M}\\Omega} \\;;\\; R_2 = \\beta R_1 = 5\\cdot 2{,}0\\text{ M}\\Omega = \\mathbf{10\\text{ M}\\Omega}'
+      }
+    ],
+    scilabCode: `// Slide 05 - Exemplo B: Tipo 1 G(s) = 1/(s(s+4)) com Atraso
+s = %s;
+G = syslin('c', 1, s*(s+4));
+Gc = syslin('c', 8.08*(s+0.05), s+0.01);
+t = 0:0.02:8; clf();
+plot(t, csim('step', t, (8*G)/.1), 'r--', t, csim('step', t, (Gc*G)/.1), 'b-', 'LineWidth', 2);
+legend(['Só P (K0=8)', 'Com Lag (z=0.05, p=0.01)']);
+xgrid();`
+  },
+  {
+    id: 'lag-ex-slide-propC',
+    controllerId: 'Lag',
+    subType: 'Lag',
+    badge: 'Slide 05 • Proposto C (Tipo 0)',
+    title: 'Exercício Proposto C (Slide 21) — Atraso em G(s) = (s+4)/[(s+1)(s+2)(s+8)]',
+    source: 'Slide 05 — Compensador de atraso de fase pelo lugar das raízes (Slides 20–21)',
+    statementLatex:
+      '\\text{Para } G(s) = \\frac{s+4}{(s+1)(s+2)(s+8)} \\text{ com } \\zeta = 0{,}707, \\text{ projete um compensador por atraso para } e_{ss}(\\text{degrau}) \\le 5\\% \\; (K_{\\text{pos,req}} = 19).',
+    plantExpr: '(s+4)/((s+1)*(s+2)*(s+8))',
+    plantLatex: '\\frac{s+4}{(s+1)(s+2)(s+8)}',
+    controllerExpr: '11.51*(s+0.665)/(s+0.0875)',
+    controllerLatex: 'G_c(s) = 11{,}51\\frac{s + 0{,}665}{s + 0{,}0875}',
+    controllerBlockLabel: 'Compensador Lag (Proposto C)',
+    inputType: 'step',
+    inputParams: { a0: 1, labelLatex: 'r(t) = u(t)' },
+    tMax: 5,
+    whyThisController:
+      'Em $s_d = -2 + j2$, o ganho $K_0 = 10$ resulta em $K_{\\text{pos},a} = 2{,}5$ ($e_P = 28{,}6\\%$). Aqui quem limita é o critério angular ($z_{\\max} = 0{,}665 < z_{\\text{dipolo}} = 0{,}909$); a cauda de $-9\\%$ fica fora da faixa de $2\\%$, fazendo $t_s$ subir de $2{,}02\\text{ s}$ para $3{,}06\\text{ s}$.',
+    diagnostics: {
+      systemType: 'Tipo 0 (com zero em -4)',
+      systemOrder: '3ª Ordem → 4ª Ordem',
+      initialErrorLatex: 'K_{\\text{pos},a} = 2{,}5 \\implies e_P = 28{,}6\\%',
+      finalErrorLatex: 'K_{\\text{pos,novo}} = 21{,}9 \\implies e_{ss} = 4{,}4\\% \\le 5\\%'
+    },
+    detailedSteps: [
+      {
+        title: '1. Polo Desejado $s_d = -2 + j2$, Ganho $K_0$, $K_{\\text{pos},a}$ e Fator $\\beta$',
+        description:
+          'Calculando $K_0 = \\frac{1}{|G(s_d)|}$, $G(0) = \\frac{4}{1\\cdot 2\\cdot 8} = 0{,}25$ e $\\beta = \\frac{K_{\\text{pos,req}}}{K_{\\text{pos},a}}$:',
+        latex:
+          'K_0 = \\frac{|-1+j2|\\cdot|j2|\\cdot|6+j2|}{|2+j2|} = \\mathbf{10} \\;;\\; K_{\\text{pos},a} = 10\\cdot 0{,}25 = 2{,}5 \\;;\\; e_P = \\frac{1}{1+2{,}5} = 28{,}6\\% > 2\\% \\implies \\varphi = 10^\\circ \\;;\\; \\beta = \\frac{19}{2{,}5} = \\mathbf{7{,}6}'
+      },
+      {
+        title: '2. Escolha de $z$ e $p$ (Ângulo vs. Dipolo $|s_{\\text{lenta}}|/1{,}1$)',
+        description:
+          'Com $|s_{\\text{lenta}}| = 1$, o limite do dipolo é $1/1{,}1 = 0{,}909$, porém o ângulo limita antes em $z_{\\max} = 0{,}665$:',
+        latex:
+          'z = \\min(z_{\\max}\\,;\\, z_{\\text{dipolo}}) = \\min(0{,}665\\,;\\, 0{,}909) = \\mathbf{0{,}665} \\;;\\; p = \\frac{z}{\\beta} = \\frac{0{,}665}{7{,}6} = \\mathbf{0{,}0875}'
+      },
+      {
+        title: '3. Ganho $K_c$ pela Condição de Módulo e Componentes ($C = 10\\,\\mu\\text{F},\\; R_3 = 10\\text{ k}\\Omega$)',
+        description:
+          'Resposta: $M_p$ vai de $6{,}0\\%$ para $4{,}0\\%$ e $t_s$ sobe de $2{,}02\\text{ s}$ para $3{,}06\\text{ s}$ pela cauda de $-9\\%$:',
+        latex:
+          'K_c = K_0\\frac{|s_d+p|}{|s_d+z|} = 10\\cdot\\frac{|-1{,}9125+j2|}{|-1{,}335+j2|} = \\mathbf{11{,}51} \\;;\\; K_{\\text{pos,novo}} = 21{,}9 \\implies e_{ss} = 4{,}4\\% \\;;\\; R_1 = \\mathbf{150\\text{ k}\\Omega} \\;;\\; R_2 = \\mathbf{1{,}14\\text{ M}\\Omega} \\;;\\; R_4 = \\mathbf{115\\text{ k}\\Omega}'
+      }
+    ],
+    scilabCode: `// Slide 21 - Proposto C: G(s) = (s+4)/((s+1)(s+2)(s+8)) com Atraso
+s = %s;
+G = syslin('c', s+4, (s+1)*(s+2)*(s+8));
+Gc = syslin('c', 11.51*(s+0.665), s+0.0875);
+t = 0:0.01:5; clf();
+plot(t, csim('step', t, (Gc*G)/.1), 'b-', 'LineWidth', 2);
+xgrid();`
+  },
+  {
+    id: 'lag-ex-slide-propD',
+    controllerId: 'Lag',
+    subType: 'Lag',
+    badge: 'Slide 05 • Proposto D (Tipo 1)',
+    title: 'Exercício Proposto D (Slide 21) — Atraso em Tipo 1 G(s) = 1/[s(s+2)(s+10)]',
+    source: 'Slide 05 — Compensador de atraso de fase pelo lugar das raízes (Slides 20–21)',
+    statementLatex:
+      '\\text{Para } G(s) = \\frac{1}{s(s+2)(s+10)} \\text{ com } \\zeta = 0{,}707, \\text{ projete um compensador por atraso para } e_{ss}(\\text{rampa unitária}) \\le 0{,}1 \\; (K_{\\text{vel,req}} = 10).',
+    plantExpr: '1/(s*(s+2)*(s+10))',
+    plantLatex: '\\frac{1}{s(s+2)(s+10)}',
+    controllerExpr: '16.69*(s+0.018)/(s+0.00149)',
+    controllerLatex: 'G_c(s) = 16{,}69\\frac{s + 0{,}018}{s + 0{,}00149}',
+    controllerBlockLabel: 'Compensador Lag (Proposto D)',
+    inputType: 'ramp',
+    inputParams: { a0: 1, labelLatex: 'r(t) = t\\cdot u(t)' },
+    tMax: 10,
+    whyThisController:
+      'Em $s_d = -0{,}9 + j0{,}9$, $K_0 = 16{,}54$ e $K_{\\text{vel},a} = 0{,}827$, exigindo $\\beta = 12{,}1$. A regra da cauda ($A = 2\\%$) impõe $z = 0{,}018$ (constante de tempo de $55\\text{ s}$), resultando em resistores inviáveis no analógico ($5{,}5\\text{ M}\\Omega$ e $67\\text{ M}\\Omega$); recomenda-se implementação digital ou aceitar cauda $A$ maior.',
+    diagnostics: {
+      systemType: 'Tipo 1 (1 polo na origem)',
+      systemOrder: '3ª Ordem → 4ª Ordem',
+      initialErrorLatex: 'K_{\\text{vel},a} = 0{,}827 \\implies e_{ss}(\\text{rampa}) = 1{,}21',
+      finalErrorLatex: 'K_{\\text{vel,novo}} = 10{,}1 \\implies e_{ss}(\\text{rampa}) = 0{,}099 \\le 0{,}1'
+    },
+    detailedSteps: [
+      {
+        title: '1. Polo Desejado $s_d = -0{,}9 + j0{,}9$, Ganho $K_0$, $K_{\\text{vel},a}$ e $\\beta$',
+        description:
+          'Calculando $K_0 = |s_d|\\cdot|s_d+2|\\cdot|s_d+10|$ e $K_{\\text{vel},a} = K_0/(2\\cdot 10) = K_0/20$:',
+        latex:
+          'K_0 = |-0{,}9+j0{,}9|\\cdot|1{,}1+j0{,}9|\\cdot|9{,}1+j0{,}9| = \\mathbf{16{,}54} \\;;\\; K_{\\text{vel},a} = \\frac{16{,}54}{20} = 0{,}827 \\;;\\; \\beta = \\frac{10}{0{,}827} = \\mathbf{12{,}1} \\;;\\; \\varphi = 10^\\circ'
+      },
+      {
+        title: '2. Três Limites para $z$: Ângulo, Dipolo e Regra da Cauda ($A = 2\\%$)',
+        description:
+          'Com $|s_{\\text{lenta}}| = 2$, o dipolo dá $2/1{,}1 = 1{,}818$, o ângulo dá $0{,}288$ e a cauda impõe $z = 0{,}018$:',
+        latex:
+          'z_{\\text{cauda}} = \\frac{0{,}02}{\\frac{1}{0{,}827} - \\frac{1}{10}} = \\mathbf{0{,}018} \\;;\\; z = \\min(0{,}288\\,;\\, 1{,}818\\,;\\, 0{,}018) = \\mathbf{0{,}018} \\;;\\; p = \\frac{0{,}018}{12{,}1} = \\mathbf{0{,}00149}'
+      },
+      {
+        title: '3. Ganho $K_c$ pela Condição de Módulo e Discussão Analógica vs. Digital',
+        description:
+          '$M_p$: $4{,}3\\% \\to 6{,}4\\%$; $t_s$: $4{,}78\\text{ s} \\to 6{,}02\\text{ s}$. Com $C = 10\\,\\mu\\text{F}$ e $R_3 = 10\\text{ k}\\Omega$, $R_1 = 5{,}5\\text{ M}\\Omega$ e $R_2 = 67\\text{ M}\\Omega$ são inviáveis no analógico — ideal implementar digitalmente:',
+        latex:
+          'K_c = K_0\\frac{|s_d+p|}{|s_d+z|} = 16{,}54\\cdot\\frac{|-0{,}8985+j0{,}9|}{|-0{,}882+j0{,}9|} = \\mathbf{16{,}69} \\;;\\; K_{\\text{vel,novo}} = 10{,}1 \\implies e_{ss} = \\mathbf{0{,}099} \\;;\\; R_4 = K_c R_3 = \\mathbf{167\\text{ k}\\Omega}'
+      }
+    ],
+    scilabCode: `// Slide 21 - Proposto D: G(s) = 1/(s(s+2)(s+10)) com Atraso
+s = %s;
+G = syslin('c', 1, s*(s+2)*(s+10));
+Gc = syslin('c', 16.69*(s+0.018), s+0.00149);
+t = 0:0.05:10; clf();
+plot(t, csim('step', t, (Gc*G)/.1), 'b-', 'LineWidth', 2);
 xgrid();`
   },
   {
@@ -2162,17 +2525,25 @@ xgrid();`
         latex: '\\angle s_d = 180^\\circ - 45^\\circ = 135^\\circ \\;;\\; \\angle(s_d+3) = 90^\\circ \\implies \\phi = (135^\\circ + 90^\\circ) - 180^\\circ = \\mathbf{+45^\\circ}'
       },
       {
-        title: '2. Posição do Zero e Polo ($z = 3,\\; p = 6$) por Cancelamento + Trigonometria',
+        title: '2. Posição do Zero e Polo pela Fórmula da Bissetriz ($z_c = 3,\\; p_c = 6$)',
         description:
-          'Escolhendo $z = 3$ para cancelar o polo da planta em $-3$, o zero $(s+3)$ contribui com $+90^\\circ$. Para que a diferença líquida $\\theta_z - \\theta_p$ seja $+45^\\circ$, o polo $(s+p)$ deve contribuir com $\\theta_p = 90^\\circ - 45^\\circ = 45^\\circ$ (1º quadrante, logo $p > 3$): no triângulo retângulo de altura $\\omega_d = 3$ e base $(p - 3) = \\frac{3}{\\tan 45^\\circ} = 3$:',
-        latex: 'z = \\mathbf{3} \\;;\\; p = 3 + \\frac{3}{\\tan(45^\\circ)} = 3 + 3 = \\mathbf{6}'
+          'Pelo método da bissetriz ($\\zeta = 0{,}707$, $\\sqrt{1-\\zeta^2} = 0{,}707$, $\\varphi = 45^\\circ$), calcula-se $q = \\frac{1 + \\sqrt{1-\\zeta^2}/\\sin\\varphi}{\\zeta + \\sqrt{1-\\zeta^2}\\cot\\varphi}$, $r = q^2$, $z_c = |s_d|/q$ e $p_c = |s_d|\\cdot q$. Verificação angular: $\\angle(s_d+3) = \\angle(j3) = 90^\\circ$ e $\\angle(s_d+6) = \\angle(3+j3) = 45^\\circ \\implies 90^\\circ - 45^\\circ = 45^\\circ$:',
+        latex:
+          'q = \\frac{1 + \\frac{0{,}707}{0{,}707}}{0{,}707 + 0{,}707\\cdot 1} = \\frac{2}{1{,}414} = 1{,}414 \\;;\\; r = q^2 = 2 \\;;\\; |s_d| = \\sqrt{(-3)^2+3^2} = 4{,}243 \\;;\\; z_c = \\frac{|s_d|}{q} = \\frac{4{,}243}{1{,}414} = \\mathbf{3{,}000} \\;;\\; p_c = |s_d|\\cdot q = 4{,}243\\cdot 1{,}414 = \\mathbf{6{,}000}'
       },
       {
         title: '3. Cálculo do Ganho $K_c$ pela Condição de Módulo (Passo a Passo Completo)',
         description:
-          'Aplicando $K_c = \\left.\\frac{1}{|\\bar{G}_c(s)G(s)|}\\right|_{s=-3+j3}$ após o cancelamento de $(s+3)$ e calculando $|a+jb| = \\sqrt{a^2+b^2}$:',
+          'Aplicando $K_c = \\left.\\frac{1}{|\\bar{G}_c(s)G(s)|}\\right|_{s=-3+j3}$ após o cancelamento de $(s+3)$ ($K_p = K_c/r = 18/2 = 9{,}0$):',
         latex:
-          'K_c = \\frac{1}{\\left|\\frac{s_d+3}{s_d+6}\\cdot\\frac{1}{s_d(s_d+3)}\\right|} = \\frac{1}{\\left|\\frac{1}{s_d(s_d+6)}\\right|} = |s_d|\\cdot|s_d+6| \\;;\\; K_c = |-3+j3|\\cdot|-3+j3+6| = |-3+j3|\\cdot|3+j3| \\;;\\; K_c = \\sqrt{(-3)^2+3^2}\\cdot\\sqrt{3^2+3^2} = \\sqrt{18}\\cdot\\sqrt{18} = \\mathbf{18} \\;;\\; \\mathbf{G_c(s) = 18\\frac{s+3}{s+6}}'
+          'K_c = \\frac{1}{\\left|\\frac{s_d+3}{s_d+6}\\cdot\\frac{1}{s_d(s_d+3)}\\right|} = \\frac{1}{\\left|\\frac{1}{s_d(s_d+6)}\\right|} = |s_d|\\cdot|s_d+6| \\;;\\; K_c = |-3+j3|\\cdot|-3+j3+6| = \\sqrt{(-3)^2+3^2}\\cdot\\sqrt{3^2+3^2} = \\sqrt{18}\\cdot\\sqrt{18} = \\mathbf{18{,}0} \\;;\\; \\mathbf{G_c(s) = 18\\frac{s+3}{s+6}}'
+      },
+      {
+        title: '4. Regra dos 10 V, Erro à Rampa ($K_{\\text{vel}}$), Componentes ($C_1 = 10\\,\\mu\\text{F}$) e Banda — Slide 9',
+        description:
+          'Sem zeros em malha fechada ($T(s) = \\frac{18}{s^2+6s+18}$), tem-se $M_p = 4{,}3\\%$ e $t_p = 1{,}05\\text{ s}$ sem pré-filtro. Limites práticos e circuito RC:',
+        latex:
+          'u(0^+) = K_c\\Delta e = 18\\Delta e \\implies \\Delta e \\le \\frac{10}{18} = \\mathbf{0{,}56\\text{ V}} \\;;\\; K_{\\text{vel}} = \\frac{K_p}{3} = \\frac{9{,}0}{3} = 3{,}00 \\implies e_{ss,\\text{rampa}} = \\frac{1}{3{,}00} = \\mathbf{0{,}333\\text{ V}} \\;;\\; R_1 = \\frac{1}{z_c C_1} = \\mathbf{33{,}3\\text{ k}\\Omega} \\;;\\; R_2 = K_p R_1 = \\mathbf{300\\text{ k}\\Omega} \\;;\\; C_2 = \\frac{1}{p_c R_2} = \\mathbf{556\\text{ nF}} \\;;\\; \\frac{\\text{GBW}}{K_c} = 55{,}6\\text{ kHz} \\gg \\frac{p_c}{2\\pi} = 0{,}95\\text{ Hz}'
       }
     ],
     scilabCode: `// Aula 20 - Avanço de Fase (Lead)
@@ -2184,6 +2555,69 @@ y_sem = csim('step', t, G/(1+G));
 y_com = csim('step', t, (Gc*G)/(1+Gc*G));
 plot(t, y_sem, 'r--', t, y_com, 'b-', 'LineWidth', 2);
 legend(["Sem Lead (Lento)", "Com Lead: 18(s+3)/(s+6)"]);
+xgrid();`
+  },
+  {
+    id: 'lead-ex-slide-prop-bissetriz',
+    controllerId: 'Lead',
+    subType: 'Lead',
+    badge: 'Slide 04 • Proposto (Bissetriz)',
+    title: 'Exercício Proposto (Slide 14) — Avanço pela Bissetriz em L(s) = 1/[s(s+3)] (sd = -2+j2)',
+    source: 'Slide 04 — Compensador por avanço de fase pelo lugar das raízes (Slides 13–14)',
+    statementLatex:
+      '\\text{Dada } L(s) = \\frac{1}{s(s+3)}, \\text{ projete um compensador por avanço de fase pelo critério da bissetriz para } s_d = -2 + j2 \\; (\\zeta = 0{,}707,\\; \\theta_{\\text{def}} = +18{,}4^\\circ).',
+    plantExpr: '1/(s*(s+3))',
+    plantLatex: '\\frac{1}{s(s+3)}',
+    controllerExpr: '7.2*(s+2.472)/(s+3.24)',
+    controllerLatex: 'G_c(s) = 7{,}2\\frac{s + 2{,}472}{s + 3{,}24}',
+    controllerBlockLabel: 'Compensador Lead (Bissetriz • r=1,31)',
+    inputType: 'step',
+    inputParams: { a0: 1, labelLatex: 'r(t) = u(t)' },
+    tMax: 5,
+    whyThisController:
+      'Pelo critério da bissetriz com $\\theta_{\\text{def}} = +18{,}4^\\circ$, obtém-se razão $r = 1{,}31$ e ganho $K_c = 7{,}2$ (muito menor que $K_c = 86{,}9$ do PD Real $N=10$). Contudo, atenção: com $r$ pequeno, o 3º polo em malha fechada cai em $-2{,}24$ (próximo aos polos dominantes $-2 \\pm j2$), reduzindo $M_p$ sem pré-filtro para $3{,}1\\%$ ($t_p = 1{,}67\\text{ s}$).',
+    diagnostics: {
+      systemType: 'Tipo 1 (1 polo na origem)',
+      systemOrder: '2ª Ordem → 3ª Ordem (3º polo em -2,24)',
+      initialErrorLatex: 'K_{\\text{vel}} \\text{ sem compensação: } 1/3',
+      finalErrorLatex: 'K_{\\text{vel}} = 1{,}84 \\; (e_{ss,\\text{rampa}} = 0{,}543\\text{ V})'
+    },
+    detailedSteps: [
+      {
+        title: '1. Deficiência Angular em $s_d = -2 + j2$',
+        description:
+          'Para os polos em $0$ ($-2+j2$, 2º quadrante) e $-3$ ($1+j2$, 1º quadrante):',
+        latex:
+          '\\theta_1 = 180^\\circ - \\arctan\\left(\\frac{2}{2}\\right) = 135^\\circ \\;;\\; \\theta_2 = \\arctan\\left(\\frac{2}{1}\\right) = 63{,}43^\\circ \\;;\\; \\angle L(s_d) = -198{,}43^\\circ \\implies \\theta_{\\text{def}} = -180^\\circ - (-198{,}43^\\circ) = \\mathbf{+18{,}4^\\circ}'
+      },
+      {
+        title: '2. Zero e Polo pela Fórmula da Bissetriz ($\\zeta = 0{,}707,\\; \\varphi = 18{,}43^\\circ$)',
+        description:
+          'Com $|s_d| = \\sqrt{(-2)^2+2^2} = 2{,}828$, $\\sin(18{,}43^\\circ) = 0{,}3162$ e $\\cot(18{,}43^\\circ) = 3{,}000$:',
+        latex:
+          'q = \\frac{1 + \\frac{0{,}707}{0{,}3162}}{0{,}707 + 0{,}707\\cdot 3} = \\frac{3{,}236}{2{,}828} = 1{,}144 \\;;\\; r = q^2 = \\mathbf{1{,}31} \\;;\\; z_c = \\frac{2{,}828}{1{,}144} = \\mathbf{2{,}472} \\;;\\; p_c = 2{,}828\\cdot 1{,}144 = \\mathbf{3{,}24}'
+      },
+      {
+        title: '3. Ganho $K_c$, $K_p$ e Polos de Malha Fechada',
+        description:
+          'Aplicando $K_c = \\frac{|s_d+p_c|\\cdot|s_d|\\cdot|s_d+3|}{|s_d+z_c|}$ e $p_3 = -(3 + p_c) - (-2\\sigma_d) = -(6{,}24) + 4 = -2{,}24$:',
+        latex:
+          'K_c = \\frac{|-2+j2+3{,}24|\\cdot|-2+j2|\\cdot|1+j2|}{|0{,}472+j2|} = \\frac{2{,}353\\cdot 2{,}828\\cdot 2{,}236}{2{,}055} \\approx \\mathbf{7{,}2} \\;;\\; K_p = \\frac{7{,}24}{1{,}31} = \\mathbf{5{,}53} \\;;\\; \\text{Polos MF: } -2\\pm j2 \\text{ e } -2{,}24'
+      },
+      {
+        title: '4. Limites Práticos e Componentes ($C_1 = 10\\,\\mu\\text{F}$) — Slide 14',
+        description:
+          'Pico de atuação: $7{,}2\\text{ V/V}$ sem filtro ($3{,}4\\text{ V/V}$ com $F(s)$); erro à rampa $0{,}543\\text{ V}$:',
+        latex:
+          'K_{\\text{vel}} = \\frac{5{,}53}{3} = 1{,}84 \\;;\\; R_1 = \\frac{1}{2{,}472\\cdot 10^{-5}} = \\mathbf{40{,}5\\text{ k}\\Omega} \\;;\\; R_2 = 5{,}53\\cdot 40{,}5\\text{ k}\\Omega = \\mathbf{224\\text{ k}\\Omega} \\;;\\; C_2 = \\frac{1}{3{,}24\\cdot 224\\cdot 10^3} = \\mathbf{1382\\text{ nF}}'
+      }
+    ],
+    scilabCode: `// Slide 14 - Proposto Avanço Bissetriz: sd = -2+j2
+s = %s;
+G = syslin('c', 1, s*(s+3));
+Gc = syslin('c', 7.2*(s+2.472), s+3.24);
+t = 0:0.02:5; clf();
+plot(t, csim('step', t, (Gc*G)/.1), 'b-', 'LineWidth', 2);
 xgrid();`
   },
   {
