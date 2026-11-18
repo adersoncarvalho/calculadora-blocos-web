@@ -962,7 +962,7 @@ disp("Polos de malha fechada com Gc=1:", roots(s^3 + 5*s^2 + 50));`
         description:
           'Calculando o módulo $|s_d|$ por Pitágoras e o ângulo complementar $\\beta = 180^\\circ - \\angle s_d = \\arctan(\\omega_d/\\sigma_d)$ no triângulo do polo desejado $s_d = -3 + j3$:',
         latex:
-          '|s_d| = \\sqrt{(-\\sigma_d)^2 + \\omega_d^2} = \\sqrt{(-3)^2 + 3^2} = \\sqrt{18} = 4{,}2426 \\;;\\; \\beta = \\arctan\\left(\\frac{\\omega_d}{\\sigma_d}\\right) = \\arctan\\left(\\frac{3}{3}\\right) = 45^\\circ \\;;\\; z_{i,\\max} = |s_d|\\frac{\\sin\\varphi}{\\sin(\\beta+\\varphi)} = 4{,}2426\\frac{\\sin 10^\\circ}{\\sin(45^\\circ+10^\\circ)} = 4{,}2426\\frac{0{,}1736}{0{,}8192} = 0{,}8994 \\;;\\; z_i = \\min\\left(z_{i,\\max}\\,;\\,\\frac{|s_{\\text{lenta}}|}{1{,}1}\\right) = \\min\\left(0{,}8994\\,;\\,\\frac{1}{1{,}1}\\right) = \\mathbf{0{,}899}'
+          '|s_d| = \\sqrt{(-\\sigma_d)^2 + \\omega_d^2} = \\sqrt{(-3)^2 + 3^2} = \\sqrt{18} = 4{,}2426 \\;;\\; \\beta = \\arctan\\left(\\frac{\\omega_d}{\\sigma_d}\\right) = \\arctan\\left(\\frac{3}{3}\\right) = 45^\\circ \\;;\\; z_{i,\\max} = |s_d|\\frac{\\sin\\varphi}{\\sin(\\beta+\\varphi)} = 4{,}2426\\frac{\\sin 10^\\circ}{\\sin(45^\\circ+10^\\circ)} = 4{,}2426\\frac{0{,}1736}{0{,}8192} = 0{,}8994 \\;;\\; z_i = \\min\\left(z_{i,\\max}\\,;\\,\\frac{|s_{\\text{lenta}}|}{1{,}1}\\right) = \\min\\left(0{,}8994\\,;\\,\\frac{1}{1{,}1}\\right) = \\mathbf{0{,}899} \\;;\\; \\Delta\\theta_{\\text{perda}} = |\\angle(s_d+z_i) - \\angle s_d| = |\\angle(-2{,}101+j3) - \\angle(-3+j3)| = \\left|\\left(180^\\circ - \\arctan\\frac{3}{2{,}101}\\right) - \\left(180^\\circ - \\arctan\\frac{3}{3}\\right)\\right| = |125{,}00^\\circ - 135{,}00^\\circ| = \\mathbf{10{,}0^\\circ}'
       },
       {
         title: '3. Ajuste do Ganho $K_c$ pela Condição de Módulo (Regra dos 7 Passos)',
@@ -1018,14 +1018,14 @@ xgrid();`
         description:
           'Singularidades em $0{,}5;\\, 3;\\, 4;\\, 6 \\implies |s_{\\text{lenta}}| = 0{,}5$. Aplicando $K_0 = \\frac{1}{|G(s_d)|}$ passo a passo com $|a+jb| = \\sqrt{a^2+b^2}$, o ganho estático $G(0)$ e o erro $e_P$:',
         latex:
-          'K_0 = \\frac{1}{|G(s_d)|} = \\frac{1}{\\left|\\frac{s_d+3}{(s_d+0{,}5)(s_d+4)(s_d+6)}\\right|} = \\frac{1}{\\left|\\frac{-3{,}97+j3{,}98+3}{(-3{,}97+j3{,}98+0{,}5)(-3{,}97+j3{,}98+4)(-3{,}97+j3{,}98+6)}\\right|} \\;;\\; K_0 = \\frac{1}{\\frac{|-0{,}97+j3{,}98|}{|-3{,}47+j3{,}98|\\cdot|0{,}03+j3{,}98|\\cdot|2{,}03+j3{,}98|}} = \\frac{1}{\\frac{\\sqrt{(-0{,}97)^2+3{,}98^2}}{\\sqrt{(-3{,}47)^2+3{,}98^2}\\cdot\\sqrt{0{,}03^2+3{,}98^2}\\cdot\\sqrt{2{,}03^2+3{,}98^2}}} = \\frac{1}{\\frac{4{,}097}{5{,}280\\cdot 3{,}980\\cdot 4{,}468}} = \\frac{1}{\\frac{4{,}097}{93{,}89}} = \\frac{1}{0{,}04364} = \\mathbf{22{,}92} \\;;\\; G(0) = \\frac{3}{0{,}5\\cdot 4\\cdot 6} = 0{,}25 \\;;\\; K_a = K_0 G(0) = 22{,}92\\cdot 0{,}25 = 5{,}73 \\;;\\; e_P = \\frac{1}{1+K_a} = \\frac{1}{6{,}73} = 14{,}9\\% > 2\\% \\implies \\varphi = 10^\\circ'
+          '\\beta = \\arccos(\\zeta) = \\arccos(0{,}707) = 45^\\circ \\implies \\omega_d = \\sigma_d\\tan 45^\\circ = \\sigma_d \\;;\\; \\angle G(s_d) = 103{,}7^\\circ - (131{,}1^\\circ + 89{,}6^\\circ + 63{,}0^\\circ) = -180^\\circ \\implies \\mathbf{s_d = -3{,}97 + j3{,}98} \\;;\\; K_0 = \\frac{1}{|G(s_d)|} = \\frac{1}{\\left|\\frac{s_d+3}{(s_d+0{,}5)(s_d+4)(s_d+6)}\\right|} = \\frac{1}{\\left|\\frac{-3{,}97+j3{,}98+3}{(-3{,}97+j3{,}98+0{,}5)(-3{,}97+j3{,}98+4)(-3{,}97+j3{,}98+6)}\\right|} \\;;\\; K_0 = \\frac{1}{\\frac{|-0{,}97+j3{,}98|}{|-3{,}47+j3{,}98|\\cdot|0{,}03+j3{,}98|\\cdot|2{,}03+j3{,}98|}} = \\frac{1}{\\frac{\\sqrt{(-0{,}97)^2+3{,}98^2}}{\\sqrt{(-3{,}47)^2+3{,}98^2}\\cdot\\sqrt{0{,}03^2+3{,}98^2}\\cdot\\sqrt{2{,}03^2+3{,}98^2}}} = \\frac{1}{\\frac{4{,}097}{5{,}280\\cdot 3{,}980\\cdot 4{,}468}} = \\frac{1}{\\frac{4{,}097}{93{,}89}} = \\frac{1}{0{,}04364} = \\mathbf{22{,}92} \\;;\\; G(0) = \\frac{3}{0{,}5\\cdot 4\\cdot 6} = 0{,}25 \\;;\\; K_a = K_0 G(0) = 22{,}92\\cdot 0{,}25 = 5{,}73 \\;;\\; e_P = \\frac{1}{1+K_a} = \\frac{1}{6{,}73} = 14{,}9\\% > 2\\% \\implies \\varphi = 10^\\circ'
       },
       {
         title: '2. Cálculo de $|s_d|$, $\\beta$, $z_{i,\\max}$ e Restrição do Dipolo ($|s_{\\text{lenta}}|/1{,}1$)',
         description:
           'Calculando $|s_d|$ por Pitágoras e $\\beta = 180^\\circ - \\angle s_d = \\arctan(\\omega_d/\\sigma_d)$ para $s_d = -3{,}97 + j3{,}98$:',
         latex:
-          '|s_d| = \\sqrt{(-\\sigma_d)^2 + \\omega_d^2} = \\sqrt{(-3{,}97)^2 + 3{,}98^2} = 5{,}622 \\;;\\; \\beta = \\arctan\\left(\\frac{\\omega_d}{\\sigma_d}\\right) = \\arctan\\left(\\frac{3{,}98}{3{,}97}\\right) = 45{,}1^\\circ \\;;\\; z_{i,\\max} = |s_d|\\frac{\\sin\\varphi}{\\sin(\\beta+\\varphi)} = 5{,}622\\frac{\\sin 10^\\circ}{\\sin(45{,}1^\\circ+10^\\circ)} = 5{,}622\\frac{0{,}1736}{0{,}8202} = 1{,}191 \\;;\\; z_i = \\min\\left(z_{i,\\max}\\,;\\,\\frac{|s_{\\text{lenta}}|}{1{,}1}\\right) = \\min(1{,}191\\,;\\, 0{,}4545) = \\mathbf{0{,}4545}'
+          '|s_d| = \\sqrt{(-\\sigma_d)^2 + \\omega_d^2} = \\sqrt{(-3{,}97)^2 + 3{,}98^2} = 5{,}622 \\;;\\; \\beta = \\arctan\\left(\\frac{\\omega_d}{\\sigma_d}\\right) = \\arctan\\left(\\frac{3{,}98}{3{,}97}\\right) = 45{,}1^\\circ \\;;\\; z_{i,\\max} = |s_d|\\frac{\\sin\\varphi}{\\sin(\\beta+\\varphi)} = 5{,}622\\frac{\\sin 10^\\circ}{\\sin(45{,}1^\\circ+10^\\circ)} = 5{,}622\\frac{0{,}1736}{0{,}8202} = 1{,}191 \\;;\\; z_i = \\min\\left(z_{i,\\max}\\,;\\,\\frac{|s_{\\text{lenta}}|}{1{,}1}\\right) = \\min(1{,}191\\,;\\, 0{,}4545) = \\mathbf{0{,}4545} \\;;\\; \\Delta\\theta_{\\text{perda}} = |\\angle(s_d+z_i) - \\angle s_d| = |\\angle(-3{,}5155+j3{,}98) - \\angle(-3{,}97+j3{,}98)| = \\left|\\left(180^\\circ - \\arctan\\frac{3{,}98}{3{,}5155}\\right) - \\left(180^\\circ - \\arctan\\frac{3{,}98}{3{,}97}\\right)\\right| = |131{,}45^\\circ - 134{,}93^\\circ| = \\mathbf{3{,}5^\\circ}'
       },
       {
         title: '3. Ganho $K_c$ pela Condição de Módulo (Regra dos 7 Passos)',
@@ -1088,7 +1088,7 @@ xgrid();`
         description:
           'Calculando $|s_d|$ e $\\beta = \\arctan(\\omega_d/\\sigma_d)$ em $s_d = -5{,}05 + j5{,}05$; com $|s_{\\text{lenta}}| = 0{,}1$, quem limita é o dipolo:',
         latex:
-          '|s_d| = \\sqrt{(-5{,}05)^2+5{,}05^2} = 7{,}142 \\;;\\; \\beta = \\arctan\\left(\\frac{5{,}05}{5{,}05}\\right) = 45^\\circ \\;;\\; z_{i,\\max} = |s_d|\\frac{\\sin\\varphi}{\\sin(\\beta+\\varphi)} = 7{,}142\\frac{\\sin 5^\\circ}{\\sin 50^\\circ} = 7{,}142\\cdot\\frac{0{,}08716}{0{,}7660} = 0{,}813 \\;;\\; z_i = \\min\\left(z_{i,\\max}\\,;\\,\\frac{|s_{\\text{lenta}}|}{1{,}1}\\right) = \\min\\left(0{,}813\\,;\\,\\frac{0{,}1}{1{,}1}\\right) = \\mathbf{0{,}0909}'
+          '|s_d| = \\sqrt{(-5{,}05)^2+5{,}05^2} = 7{,}142 \\;;\\; \\beta = \\arctan\\left(\\frac{5{,}05}{5{,}05}\\right) = 45^\\circ \\;;\\; z_{i,\\max} = |s_d|\\frac{\\sin\\varphi}{\\sin(\\beta+\\varphi)} = 7{,}142\\frac{\\sin 5^\\circ}{\\sin 50^\\circ} = 7{,}142\\cdot\\frac{0{,}08716}{0{,}7660} = 0{,}813 \\;;\\; z_i = \\min\\left(z_{i,\\max}\\,;\\,\\frac{|s_{\\text{lenta}}|}{1{,}1}\\right) = \\min\\left(0{,}813\\,;\\,\\frac{0{,}1}{1{,}1}\\right) = \\mathbf{0{,}0909} \\;;\\; \\Delta\\theta_{\\text{perda}} = |\\angle(s_d+z_i) - \\angle s_d| = |\\angle(-4{,}9591+j5{,}05) - \\angle(-5{,}05+j5{,}05)| = \\left|\\left(180^\\circ - \\arctan\\frac{5{,}05}{4{,}9591}\\right) - \\left(180^\\circ - \\arctan\\frac{5{,}05}{5{,}05}\\right)\\right| = |134{,}48^\\circ - 135{,}00^\\circ| = \\mathbf{0{,}5^\\circ}'
       },
       {
         title: '3. Ganho $K_c$ pela Condição de Módulo (Regra dos 7 Passos) e Componentes ($R_1 = 10\\text{ k}\\Omega$)',
@@ -1132,18 +1132,18 @@ xgrid();`
     },
     detailedSteps: [
       {
-        title: '1. Polo Desejado $s_d$ para $\\zeta = 0{,}6$ e Ganho $K_0$ (Passo a Passo)',
+        title: '1. Polo Desejado $s_d$ no LGR para $\\zeta = 0{,}6$ e Ganho $K_0$ (Passo a Passo)',
         description:
-          'No LGR do P para $\\zeta = 0{,}6$, $s_d = -5{,}57 + j7{,}42$ ($|s_d| = \\sqrt{5{,}57^2+7{,}42^2} = 9{,}278$, $\\beta = \\arccos(0{,}6) = 53{,}13^\\circ$). Aplicando $K_0 = \\frac{1}{|G(s_d)|}$:',
+          'Sobre a reta de amortecimento $\\beta = \\arccos(\\zeta)$ no LGR ($\\angle G(s_d) = -180^\\circ$), determinamos $s_d$ e aplicamos $K_0 = \\frac{1}{|G(s_d)|}$:',
         latex:
-          'K_0 = \\frac{1}{|G(s_d)|} = \\frac{1}{\\left|\\frac{s_d+6}{(s_d+2)(s_d+4)(s_d+12)}\\right|} = \\frac{1}{\\left|\\frac{-5{,}57+j7{,}42+6}{(-5{,}57+j7{,}42+2)(-5{,}57+j7{,}42+4)(-5{,}57+j7{,}42+12)}\\right|} \\;;\\; K_0 = \\frac{1}{\\frac{|0{,}43+j7{,}42|}{|-3{,}57+j7{,}42|\\cdot|-1{,}57+j7{,}42|\\cdot|6{,}43+j7{,}42|}} = \\frac{1}{\\frac{\\sqrt{0{,}43^2+7{,}42^2}}{\\sqrt{(-3{,}57)^2+7{,}42^2}\\cdot\\sqrt{(-1{,}57)^2+7{,}42^2}\\cdot\\sqrt{6{,}43^2+7{,}42^2}}} = \\frac{1}{\\frac{7{,}432}{8{,}234\\cdot 7{,}584\\cdot 9{,}818}} = \\frac{1}{0{,}01212} = \\mathbf{82{,}5} \\;;\\; G(0) = \\frac{6}{2\\cdot 4\\cdot 12} = \\frac{1}{16} \\;;\\; K_a = K_0 G(0) = 5{,}16 \\;;\\; e_P = \\frac{1}{1+5{,}16} = 16{,}2\\% > 2\\% \\implies \\varphi = 10^\\circ'
+          '\\beta = \\arccos(0{,}6) = 53{,}13^\\circ \\implies \\omega_d = \\sigma_d\\frac{\\sqrt{1-0{,}6^2}}{0{,}6} = \\frac{4}{3}\\sigma_d \\;;\\; \\angle G(s_d) = 86{,}7^\\circ - (115{,}7^\\circ + 101{,}9^\\circ + 49{,}1^\\circ) = -180^\\circ \\implies \\mathbf{s_d = -5{,}57 + j7{,}42} \\;;\\; K_0 = \\frac{1}{|G(s_d)|} = \\frac{1}{\\left|\\frac{s_d+6}{(s_d+2)(s_d+4)(s_d+12)}\\right|} = \\frac{1}{\\left|\\frac{-5{,}57+j7{,}42+6}{(-5{,}57+j7{,}42+2)(-5{,}57+j7{,}42+4)(-5{,}57+j7{,}42+12)}\\right|} \\;;\\; K_0 = \\frac{1}{\\frac{|0{,}43+j7{,}42|}{|-3{,}57+j7{,}42|\\cdot|-1{,}57+j7{,}42|\\cdot|6{,}43+j7{,}42|}} = \\frac{1}{\\frac{\\sqrt{0{,}43^2+7{,}42^2}}{\\sqrt{(-3{,}57)^2+7{,}42^2}\\cdot\\sqrt{(-1{,}57)^2+7{,}42^2}\\cdot\\sqrt{6{,}43^2+7{,}42^2}}} = \\frac{1}{\\frac{7{,}432}{8{,}234\\cdot 7{,}584\\cdot 9{,}818}} = \\frac{1}{0{,}01212} = \\mathbf{82{,}5} \\;;\\; G(0) = \\frac{6}{2\\cdot 4\\cdot 12} = \\frac{1}{16} \\;;\\; K_a = K_0 G(0) = 5{,}16 \\;;\\; e_P = \\frac{1}{1+5{,}16} = 16{,}2\\% > 2\\% \\implies \\varphi = 10^\\circ'
       },
       {
         title: '2. Cálculo de $|s_d|$, $\\beta$, $z_i$ ($\\varphi = 10^\\circ$ vs. $5^\\circ$) e Limite do Dipolo',
         description:
           'Calculando $|s_d|$, $\\beta = \\arccos(\\zeta) = \\arctan(\\omega_d/\\sigma_d)$ e comparando com $|s_{\\text{lenta}}|/1{,}1 = 2/1{,}1 = 1{,}818$:',
         latex:
-          '|s_d| = \\sqrt{(-5{,}57)^2+7{,}42^2} = 9{,}278 \\;;\\; \\beta = \\arctan\\left(\\frac{7{,}42}{5{,}57}\\right) = 53{,}13^\\circ \\;;\\; z_{i,\\max}(10^\\circ) = |s_d|\\frac{\\sin 10^\\circ}{\\sin(53{,}13^\\circ+10^\\circ)} = 9{,}278\\frac{\\sin 10^\\circ}{\\sin 63{,}13^\\circ} = 1{,}807 \\implies z_i = \\min(1{,}807\\,;\\,1{,}818) = \\mathbf{1{,}807} \\;;\\; \\text{para } \\varphi = 5^\\circ:\\; z_i = 9{,}278\\frac{\\sin 5^\\circ}{\\sin 58{,}13^\\circ} = \\mathbf{0{,}952}'
+          '|s_d| = \\sqrt{(-5{,}57)^2+7{,}42^2} = 9{,}278 \\;;\\; \\beta = \\arctan\\left(\\frac{7{,}42}{5{,}57}\\right) = 53{,}13^\\circ \\;;\\; z_{i,\\max}(10^\\circ) = |s_d|\\frac{\\sin 10^\\circ}{\\sin(53{,}13^\\circ+10^\\circ)} = 9{,}278\\frac{\\sin 10^\\circ}{\\sin 63{,}13^\\circ} = 1{,}807 \\implies z_i = \\min(1{,}807\\,;\\,1{,}818) = \\mathbf{1{,}807} \\;;\\; \\Delta\\theta_{\\text{perda}}(10^\\circ) = |\\angle(-3{,}763+j7{,}42) - \\angle(-5{,}57+j7{,}42)| = |116{,}89^\\circ - 126{,}89^\\circ| = \\mathbf{10{,}0^\\circ} \\;;\\; \\text{para } \\varphi = 5^\\circ:\\; z_i = 9{,}278\\frac{\\sin 5^\\circ}{\\sin 58{,}13^\\circ} = \\mathbf{0{,}952} \\;(\\Delta\\theta_{\\text{perda}} = |121{,}90^\\circ - 126{,}89^\\circ| = \\mathbf{5{,}0^\\circ})'
       },
       {
         title: '3. Ganho $K_c$ pela Condição de Módulo (Regra dos 7 Passos) e Componentes ($R_1 = 10\\text{ k}\\Omega$)',
@@ -1873,7 +1873,7 @@ xgrid();`
       {
         title: '3. Passo 4 — Polinômio Trigonométrico para $z$ e $p$',
         description: 'Impondo $\\tan(\\theta_z - \\theta_p) = \\tan(10^\\circ)$ com $z = 7{,}31p$ em $s_d = -3 + j3$ e comparando $z_{\\max}$ com $z_{\\text{dipolo}}$:',
-        latex: '7{,}31p^2 - 132{,}24p + 18 = 0 \\implies p_{\\max} \\approx 0{,}137 \\implies z_{\\max} = 7{,}31 \\cdot 0{,}137 \\approx 1{,}002 \\implies z = \\min(1{,}002;\\, 0{,}909) = \\mathbf{0{,}909} \\;;\\; p = \\frac{0{,}909}{7{,}31} \\approx \\mathbf{0{,}124}'
+        latex: '7{,}31p^2 - 132{,}24p + 18 = 0 \\implies p_{\\max} \\approx 0{,}137 \\implies z_{\\max} = 7{,}31 \\cdot 0{,}137 \\approx 1{,}002 \\implies z = \\min(1{,}002;\\, 0{,}909) = \\mathbf{0{,}909} \\;;\\; p = \\frac{0{,}909}{7{,}31} \\approx \\mathbf{0{,}124} \\;;\\; \\Delta\\theta_{\\text{perda}} = |\\angle(s_d+z) - \\angle(s_d+p)| = |\\angle(-2{,}091+j3) - \\angle(-2{,}876+j3)| = |124{,}88^\\circ - 133{,}79^\\circ| = \\mathbf{8{,}9^\\circ}'
       },
       {
         title: '4. Passo 5 — Ajuste de Ganho $K_c$ pela Condição de Módulo (Regra dos 7 Passos) e Conferência',
@@ -1938,7 +1938,7 @@ xgrid();`
         description:
           'Para o polinômio angular com $z = \\beta p$ ($\\sigma_d = 2,\\; \\omega_d = 2,\\; \\beta = 5,\\; \\cot 10^\\circ = 5{,}671$): $c_2 = \\beta$, $c_1 = -[\\sigma_d(\\beta+1)+\\omega_d(\\beta-1)\\cot\\varphi]$ e $c_0 = \\sigma_d^2+\\omega_d^2$. Em plantas Tipo 1, a regra da cauda limita $z$ antes do ângulo e do dipolo:',
         latex:
-          'c_2 = 5 \\;;\\; c_1 = -[2(5+1) + 2(5-1)\\cdot 5{,}671] = -57{,}37 \\;;\\; c_0 = 2^2+2^2 = 8 \\;;\\; 5p^2 - 57{,}37p + 8 = 0 \\implies \\Delta = (-57{,}37)^2 - 4\\cdot 5\\cdot 8 = 3131{,}35 \\;(\\sqrt{\\Delta} = 55{,}96) \\;;\\; p_{\\max} = \\frac{57{,}37 - 55{,}96}{10} = 0{,}1412 \\implies z_{\\max} = 5\\cdot 0{,}1412 = 0{,}706 \\;;\\; z_{\\text{dipolo}} = \\frac{4}{1{,}1} = 3{,}64 \\;;\\; z_{\\text{cauda}} = \\frac{A}{\\frac{1}{K_{\\text{vel},a}} - \\frac{1}{K_{\\text{vel,req}}}} = \\frac{0{,}02}{\\frac{1}{2} - \\frac{1}{10}} = \\mathbf{0{,}05} \\;;\\; z = \\mathbf{0{,}05} \\;;\\; p = \\frac{z}{\\beta} = \\mathbf{0{,}01}'
+          'c_2 = 5 \\;;\\; c_1 = -[2(5+1) + 2(5-1)\\cdot 5{,}671] = -57{,}37 \\;;\\; c_0 = 2^2+2^2 = 8 \\;;\\; 5p^2 - 57{,}37p + 8 = 0 \\implies \\Delta = (-57{,}37)^2 - 4\\cdot 5\\cdot 8 = 3131{,}35 \\;(\\sqrt{\\Delta} = 55{,}96) \\;;\\; p_{\\max} = \\frac{57{,}37 - 55{,}96}{10} = 0{,}1412 \\implies z_{\\max} = 5\\cdot 0{,}1412 = 0{,}706 \\;;\\; z_{\\text{dipolo}} = \\frac{4}{1{,}1} = 3{,}64 \\;;\\; z_{\\text{cauda}} = \\frac{A}{\\frac{1}{K_{\\text{vel},a}} - \\frac{1}{K_{\\text{vel,req}}}} = \\frac{0{,}02}{\\frac{1}{2} - \\frac{1}{10}} = \\mathbf{0{,}05} \\;;\\; z = \\mathbf{0{,}05} \\;;\\; p = \\frac{z}{\\beta} = \\mathbf{0{,}01} \\;;\\; \\Delta\\theta_{\\text{perda}} = |\\angle(-1{,}95+j2) - \\angle(-1{,}99+j2)| = |134{,}27^\\circ - 134{,}86^\\circ| = \\mathbf{0{,}6^\\circ}'
       },
       {
         title: '3. Ganho $K_c$ pela Condição de Módulo (Regra dos 7 Passos) e Conferência de $K_{\\text{vel,novo}}$',
@@ -1995,14 +1995,14 @@ xgrid();`
         description:
           'Aplicando $K_0 = \\frac{1}{|G(s_d)|}$ passo a passo com $|a+jb| = \\sqrt{a^2+b^2}$, $G(0) = \\frac{4}{1\\cdot 2\\cdot 8} = 0{,}25$ e $\\beta = \\frac{K_{\\text{pos,req}}}{K_{\\text{pos},a}}$:',
         latex:
-          'K_0 = \\frac{1}{|G(s_d)|} = \\frac{1}{\\left|\\frac{s_d+4}{(s_d+1)(s_d+2)(s_d+8)}\\right|} = \\frac{1}{\\left|\\frac{-2+j2+4}{(-2+j2+1)(-2+j2+2)(-2+j2+8)}\\right|} \\;;\\; K_0 = \\frac{1}{\\frac{|2+j2|}{|-1+j2|\\cdot|j2|\\cdot|6+j2|}} = \\frac{1}{\\frac{\\sqrt{2^2+2^2}}{\\sqrt{(-1)^2+2^2}\\cdot 2\\cdot\\sqrt{6^2+2^2}}} = \\frac{1}{\\frac{2{,}8284}{2{,}2361\\cdot 2\\cdot 6{,}3246}} = \\frac{1}{0{,}1000} = \\mathbf{10} \\;;\\; K_{\\text{pos},a} = K_0 G(0) = 10\\cdot 0{,}25 = 2{,}5 \\;;\\; e_P = \\frac{1}{1+2{,}5} = 28{,}6\\% > 2\\% \\implies \\varphi = 10^\\circ \\;;\\; \\beta = \\frac{19}{2{,}5} = \\mathbf{7{,}6}'
+          '\\beta = \\arccos(0{,}707) = 45^\\circ \\implies \\omega_d = \\sigma_d \\;;\\; \\angle G(-2+j2) = 45^\\circ - (116{,}57^\\circ + 90^\\circ + 18{,}43^\\circ) = -180^\\circ \\implies \\mathbf{s_d = -2 + j2} \\;;\\; K_0 = \\frac{1}{|G(s_d)|} = \\frac{1}{\\left|\\frac{s_d+4}{(s_d+1)(s_d+2)(s_d+8)}\\right|} = \\frac{1}{\\left|\\frac{-2+j2+4}{(-2+j2+1)(-2+j2+2)(-2+j2+8)}\\right|} \\;;\\; K_0 = \\frac{1}{\\frac{|2+j2|}{|-1+j2|\\cdot|j2|\\cdot|6+j2|}} = \\frac{1}{\\frac{\\sqrt{2^2+2^2}}{\\sqrt{(-1)^2+2^2}\\cdot 2\\cdot\\sqrt{6^2+2^2}}} = \\frac{1}{\\frac{2{,}8284}{2{,}2361\\cdot 2\\cdot 6{,}3246}} = \\frac{1}{0{,}1000} = \\mathbf{10} \\;;\\; K_{\\text{pos},a} = K_0 G(0) = 10\\cdot 0{,}25 = 2{,}5 \\;;\\; e_P = \\frac{1}{1+2{,}5} = 28{,}6\\% > 2\\% \\implies \\varphi = 10^\\circ \\;;\\; \\beta = \\frac{19}{2{,}5} = \\mathbf{7{,}6}'
       },
       {
         title: '2. Escolha de $z$ e $p$ (Polinômio Angular vs. Dipolo $|s_{\\text{lenta}}|/1{,}1$)',
         description:
           'Com $\\sigma_d = 2$, $\\omega_d = 2$, $\\beta = 7{,}6$ e $\\cot 10^\\circ = 5{,}671$: $c_2 = 7{,}6$, $c_1 = -[2(8{,}6) + 2(6{,}6)\\cdot 5{,}671] = -92{,}06$ e $c_0 = 8$. Aqui o ângulo limita antes do dipolo ($1/1{,}1 = 0{,}909$):',
         latex:
-          '7{,}6p^2 - 92{,}06p + 8 = 0 \\implies \\Delta = (-92{,}06)^2 - 4\\cdot 7{,}6\\cdot 8 = 8232{,}01 \\;(\\sqrt{\\Delta} = 90{,}73) \\;;\\; p_{\\max} = \\frac{92{,}06 - 90{,}73}{2\\cdot 7{,}6} = 0{,}0875 \\implies z_{\\max} = 7{,}6\\cdot 0{,}0875 = 0{,}665 \\;;\\; z = \\min(0{,}665\\,;\\, 0{,}909) = \\mathbf{0{,}665} \\;;\\; p = \\frac{z}{\\beta} = \\mathbf{0{,}0875}'
+          '7{,}6p^2 - 92{,}06p + 8 = 0 \\implies \\Delta = (-92{,}06)^2 - 4\\cdot 7{,}6\\cdot 8 = 8232{,}01 \\;(\\sqrt{\\Delta} = 90{,}73) \\;;\\; p_{\\max} = \\frac{92{,}06 - 90{,}73}{2\\cdot 7{,}6} = 0{,}0875 \\implies z_{\\max} = 7{,}6\\cdot 0{,}0875 = 0{,}665 \\;;\\; z = \\min(0{,}665\\,;\\, 0{,}909) = \\mathbf{0{,}665} \\;;\\; p = \\frac{z}{\\beta} = \\mathbf{0{,}0875} \\;;\\; \\Delta\\theta_{\\text{perda}} = |\\angle(-1{,}335+j2) - \\angle(-1{,}9125+j2)| = |123{,}72^\\circ - 133{,}72^\\circ| = \\mathbf{10{,}0^\\circ}'
       },
       {
         title: '3. Ganho $K_c$ pela Condição de Módulo (Regra dos 7 Passos) e Componentes ($C = 10\\,\\mu\\text{F},\\; R_3 = 10\\text{ k}\\Omega$)',
@@ -2051,14 +2051,14 @@ xgrid();`
         description:
           'Aplicando $K_0 = |s_d|\\cdot|s_d+2|\\cdot|s_d+10|$ passo a passo e $K_{\\text{vel},a} = K_0\\lim_{s\\to 0} s G(s) = \\frac{K_0}{2\\cdot 10}$:',
         latex:
-          'K_0 = \\frac{1}{|G(s_d)|} = \\frac{1}{\\left|\\frac{1}{s_d(s_d+2)(s_d+10)}\\right|} = \\frac{1}{\\left|\\frac{1}{(-0{,}9+j0{,}9)(-0{,}9+j0{,}9+2)(-0{,}9+j0{,}9+10)}\\right|} \\;;\\; K_0 = \\frac{1}{\\frac{1}{|-0{,}9+j0{,}9|\\cdot|1{,}1+j0{,}9|\\cdot|9{,}1+j0{,}9|}} = \\frac{1}{\\frac{1}{\\sqrt{(-0{,}9)^2+0{,}9^2}\\cdot\\sqrt{1{,}1^2+0{,}9^2}\\cdot\\sqrt{9{,}1^2+0{,}9^2}}} = \\frac{1}{\\frac{1}{1{,}2728\\cdot 1{,}4213\\cdot 9{,}1444}} = \\frac{1}{0{,}06045} = \\mathbf{16{,}54} \\;;\\; K_{\\text{vel},a} = \\frac{16{,}54}{20} = 0{,}827 \\;;\\; \\beta = \\frac{K_{\\text{vel,req}}}{K_{\\text{vel},a}} = \\frac{10}{0{,}827} = \\mathbf{12{,}1} \\;;\\; \\varphi = 10^\\circ'
+          '\\beta = \\arccos(0{,}707) = 45^\\circ \\implies \\omega_d = \\sigma_d \\;;\\; \\angle G(-0{,}9+j0{,}9) = -(135^\\circ + 39{,}3^\\circ + 5{,}6^\\circ) = -180^\\circ \\implies \\mathbf{s_d = -0{,}9 + j0{,}9} \\;;\\; K_0 = \\frac{1}{|G(s_d)|} = \\frac{1}{\\left|\\frac{1}{s_d(s_d+2)(s_d+10)}\\right|} = \\frac{1}{\\left|\\frac{1}{(-0{,}9+j0{,}9)(-0{,}9+j0{,}9+2)(-0{,}9+j0{,}9+10)}\\right|} \\;;\\; K_0 = \\frac{1}{\\frac{1}{|-0{,}9+j0{,}9|\\cdot|1{,}1+j0{,}9|\\cdot|9{,}1+j0{,}9|}} = \\frac{1}{\\frac{1}{\\sqrt{(-0{,}9)^2+0{,}9^2}\\cdot\\sqrt{1{,}1^2+0{,}9^2}\\cdot\\sqrt{9{,}1^2+0{,}9^2}}} = \\frac{1}{\\frac{1}{1{,}2728\\cdot 1{,}4213\\cdot 9{,}1444}} = \\frac{1}{0{,}06045} = \\mathbf{16{,}54} \\;;\\; K_{\\text{vel},a} = \\frac{16{,}54}{20} = 0{,}827 \\;;\\; \\beta = \\frac{K_{\\text{vel,req}}}{K_{\\text{vel},a}} = \\frac{10}{0{,}827} = \\mathbf{12{,}1} \\;;\\; \\varphi = 10^\\circ'
       },
       {
         title: '2. Três Limites para $z$: Polinômio Angular, Dipolo e Regra da Cauda ($A = 2\\%$)',
         description:
           'Com $\\sigma_d = 0{,}9$, $\\omega_d = 0{,}9$, $\\beta = 12{,}1$ e $\\cot 10^\\circ = 5{,}671$: $c_2 = 12{,}1$, $c_1 = -[0{,}9(13{,}1)+0{,}9(11{,}1)\\cdot 5{,}671] = -68{,}45$ e $c_0 = 0{,}9^2+0{,}9^2 = 1{,}62$. A cauda impõe $z = 0{,}018$:',
         latex:
-          '12{,}1p^2 - 68{,}45p + 1{,}62 = 0 \\implies \\Delta = 4606{,}46 \\;(\\sqrt{\\Delta} = 67{,}87) \\implies z_{\\max} = 12{,}1\\cdot\\frac{68{,}45 - 67{,}87}{24{,}2} = 0{,}288 \\;;\\; z_{\\text{dipolo}} = \\frac{2}{1{,}1} = 1{,}818 \\;;\\; z_{\\text{cauda}} = \\frac{0{,}02}{\\frac{1}{0{,}827} - \\frac{1}{10}} = \\mathbf{0{,}018} \\;;\\; z = \\mathbf{0{,}018} \\;;\\; p = \\frac{z}{\\beta} = \\frac{0{,}018}{12{,}1} = \\mathbf{0{,}00149}'
+          '12{,}1p^2 - 68{,}45p + 1{,}62 = 0 \\implies \\Delta = 4606{,}46 \\;(\\sqrt{\\Delta} = 67{,}87) \\implies z_{\\max} = 12{,}1\\cdot\\frac{68{,}45 - 67{,}87}{24{,}2} = 0{,}288 \\;;\\; z_{\\text{dipolo}} = \\frac{2}{1{,}1} = 1{,}818 \\;;\\; z_{\\text{cauda}} = \\frac{0{,}02}{\\frac{1}{0{,}827} - \\frac{1}{10}} = \\mathbf{0{,}018} \\;;\\; z = \\mathbf{0{,}018} \\;;\\; p = \\frac{z}{\\beta} = \\frac{0{,}018}{12{,}1} = \\mathbf{0{,}00149} \\;;\\; \\Delta\\theta_{\\text{perda}} = |\\angle(-0{,}882+j0{,}9) - \\angle(-0{,}8985+j0{,}9)| = |134{,}42^\\circ - 134{,}95^\\circ| = \\mathbf{0{,}5^\\circ}'
       },
       {
         title: '3. Ganho $K_c$ pela Condição de Módulo e Discussão Analógica vs. Digital',
