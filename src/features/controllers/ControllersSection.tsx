@@ -976,10 +976,16 @@ export const ControllersSection: React.FC<ControllersSectionProps> = ({ onBack, 
                 <MathView math={activeExercise.statementLatex} />
               </div>
 
-              {/* Diagrama de Blocos Referente ao Enunciado (Planta Original) */}
+              {/* Diagrama de Blocos Referente ao Enunciado (Planta Original / Controlador K a Projetar) */}
               <ControllerBlockDiagram
-                title="Diagrama de Blocos do Enunciado (Sistema Original sem Compensação)"
-                showControllerBlock={false}
+                title={
+                  activeExercise.controllerId === 'P' || Boolean(activeExercise.initialControllerLatex)
+                    ? 'Diagrama de Blocos do Enunciado (Planta com Controlador K a Projetar)'
+                    : 'Diagrama de Blocos do Enunciado (Sistema Original sem Compensação)'
+                }
+                showControllerBlock={activeExercise.controllerId === 'P' || Boolean(activeExercise.initialControllerLatex)}
+                controllerLabel={activeExercise.initialControllerLabel ?? 'Controlador'}
+                controllerLatex={activeExercise.initialControllerLatex ?? 'K'}
                 plantLatex={activeExercise.plantLatex}
                 plantExpr={activeExercise.plantExpr}
                 feedbackLatex={activeExercise.feedbackLatex}

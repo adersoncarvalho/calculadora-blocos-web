@@ -59,6 +59,8 @@ export interface ControllerExercise {
   controllerExpr: string;
   controllerLatex: string;
   controllerBlockLabel: string;
+  initialControllerLabel?: string;
+  initialControllerLatex?: string;
   feedbackExpr?: string;
   feedbackLatex?: string;
   inputType: 'step' | 'ramp' | 'parabola' | 'combined';
