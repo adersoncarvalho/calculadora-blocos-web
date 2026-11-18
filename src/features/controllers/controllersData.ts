@@ -154,28 +154,63 @@ export const CONTROLLERS_THEORY: Record<ControllerCategoryId, ControllerTheory> 
       'Quando o sistema atual diverge com erro infinito e precisa passar a acompanhar a entrada com erro finito (ex.: Tipo 0 com rampa → Tipo 1; Tipo 1 com parábola → Tipo 2).',
       'Quando um compensador Lag não resolve, pois o Lag não altera o Tipo do sistema.'
     ],
-    professorMethodTitle: 'Roteiro Padrão — Projeto do Controlador PI (Mudança de Tipo e LGR)',
+    professorMethodTitle: 'Procedimento Padrão — Projeto do Controlador PI via LGR (Slide 03)',
     professorMethodSteps: [
       {
-        step: 'Passo 1',
-        title: 'Avaliar a Necessidade de Mudança de Tipo',
+        step: 'Passo 0',
+        title: 'Triagem: Tipo 0, Fase Mínima e Polo/Zero Mais Lento |s_lenta|',
         description:
-          'Verificar se o Tipo atual da planta produz erro finito indesejado ou infinito. A introdução de Gc(s) = (Kp·s + Ki)/s adiciona um integrador (s = 0), elevando o Tipo para N + 1.',
-        formulaLatex: 'G_c(s) G(s) = \\frac{K_p(s + z_c)}{s} \\cdot \\frac{N(s)}{s^N D_1(s)} \\implies \\text{Tipo } (N+1)'
+          'Confirmar que a planta é Tipo 0, de fase mínima (sem zeros no semiplano direito) e identificar a menor singularidade não-nula |s_lenta|.',
+        formulaLatex: '|s_{\\text{lenta}}| = \\min_i |s_i| \\; (s_i \\neq 0)'
+      },
+      {
+        step: 'Passo 1',
+        title: 'P ou PD em sd: Ganho K0 (Transitório Já Definido)',
+        description:
+          'Calcular o ganho K0 = 1/|G(sd)| que posiciona os polos dominantes em sd (atendendo ζ e ωn/ts desejados).',
+        formulaLatex: 'K_0 = \\frac{1}{|G(s_d)|}'
       },
       {
         step: 'Passo 2',
-        title: 'Calcular Ki (ou Ganho Estático) pelo Erro Requerido',
+        title: 'Constante Estática Ka e Erro Inicial eP',
         description:
-          'Aplicar o limite da nova constante de erro (Kv ou Ka) em s → 0 para determinar Ki diretamente.',
-        formulaLatex: 'K_{\\text{nova}} = \\lim_{s\\to 0} s^{N+1} G_c(s)G(s) \\implies K_i'
+          'Calcular o ganho estático Ka = K0·G(0) obtido com o P puro e o respectivo erro estacionário ao degrau unitário eP.',
+        formulaLatex: 'K_a = K_0 \\cdot G(0) \\quad \\text{e} \\quad e_P = \\frac{1}{1 + K_a}'
       },
       {
         step: 'Passo 3',
-        title: 'Posicionar o Zero zc Próximo à Origem (ou via LGR)',
+        title: 'Orçamento Angular φ (5° ou 10°)',
         description:
-          'Escolher Kp (ou zc = Ki/Kp) de modo que o zero fique bem mais próximo da origem que os polos dominantes da planta, evitando interferência negativa no transitório, ou ajustar no ponto sd pelo LGR.',
-        formulaLatex: 'z_c = \\frac{K_i}{K_p} \\ll |s_{\\text{lenta}}| \\quad \\text{ou} \\quad |G_c(s_d)G(s_d)| = 1'
+          'Escolher a perda angular máxima tolerada do integrador em sd conforme o erro inicial eP.',
+        formulaLatex: '\\varphi = 5^\\circ \\;\\text{se } e_P \\le 2\\%, \\;\\text{senão } \\varphi = 10^\\circ'
+      },
+      {
+        step: 'Passo 4',
+        title: 'Cálculo do Zero zi (Limite Angular vs. Dipolo)',
+        description:
+          'Calcular zi,max pela lei dos senos no triângulo do LGR (com β = arctan(ωd/σd)) e limitar pelo critério do dipolo |s_lenta|/1,1.',
+        formulaLatex: 'z_{i,\\max} = |s_d|\\frac{\\sin\\varphi}{\\sin(\\beta+\\varphi)} \\quad \\text{e} \\quad z_i = z_{i,\\text{lim}} = \\min\\left(z_{i,\\max}\\,;\\,\\frac{|s_{\\text{lenta}}|}{1{,}1}\\right)'
+      },
+      {
+        step: 'Passo 5',
+        title: 'Ajuste de Ganho Kc pela Condição de Módulo',
+        description:
+          'Recalcular o ganho Kc = 1/|Gc_bar(sd)G(sd)| = K0·|sd|/|sd + zi| para manter os polos dominantes em sd.',
+        formulaLatex: 'K_c = K_0 \\cdot \\frac{|s_d|}{|s_d + z_i|}'
+      },
+      {
+        step: 'Passo 6',
+        title: 'Simular P e PI: Mp, ts, Valor Final, Cauda e Regra dos 10 V',
+        description:
+          'Comparar as respostas ao degrau (P vs. PI), conferir se a cauda lenta entra na faixa de 2% e verificar a saturação do amp-op (±10 V).',
+        formulaLatex: 'u(0^+) = K_c \\cdot \\Delta e \\implies \\Delta e \\le \\frac{10}{K_c}'
+      },
+      {
+        step: 'Passo 7',
+        title: 'Dimensionamento RC e Anti-Windup',
+        description:
+          'Escolher R1 comercial e calcular R2 e C para o PI analógico, prevendo proteção anti-windup contra saturação do integrador.',
+        formulaLatex: 'R_2 = K_c \\cdot R_1, \\quad C = \\frac{1}{z_i \\cdot R_2}'
       }
     ]
   },
@@ -1044,9 +1079,9 @@ xgrid();`
       {
         title: '1. Polo Desejado $s_d$ no LGR do P e Ganho $K_0$ (Passo a Passo)',
         description:
-          'A mediatriz dos polos $-0{,}1$ e $-10$ fica em $\\sigma_d = \\frac{0{,}1 + 10}{2} = 5{,}05$; para $\\zeta = 0{,}707$, $\\omega_d = \\sigma_d\\frac{\\sqrt{1-\\zeta^2}}{\\zeta} = 5{,}05 \\implies s_d = -5{,}05 + j5{,}05$. Calculando $K_0 = |s_d+0{,}1|\\cdot|s_d+10|$, $K_a$ e $e_P$:',
+          'Pelo centróide (mediatriz) dos polos de malha aberta $-0{,}1$ e $-10$ no LGR, calculamos $\\sigma_d$, $\\omega_d$, $s_d$, e depois $K_0 = \\frac{1}{|G(s_d)|}$, $K_a$ e $e_P$:',
         latex:
-          'K_0 = \\frac{1}{|G(s_d)|} = \\frac{1}{\\left|\\frac{1}{(s_d+0{,}1)(s_d+10)}\\right|} = \\frac{1}{\\left|\\frac{1}{(-5{,}05+j5{,}05+0{,}1)(-5{,}05+j5{,}05+10)}\\right|} \\;;\\; K_0 = \\frac{1}{\\frac{1}{|-4{,}95+j5{,}05|\\cdot|4{,}95+j5{,}05|}} = \\frac{1}{\\frac{1}{\\sqrt{(-4{,}95)^2+5{,}05^2}\\cdot\\sqrt{4{,}95^2+5{,}05^2}}} = \\frac{1}{\\frac{1}{\\sqrt{24{,}503+25{,}502}\\cdot\\sqrt{24{,}503+25{,}502}}} \\;;\\; K_0 = \\frac{1}{\\frac{1}{\\sqrt{50{,}005}\\cdot\\sqrt{50{,}005}}} = \\frac{1}{\\frac{1}{7{,}071\\cdot 7{,}071}} = \\frac{1}{\\frac{1}{50{,}005}} = \\frac{1}{0{,}0200} = \\mathbf{50{,}0} \\;;\\; G(0) = \\frac{1}{0{,}1\\cdot 10} = 1 \\;;\\; K_a = K_0 G(0) = 50{,}0 \\;;\\; e_P = \\frac{1}{1+K_a} = \\frac{1}{51{,}0} = 1{,}96\\% \\le 2\\% \\implies \\varphi = 5^\\circ'
+          '\\sigma_a = \\frac{\\sum p_i - \\sum z_i}{n - m} = \\frac{-0{,}1 + (-10) - 0}{2 - 0} = \\frac{-10{,}1}{2} = -5{,}05 \\implies \\sigma_d = 5{,}05 \\;;\\; \\omega_d = \\sigma_d\\frac{\\sqrt{1-\\zeta^2}}{\\zeta} = 5{,}05\\cdot\\frac{\\sqrt{1-0{,}707^2}}{0{,}707} = 5{,}05\\cdot\\frac{0{,}707}{0{,}707} = 5{,}05 \\implies s_d = -\\sigma_d + j\\omega_d = \\mathbf{-5{,}05 + j5{,}05} \\;;\\; K_0 = \\frac{1}{|G(s_d)|} = \\frac{1}{\\left|\\frac{1}{(s_d+0{,}1)(s_d+10)}\\right|} = \\frac{1}{\\left|\\frac{1}{(-5{,}05+j5{,}05+0{,}1)(-5{,}05+j5{,}05+10)}\\right|} \\;;\\; K_0 = \\frac{1}{\\frac{1}{|-4{,}95+j5{,}05|\\cdot|4{,}95+j5{,}05|}} = \\frac{1}{\\frac{1}{\\sqrt{(-4{,}95)^2+5{,}05^2}\\cdot\\sqrt{4{,}95^2+5{,}05^2}}} = \\frac{1}{\\frac{1}{\\sqrt{24{,}503+25{,}502}\\cdot\\sqrt{24{,}503+25{,}502}}} \\;;\\; K_0 = \\frac{1}{\\frac{1}{\\sqrt{50{,}005}\\cdot\\sqrt{50{,}005}}} = \\frac{1}{\\frac{1}{7{,}071\\cdot 7{,}071}} = \\frac{1}{\\frac{1}{50{,}005}} = \\frac{1}{0{,}0200} = \\mathbf{50{,}0} \\;;\\; G(0) = \\frac{1}{0{,}1\\cdot 10} = 1 \\;;\\; K_a = K_0 G(0) = 50{,}0 \\;;\\; e_P = \\frac{1}{1+K_a} = \\frac{1}{51{,}0} = 1{,}96\\% \\le 2\\% \\implies \\varphi = 5^\\circ'
       },
       {
         title: '2. Cálculo de $|s_d|$, $\\beta$, $z_i$ e Limite do Dipolo',
