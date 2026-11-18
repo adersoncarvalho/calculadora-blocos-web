@@ -923,15 +923,17 @@ disp("Polos de malha fechada com Gc=1:", roots(s^3 + 5*s^2 + 50));`
           'K_0 = \\frac{1}{\\left|\\frac{1}{(-3+j3+1)(-3+j3+5)}\\right|} = \\frac{1}{\\frac{1}{|-2+j3|\\cdot|2+j3|}} = \\frac{1}{\\frac{1}{\\sqrt{4+9}\\cdot\\sqrt{4+9}}} = \\mathbf{13} \\;;\\; K_{p,a} = 13\\cdot\\frac{1}{5} = 2{,}6 \\;;\\; e_P = \\frac{1}{1+2{,}6} = 27{,}78\\% > 2\\% \\implies \\varphi = 10^\\circ'
       },
       {
-        title: '2. Cálculo do Zero $z_i$ e Verificação do Limite do Dipolo',
-        description: 'Com $|s_d| = 3\\sqrt{2} = 4{,}2426$ e $\\beta = 45^\\circ$:',
-        latex: 'z_{i,\\max} = 4{,}2426\\frac{\\sin(10^\\circ)}{\\sin(55^\\circ)} = 0{,}8994 \\;;\\; z_i = \\min\\left(0{,}8994\\,;\\;\\frac{1}{1{,}1}\\right) = \\mathbf{0{,}899}'
+        title: '2. Cálculo de $|s_d|$, $\\beta$, Zero $z_i$ e Limite do Dipolo',
+        description:
+          'Calculando o módulo $|s_d|$ por Pitágoras e o ângulo complementar $\\beta = 180^\\circ - \\angle s_d = \\arctan(\\omega_d/\\sigma_d)$ no triângulo do polo desejado $s_d = -3 + j3$:',
+        latex:
+          '|s_d| = \\sqrt{(-\\sigma_d)^2 + \\omega_d^2} = \\sqrt{(-3)^2 + 3^2} = \\sqrt{18} = 4{,}2426 \\;;\\; \\beta = \\arctan\\left(\\frac{\\omega_d}{\\sigma_d}\\right) = \\arctan\\left(\\frac{3}{3}\\right) = 45^\\circ \\;;\\; z_{i,\\max} = |s_d|\\frac{\\sin\\varphi}{\\sin(\\beta+\\varphi)} = 4{,}2426\\frac{\\sin 10^\\circ}{\\sin(45^\\circ+10^\\circ)} = 4{,}2426\\frac{0{,}1736}{0{,}8192} = 0{,}8994 \\;;\\; z_i = \\min\\left(z_{i,\\max}\\,;\\,\\frac{|s_{\\text{lenta}}|}{1{,}1}\\right) = \\min\\left(0{,}8994\\,;\\,\\frac{1}{1{,}1}\\right) = \\mathbf{0{,}899}'
       },
       {
-        title: '3. Ajuste do Ganho $K_c$ pela Condição de Módulo (Passo a Passo)',
-        description: 'Aplicando $K_c = \\left.\\frac{1}{|\\bar{G}_c(s)G(s)|}\\right|_{s=s_d}$ (polos MF em $-2{,}57 \\pm j3{,}00$ e $-0{,}868$):',
+        title: '3. Ajuste do Ganho $K_c$ pela Condição de Módulo (Regra dos 7 Passos)',
+        description: 'Aplicando $K_c = \\left.\\frac{1}{|\\bar{G}_c(s)G(s)|}\\right|_{s=s_d}$ sem inverter antecipadamente (polos MF em $-2{,}57 \\pm j3{,}00$ e $-0{,}868$):',
         latex:
-          'K_c = \\frac{1}{\\left|\\frac{s_d+0{,}899}{s_d}\\cdot G(s_d)\\right|} = K_0\\cdot\\frac{|s_d|}{|s_d+0{,}899|} = 13\\cdot\\frac{|-3+j3|}{|-3+j3+0{,}899|} \\;;\\; K_c = 13\\cdot\\frac{|-3+j3|}{|-2{,}101+j3|} = 13\\cdot\\frac{\\sqrt{(-3)^2+3^2}}{\\sqrt{(-2{,}101)^2+3^2}} = 13\\cdot\\frac{\\sqrt{18}}{\\sqrt{13{,}414}} = 13\\cdot\\frac{4{,}2426}{3{,}6625} \\approx \\mathbf{15{,}06} \\;;\\; \\mathbf{G_c(s) = 15{,}06\\frac{s+0{,}899}{s}}'
+          'K_c = \\frac{1}{|\\bar{G}_c(s_d)G(s_d)|} = \\frac{1}{\\left|\\frac{s_d+z_i}{s_d}\\cdot\\frac{1}{(s_d+1)(s_d+5)}\\right|} = \\frac{1}{\\left|\\frac{-3+j3+0{,}899}{-3+j3}\\cdot\\frac{1}{(-3+j3+1)(-3+j3+5)}\\right|} \\;;\\; K_c = \\frac{1}{\\left|\\frac{-2{,}101+j3}{-3+j3}\\cdot\\frac{1}{(-2+j3)(2+j3)}\\right|} = \\frac{1}{\\frac{|-2{,}101+j3|}{|-3+j3|\\cdot|-2+j3|\\cdot|2+j3|}} = \\frac{1}{\\frac{\\sqrt{(-2{,}101)^2+3^2}}{\\sqrt{(-3)^2+3^2}\\cdot\\sqrt{(-2)^2+3^2}\\cdot\\sqrt{2^2+3^2}}} \\;;\\; K_c = \\frac{1}{\\frac{\\sqrt{4{,}414+9}}{\\sqrt{9+9}\\cdot\\sqrt{4+9}\\cdot\\sqrt{4+9}}} = \\frac{1}{\\frac{3{,}6625}{4{,}2426\\cdot 3{,}6056\\cdot 3{,}6056}} = \\frac{1}{\\frac{3{,}6625}{55{,}154}} = \\frac{1}{0{,}066405} \\approx \\mathbf{15{,}06} \\;;\\; \\mathbf{G_c(s) = 15{,}06\\frac{s+0{,}899}{s}}'
       },
       {
         title: '4. Verificação, Regra dos 10 V e Componentes ($R_1 = 47\\text{ k}\\Omega$) — Slide 11',
@@ -984,18 +986,18 @@ xgrid();`
           'K_0 = \\frac{1}{|G(s_d)|} = \\frac{1}{\\left|\\frac{s_d+3}{(s_d+0{,}5)(s_d+4)(s_d+6)}\\right|} = \\frac{1}{\\left|\\frac{-3{,}97+j3{,}98+3}{(-3{,}97+j3{,}98+0{,}5)(-3{,}97+j3{,}98+4)(-3{,}97+j3{,}98+6)}\\right|} \\;;\\; K_0 = \\frac{1}{\\frac{|-0{,}97+j3{,}98|}{|-3{,}47+j3{,}98|\\cdot|0{,}03+j3{,}98|\\cdot|2{,}03+j3{,}98|}} = \\frac{1}{\\frac{\\sqrt{(-0{,}97)^2+3{,}98^2}}{\\sqrt{(-3{,}47)^2+3{,}98^2}\\cdot\\sqrt{0{,}03^2+3{,}98^2}\\cdot\\sqrt{2{,}03^2+3{,}98^2}}} = \\frac{1}{\\frac{4{,}097}{5{,}280\\cdot 3{,}980\\cdot 4{,}468}} = \\frac{1}{\\frac{4{,}097}{93{,}89}} = \\frac{1}{0{,}04364} = \\mathbf{22{,}92} \\;;\\; G(0) = \\frac{3}{0{,}5\\cdot 4\\cdot 6} = 0{,}25 \\;;\\; K_a = K_0 G(0) = 22{,}92\\cdot 0{,}25 = 5{,}73 \\;;\\; e_P = \\frac{1}{1+K_a} = \\frac{1}{6{,}73} = 14{,}9\\% > 2\\% \\implies \\varphi = 10^\\circ'
       },
       {
-        title: '2. Cálculo de $z_{i,\\max}$ e Restrição do Dipolo ($|s_{\\text{lenta}}|/1{,}1$)',
+        title: '2. Cálculo de $|s_d|$, $\\beta$, $z_{i,\\max}$ e Restrição do Dipolo ($|s_{\\text{lenta}}|/1{,}1$)',
         description:
-          'Calculando $|s_d|$ por Pitágoras e $\\beta = 180^\\circ - \\angle s_d = \\arctan(\\omega_d/\\sigma_d) = \\arctan(3{,}98/3{,}97) = 45{,}1^\\circ$:',
+          'Calculando $|s_d|$ por Pitágoras e $\\beta = 180^\\circ - \\angle s_d = \\arctan(\\omega_d/\\sigma_d)$ para $s_d = -3{,}97 + j3{,}98$:',
         latex:
-          '|s_d| = \\sqrt{(-3{,}97)^2 + 3{,}98^2} = 5{,}622 \\;;\\; z_{i,\\max} = |s_d|\\frac{\\sin\\varphi}{\\sin(\\beta+\\varphi)} = 5{,}622\\frac{\\sin 10^\\circ}{\\sin(45{,}1^\\circ+10^\\circ)} = 5{,}622\\frac{0{,}1736}{0{,}8202} = 1{,}191 \\;;\\; z_i = \\min\\left(z_{i,\\max}\\,;\\,\\frac{|s_{\\text{lenta}}|}{1{,}1}\\right) = \\min(1{,}191\\,;\\, 0{,}4545) = \\mathbf{0{,}4545}'
+          '|s_d| = \\sqrt{(-\\sigma_d)^2 + \\omega_d^2} = \\sqrt{(-3{,}97)^2 + 3{,}98^2} = 5{,}622 \\;;\\; \\beta = \\arctan\\left(\\frac{\\omega_d}{\\sigma_d}\\right) = \\arctan\\left(\\frac{3{,}98}{3{,}97}\\right) = 45{,}1^\\circ \\;;\\; z_{i,\\max} = |s_d|\\frac{\\sin\\varphi}{\\sin(\\beta+\\varphi)} = 5{,}622\\frac{\\sin 10^\\circ}{\\sin(45{,}1^\\circ+10^\\circ)} = 5{,}622\\frac{0{,}1736}{0{,}8202} = 1{,}191 \\;;\\; z_i = \\min\\left(z_{i,\\max}\\,;\\,\\frac{|s_{\\text{lenta}}|}{1{,}1}\\right) = \\min(1{,}191\\,;\\, 0{,}4545) = \\mathbf{0{,}4545}'
       },
       {
-        title: '3. Ganho $K_c$ pela Condição de Módulo (Passo a Passo Completo)',
+        title: '3. Ganho $K_c$ pela Condição de Módulo (Regra dos 7 Passos)',
         description:
-          'Aplicando $K_c = \\left.\\frac{1}{|\\bar{G}_c(s)G(s)|}\\right|_{s=s_d} = K_0\\frac{|s_d|}{|s_d+z_i|}$:',
+          'Aplicando $K_c = \\left.\\frac{1}{|\\bar{G}_c(s)G(s)|}\\right|_{s=s_d}$ sem inverter antecipadamente:',
         latex:
-          'K_c = K_0\\frac{|s_d|}{|s_d+z_i|} = 22{,}92\\cdot\\frac{|-3{,}97+j3{,}98|}{|-3{,}97+j3{,}98+0{,}4545|} = 22{,}92\\cdot\\frac{|-3{,}97+j3{,}98|}{|-3{,}5155+j3{,}98|} \\;;\\; K_c = 22{,}92\\cdot\\frac{\\sqrt{(-3{,}97)^2+3{,}98^2}}{\\sqrt{(-3{,}5155)^2+3{,}98^2}} = 22{,}92\\cdot\\frac{5{,}622}{5{,}310} = \\frac{128{,}86}{5{,}310} \\approx \\mathbf{24{,}26} \\;;\\; \\mathbf{G_c(s) = 24{,}26\\frac{s+0{,}4545}{s}}'
+          'K_c = \\frac{1}{|\\bar{G}_c(s_d)G(s_d)|} = \\frac{1}{\\left|\\frac{s_d+z_i}{s_d}\\cdot\\frac{s_d+3}{(s_d+0{,}5)(s_d+4)(s_d+6)}\\right|} = \\frac{1}{\\left|\\frac{-3{,}5155+j3{,}98}{-3{,}97+j3{,}98}\\cdot\\frac{-0{,}97+j3{,}98}{(-3{,}47+j3{,}98)(0{,}03+j3{,}98)(2{,}03+j3{,}98)}\\right|} \\;;\\; K_c = \\frac{1}{\\frac{|-3{,}5155+j3{,}98|\\cdot|-0{,}97+j3{,}98|}{|-3{,}97+j3{,}98|\\cdot|-3{,}47+j3{,}98|\\cdot|0{,}03+j3{,}98|\\cdot|2{,}03+j3{,}98|}} = \\frac{1}{\\frac{5{,}310\\cdot 4{,}097}{5{,}622\\cdot 5{,}280\\cdot 3{,}980\\cdot 4{,}468}} = \\frac{1}{\\frac{21{,}754}{527{,}84}} = \\frac{1}{0{,}04121} \\approx \\mathbf{24{,}26} \\;;\\; \\mathbf{G_c(s) = 24{,}26\\frac{s+0{,}4545}{s}}'
       },
       {
         title: '4. Verificação, Regra dos 10 V e Componentes ($R_1 = 22\\text{ k}\\Omega$) — Slide 13',
@@ -1047,18 +1049,18 @@ xgrid();`
           'K_0 = \\frac{1}{|G(s_d)|} = \\frac{1}{\\left|\\frac{1}{(s_d+0{,}1)(s_d+10)}\\right|} = \\frac{1}{\\left|\\frac{1}{(-5{,}05+j5{,}05+0{,}1)(-5{,}05+j5{,}05+10)}\\right|} \\;;\\; K_0 = \\frac{1}{\\frac{1}{|-4{,}95+j5{,}05|\\cdot|4{,}95+j5{,}05|}} = \\frac{1}{\\frac{1}{\\sqrt{(-4{,}95)^2+5{,}05^2}\\cdot\\sqrt{4{,}95^2+5{,}05^2}}} = \\frac{1}{\\frac{1}{7{,}071\\cdot 7{,}071}} = \\frac{1}{0{,}0200} = \\mathbf{50{,}0} \\;;\\; G(0) = \\frac{1}{0{,}1\\cdot 10} = 1 \\;;\\; K_a = K_0 G(0) = 50{,}0 \\;;\\; e_P = \\frac{1}{1+K_a} = \\frac{1}{51{,}0} = 1{,}96\\% \\le 2\\% \\implies \\varphi = 5^\\circ'
       },
       {
-        title: '2. Cálculo de $z_i$ pelo Limite Angular vs. Limite do Dipolo',
+        title: '2. Cálculo de $|s_d|$, $\\beta$, $z_i$ e Limite do Dipolo',
         description:
-          'Com $|s_d| = \\sqrt{(-5{,}05)^2+5{,}05^2} = 7{,}142$, $\\beta = 45^\\circ$ e $|s_{\\text{lenta}}| = 0{,}1$, quem limita é o dipolo:',
+          'Calculando $|s_d|$ e $\\beta = \\arctan(\\omega_d/\\sigma_d)$ em $s_d = -5{,}05 + j5{,}05$; com $|s_{\\text{lenta}}| = 0{,}1$, quem limita é o dipolo:',
         latex:
-          'z_{i,\\max} = |s_d|\\frac{\\sin\\varphi}{\\sin(\\beta+\\varphi)} = 7{,}142\\frac{\\sin 5^\\circ}{\\sin 50^\\circ} = 7{,}142\\cdot\\frac{0{,}08716}{0{,}7660} = 0{,}813 \\;;\\; z_i = \\min\\left(z_{i,\\max}\\,;\\,\\frac{|s_{\\text{lenta}}|}{1{,}1}\\right) = \\min\\left(0{,}813\\,;\\,\\frac{0{,}1}{1{,}1}\\right) = \\mathbf{0{,}0909}'
+          '|s_d| = \\sqrt{(-5{,}05)^2+5{,}05^2} = 7{,}142 \\;;\\; \\beta = \\arctan\\left(\\frac{5{,}05}{5{,}05}\\right) = 45^\\circ \\;;\\; z_{i,\\max} = |s_d|\\frac{\\sin\\varphi}{\\sin(\\beta+\\varphi)} = 7{,}142\\frac{\\sin 5^\\circ}{\\sin 50^\\circ} = 7{,}142\\cdot\\frac{0{,}08716}{0{,}7660} = 0{,}813 \\;;\\; z_i = \\min\\left(z_{i,\\max}\\,;\\,\\frac{|s_{\\text{lenta}}|}{1{,}1}\\right) = \\min\\left(0{,}813\\,;\\,\\frac{0{,}1}{1{,}1}\\right) = \\mathbf{0{,}0909}'
       },
       {
-        title: '3. Ganho $K_c$ pela Condição de Módulo e Componentes ($R_1 = 10\\text{ k}\\Omega$)',
+        title: '3. Ganho $K_c$ pela Condição de Módulo (Regra dos 7 Passos) e Componentes ($R_1 = 10\\text{ k}\\Omega$)',
         description:
-          'Perda angular de $0{,}5^\\circ$; polos MF: $-5{,}01 \\pm j5{,}05$ e $-0{,}091$ ($M_p = 4{,}3\\%$, $t_s = 0{,}83\\text{ s}$):',
+          'Aplicando $K_c = \\frac{1}{|\\bar{G}_c(s_d)G(s_d)|}$ (polos MF: $-5{,}01 \\pm j5{,}05$ e $-0{,}091$, $M_p = 4{,}3\\%$, $t_s = 0{,}83\\text{ s}$):',
         latex:
-          'K_c = K_0\\frac{|s_d|}{|s_d+z_i|} = 50{,}0\\cdot\\frac{|-5{,}05+j5{,}05|}{|-5{,}05+j5{,}05+0{,}0909|} = 50{,}0\\cdot\\frac{\\sqrt{(-5{,}05)^2+5{,}05^2}}{\\sqrt{(-4{,}959)^2+5{,}05^2}} = 50{,}0\\cdot\\frac{7{,}142}{7{,}078} = \\mathbf{50{,}46} \\;;\\; R_2 = K_c R_1 = 50{,}46\\cdot 10\\text{ k}\\Omega = \\mathbf{505\\text{ k}\\Omega} \\;;\\; C = \\frac{1}{z_i R_2} = \\frac{1}{0{,}0909\\cdot 505\\cdot 10^3} = \\mathbf{21{,}8\\,\\mu\\text{F}}'
+          'K_c = \\frac{1}{\\left|\\frac{s_d+z_i}{s_d}\\cdot\\frac{1}{(s_d+0{,}1)(s_d+10)}\\right|} = \\frac{1}{\\left|\\frac{-4{,}959+j5{,}05}{-5{,}05+j5{,}05}\\cdot\\frac{1}{(-4{,}95+j5{,}05)(4{,}95+j5{,}05)}\\right|} = \\frac{1}{\\frac{7{,}078}{7{,}142\\cdot 7{,}071\\cdot 7{,}071}} = \\frac{1}{\\frac{7{,}078}{357{,}12}} = \\frac{1}{0{,}01982} = \\mathbf{50{,}46} \\;;\\; R_2 = K_c R_1 = 50{,}46\\cdot 10\\text{ k}\\Omega = \\mathbf{505\\text{ k}\\Omega} \\;;\\; C = \\frac{1}{z_i R_2} = \\frac{1}{0{,}0909\\cdot 505\\cdot 10^3} = \\mathbf{21{,}8\\,\\mu\\text{F}}'
       }
     ],
     scilabCode: `// Slide 22 - Proposto A: G(s) = 1/((s+0.1)(s+10)) com PI
@@ -1102,18 +1104,18 @@ xgrid();`
           'K_0 = \\frac{1}{|G(s_d)|} = \\frac{1}{\\left|\\frac{s_d+6}{(s_d+2)(s_d+4)(s_d+12)}\\right|} = \\frac{1}{\\left|\\frac{-5{,}57+j7{,}42+6}{(-5{,}57+j7{,}42+2)(-5{,}57+j7{,}42+4)(-5{,}57+j7{,}42+12)}\\right|} \\;;\\; K_0 = \\frac{1}{\\frac{|0{,}43+j7{,}42|}{|-3{,}57+j7{,}42|\\cdot|-1{,}57+j7{,}42|\\cdot|6{,}43+j7{,}42|}} = \\frac{1}{\\frac{\\sqrt{0{,}43^2+7{,}42^2}}{\\sqrt{(-3{,}57)^2+7{,}42^2}\\cdot\\sqrt{(-1{,}57)^2+7{,}42^2}\\cdot\\sqrt{6{,}43^2+7{,}42^2}}} = \\frac{1}{\\frac{7{,}432}{8{,}234\\cdot 7{,}584\\cdot 9{,}818}} = \\frac{1}{0{,}01212} = \\mathbf{82{,}5} \\;;\\; G(0) = \\frac{6}{2\\cdot 4\\cdot 12} = \\frac{1}{16} \\;;\\; K_a = K_0 G(0) = 5{,}16 \\;;\\; e_P = \\frac{1}{1+5{,}16} = 16{,}2\\% > 2\\% \\implies \\varphi = 10^\\circ'
       },
       {
-        title: '2. Cálculo de $z_i$ ($\\varphi = 10^\\circ$ vs. $\\varphi = 5^\\circ$) e Limite do Dipolo',
+        title: '2. Cálculo de $|s_d|$, $\\beta$, $z_i$ ($\\varphi = 10^\\circ$ vs. $5^\\circ$) e Limite do Dipolo',
         description:
-          'Com $|s_{\\text{lenta}}| = 2$, o limite do dipolo é $|s_{\\text{lenta}}|/1{,}1 = 2/1{,}1 = 1{,}818$:',
+          'Calculando $|s_d|$, $\\beta = \\arccos(\\zeta) = \\arctan(\\omega_d/\\sigma_d)$ e comparando com $|s_{\\text{lenta}}|/1{,}1 = 2/1{,}1 = 1{,}818$:',
         latex:
-          'z_{i,\\max}(10^\\circ) = |s_d|\\frac{\\sin 10^\\circ}{\\sin(53{,}13^\\circ+10^\\circ)} = 9{,}278\\frac{\\sin 10^\\circ}{\\sin 63{,}13^\\circ} = 1{,}807 \\implies z_i = \\min(1{,}807\\,;\\,1{,}818) = \\mathbf{1{,}807} \\;;\\; \\text{para } \\varphi = 5^\\circ:\\; z_i = 9{,}278\\frac{\\sin 5^\\circ}{\\sin 58{,}13^\\circ} = \\mathbf{0{,}952}'
+          '|s_d| = \\sqrt{(-5{,}57)^2+7{,}42^2} = 9{,}278 \\;;\\; \\beta = \\arctan\\left(\\frac{7{,}42}{5{,}57}\\right) = 53{,}13^\\circ \\;;\\; z_{i,\\max}(10^\\circ) = |s_d|\\frac{\\sin 10^\\circ}{\\sin(53{,}13^\\circ+10^\\circ)} = 9{,}278\\frac{\\sin 10^\\circ}{\\sin 63{,}13^\\circ} = 1{,}807 \\implies z_i = \\min(1{,}807\\,;\\,1{,}818) = \\mathbf{1{,}807} \\;;\\; \\text{para } \\varphi = 5^\\circ:\\; z_i = 9{,}278\\frac{\\sin 5^\\circ}{\\sin 58{,}13^\\circ} = \\mathbf{0{,}952}'
       },
       {
-        title: '3. Ganho $K_c$ pela Condição de Módulo e Componentes ($R_1 = 10\\text{ k}\\Omega$)',
+        title: '3. Ganho $K_c$ pela Condição de Módulo (Regra dos 7 Passos) e Componentes ($R_1 = 10\\text{ k}\\Omega$)',
         description:
-          'Com $\\varphi = 10^\\circ$: polos MF em $-4{,}54 \\pm j7{,}60$, $-7{,}14$ e $-1{,}78$ ($M_p = 19{,}5\\%$, $t_s = 0{,}93\\text{ s}$):',
+          'Aplicando $K_c = \\frac{1}{|\\bar{G}_c(s_d)G(s_d)|}$ com $\\varphi = 10^\\circ$ (polos MF: $-4{,}54 \\pm j7{,}60$, $-7{,}14$ e $-1{,}78$):',
         latex:
-          'K_c = K_0\\frac{|s_d|}{|s_d+z_i|} = 82{,}5\\cdot\\frac{|-5{,}57+j7{,}42|}{|-5{,}57+j7{,}42+1{,}807|} = 82{,}5\\cdot\\frac{9{,}278}{\\sqrt{(-3{,}763)^2+7{,}42^2}} = 82{,}5\\cdot\\frac{9{,}278}{8{,}320} = \\mathbf{92{,}0} \\;;\\; R_2 = K_c R_1 = 92{,}0\\cdot 10\\text{ k}\\Omega = \\mathbf{920\\text{ k}\\Omega} \\;;\\; C = \\frac{1}{z_i R_2} = \\frac{1}{1{,}807\\cdot 920\\cdot 10^3} = \\mathbf{0{,}60\\,\\mu\\text{F}}'
+          'K_c = \\frac{1}{\\left|\\frac{s_d+z_i}{s_d}\\cdot\\frac{s_d+6}{(s_d+2)(s_d+4)(s_d+12)}\\right|} = \\frac{1}{\\left|\\frac{-3{,}763+j7{,}42}{-5{,}57+j7{,}42}\\cdot\\frac{0{,}43+j7{,}42}{(-3{,}57+j7{,}42)(-1{,}57+j7{,}42)(6{,}43+j7{,}42)}\\right|} = \\frac{1}{\\frac{8{,}320\\cdot 7{,}432}{9{,}278\\cdot 8{,}234\\cdot 7{,}584\\cdot 9{,}818}} = \\frac{1}{\\frac{61{,}835}{5688{,}9}} = \\frac{1}{0{,}01087} = \\mathbf{92{,}0} \\;;\\; R_2 = K_c R_1 = 92{,}0\\cdot 10\\text{ k}\\Omega = \\mathbf{920\\text{ k}\\Omega} \\;;\\; C = \\frac{1}{z_i R_2} = \\frac{1}{1{,}807\\cdot 920\\cdot 10^3} = \\mathbf{0{,}60\\,\\mu\\text{F}}'
       }
     ],
     scilabCode: `// Slide 22 - Proposto B: G(s) = (s+6)/((s+2)(s+4)(s+12)) com PI
@@ -1839,10 +1841,10 @@ xgrid();`
         latex: '7{,}31p^2 - 132{,}24p + 18 = 0 \\implies p_{\\max} \\approx 0{,}137 \\implies z_{\\max} = 7{,}31 \\cdot 0{,}137 \\approx 1{,}002 \\implies z = \\min(1{,}002;\\, 0{,}909) = \\mathbf{0{,}909} \\;;\\; p = \\frac{0{,}909}{7{,}31} \\approx \\mathbf{0{,}124}'
       },
       {
-        title: '4. Passo 5 — Ajuste de Ganho $K_c$ pela Condição de Módulo e Conferência',
-        description: 'Aplicando $K_c = K_0\\frac{|s_d+p|}{|s_d+z|}$ em $s_d = -3+j3$ ($z=0{,}909,\\; p=0{,}124$) e conferindo $K_{p,\\text{novo}}$ e $e_{ss}$:',
+        title: '4. Passo 5 — Ajuste de Ganho $K_c$ pela Condição de Módulo (Regra dos 7 Passos) e Conferência',
+        description: 'Aplicando $K_c = \\left.\\frac{1}{|\\bar{G}_c(s)G(s)|}\\right|_{s=-3+j3}$ sem inverter antecipadamente ($z=0{,}909,\\; p=0{,}124$) e conferindo $K_{p,\\text{novo}}$ e $e_{ss}$:',
         latex:
-          'K_c = 13\\cdot\\frac{|-3+j3+0{,}124|}{|-3+j3+0{,}909|} = 13\\cdot\\frac{|-2{,}876+j3|}{|-2{,}091+j3|} = 13\\cdot\\frac{\\sqrt{(-2{,}876)^2+3^2}}{\\sqrt{(-2{,}091)^2+3^2}} \\;;\\; K_c = 13\\cdot\\frac{\\sqrt{17{,}271}}{\\sqrt{13{,}372}} = 13\\cdot\\frac{4{,}156}{3{,}657} \\approx \\mathbf{14{,}77} \\;;\\; K_{p,\\text{novo}} = \\frac{14{,}77 \\cdot 7{,}31}{5} = 21{,}6 \\implies \\mathbf{e_{ss} = \\frac{1}{1+21{,}6} = 4{,}4\\% \\le 5\\%}'
+          'K_c = \\frac{1}{|\\bar{G}_c(s_d)G(s_d)|} = \\frac{1}{\\left|\\frac{s_d+z}{s_d+p}\\cdot\\frac{1}{(s_d+1)(s_d+5)}\\right|} = \\frac{1}{\\left|\\frac{-3+j3+0{,}909}{-3+j3+0{,}124}\\cdot\\frac{1}{(-3+j3+1)(-3+j3+5)}\\right|} \\;;\\; K_c = \\frac{1}{\\left|\\frac{-2{,}091+j3}{-2{,}876+j3}\\cdot\\frac{1}{(-2+j3)(2+j3)}\\right|} = \\frac{1}{\\frac{\\sqrt{(-2{,}091)^2+3^2}}{\\sqrt{(-2{,}876)^2+3^2}\\cdot\\sqrt{(-2)^2+3^2}\\cdot\\sqrt{2^2+3^2}}} = \\frac{1}{\\frac{3{,}657}{4{,}156\\cdot 3{,}606\\cdot 3{,}606}} = \\frac{1}{\\frac{3{,}657}{54{,}03}} = \\frac{1}{0{,}06769} \\approx \\mathbf{14{,}77} \\;;\\; K_{p,\\text{novo}} = \\frac{14{,}77 \\cdot 7{,}31}{5} = 21{,}6 \\implies \\mathbf{e_{ss} = \\frac{1}{1+21{,}6} = 4{,}4\\% \\le 5\\%}'
       },
       {
         title: '5. Verificação, Comparação com PI e Componentes ($C = 10\\,\\mu\\text{F},\\; R_3 = 10\\text{ k}\\Omega$) — Slide 14',
@@ -1904,11 +1906,11 @@ xgrid();`
           'c_2 = 5 \\;;\\; c_1 = -[2(5+1) + 2(5-1)\\cdot 5{,}671] = -57{,}37 \\;;\\; c_0 = 2^2+2^2 = 8 \\;;\\; 5p^2 - 57{,}37p + 8 = 0 \\implies \\Delta = (-57{,}37)^2 - 4\\cdot 5\\cdot 8 = 3131{,}35 \\;(\\sqrt{\\Delta} = 55{,}96) \\;;\\; p_{\\max} = \\frac{57{,}37 - 55{,}96}{10} = 0{,}1412 \\implies z_{\\max} = 5\\cdot 0{,}1412 = 0{,}706 \\;;\\; z_{\\text{dipolo}} = \\frac{4}{1{,}1} = 3{,}64 \\;;\\; z_{\\text{cauda}} = \\frac{A}{\\frac{1}{K_{\\text{vel},a}} - \\frac{1}{K_{\\text{vel,req}}}} = \\frac{0{,}02}{\\frac{1}{2} - \\frac{1}{10}} = \\mathbf{0{,}05} \\;;\\; z = \\mathbf{0{,}05} \\;;\\; p = \\frac{z}{\\beta} = \\mathbf{0{,}01}'
       },
       {
-        title: '3. Ganho $K_c$ pela Condição de Módulo e Conferência de $K_{\\text{vel,novo}}$',
+        title: '3. Ganho $K_c$ pela Condição de Módulo (Regra dos 7 Passos) e Conferência de $K_{\\text{vel,novo}}$',
         description:
-          'Aplicando $K_c = K_0\\frac{|s_d+p|}{|s_d+z|}$ em $s_d = -2 + j2$ passo a passo:',
+          'Aplicando $K_c = \\frac{1}{|\\bar{G}_c(s_d)G(s_d)|}$ em $s_d = -2 + j2$ sem inverter antecipadamente:',
         latex:
-          'K_c = K_0\\frac{|-2+j2+0{,}01|}{|-2+j2+0{,}05|} = 8\\cdot\\frac{|-1{,}99+j2|}{|-1{,}95+j2|} = 8\\cdot\\frac{\\sqrt{(-1{,}99)^2+2^2}}{\\sqrt{(-1{,}95)^2+2^2}} = 8\\cdot\\frac{2{,}821}{2{,}793} = \\mathbf{8{,}08} \\;;\\; K_{\\text{vel,novo}} = K_c\\cdot\\beta\\cdot\\frac{K_{\\text{vel},a}}{K_0} = 8{,}08\\cdot 5\\cdot\\frac{2}{8} = 10{,}1 \\implies e_{ss} = \\frac{1}{10{,}1} = \\mathbf{0{,}099 \\le 0{,}1}'
+          'K_c = \\frac{1}{|\\bar{G}_c(s_d)G(s_d)|} = \\frac{1}{\\left|\\frac{s_d+z}{s_d+p}\\cdot\\frac{1}{s_d(s_d+4)}\\right|} = \\frac{1}{\\left|\\frac{-1{,}95+j2}{-1{,}99+j2}\\cdot\\frac{1}{(-2+j2)(2+j2)}\\right|} = \\frac{1}{\\frac{2{,}793}{2{,}821\\cdot 2{,}828\\cdot 2{,}828}} = \\frac{1}{\\frac{2{,}793}{22{,}57}} = \\frac{1}{0{,}12376} = \\mathbf{8{,}08} \\;;\\; K_{\\text{vel,novo}} = K_c\\cdot\\beta\\cdot\\frac{K_{\\text{vel},a}}{K_0} = 8{,}08\\cdot 5\\cdot\\frac{2}{8} = 10{,}1 \\implies e_{ss} = \\frac{1}{10{,}1} = \\mathbf{0{,}099 \\le 0{,}1}'
       },
       {
         title: '4. Implementação ($C = 10\\,\\mu\\text{F}$ vs. $47\\,\\mu\\text{F}$ ou Digital) — Slide 16',
@@ -1968,11 +1970,11 @@ xgrid();`
           '7{,}6p^2 - 92{,}06p + 8 = 0 \\implies \\Delta = (-92{,}06)^2 - 4\\cdot 7{,}6\\cdot 8 = 8232{,}01 \\;(\\sqrt{\\Delta} = 90{,}73) \\;;\\; p_{\\max} = \\frac{92{,}06 - 90{,}73}{2\\cdot 7{,}6} = 0{,}0875 \\implies z_{\\max} = 7{,}6\\cdot 0{,}0875 = 0{,}665 \\;;\\; z = \\min(0{,}665\\,;\\, 0{,}909) = \\mathbf{0{,}665} \\;;\\; p = \\frac{z}{\\beta} = \\mathbf{0{,}0875}'
       },
       {
-        title: '3. Ganho $K_c$ pela Condição de Módulo e Componentes ($C = 10\\,\\mu\\text{F},\\; R_3 = 10\\text{ k}\\Omega$)',
+        title: '3. Ganho $K_c$ pela Condição de Módulo (Regra dos 7 Passos) e Componentes ($C = 10\\,\\mu\\text{F},\\; R_3 = 10\\text{ k}\\Omega$)',
         description:
-          'Resposta: $M_p$ vai de $6{,}0\\%$ para $4{,}0\\%$ e $t_s$ sobe de $2{,}02\\text{ s}$ para $3{,}06\\text{ s}$ pela cauda de $-9\\%$:',
+          'Aplicando $K_c = \\frac{1}{|\\bar{G}_c(s_d)G(s_d)|}$; resposta: $M_p$ vai de $6{,}0\\%$ para $4{,}0\\%$ e $t_s$ sobe de $2{,}02\\text{ s}$ para $3{,}06\\text{ s}$ pela cauda de $-9\\%$:',
         latex:
-          'K_c = K_0\\frac{|s_d+p|}{|s_d+z|} = 10\\cdot\\frac{|-1{,}9125+j2|}{|-1{,}335+j2|} = 10\\cdot\\frac{\\sqrt{(-1{,}9125)^2+2^2}}{\\sqrt{(-1{,}335)^2+2^2}} = 10\\cdot\\frac{2{,}7672}{2{,}4046} = \\mathbf{11{,}51} \\;;\\; K_{\\text{pos,novo}} = 21{,}9 \\implies e_{ss} = \\frac{1}{1+21{,}9} = 4{,}4\\% \\;;\\; R_1 = \\frac{1}{z C} = \\mathbf{150\\text{ k}\\Omega} \\;;\\; R_2 = \\beta R_1 = \\mathbf{1{,}14\\text{ M}\\Omega} \\;;\\; R_4 = K_c R_3 = \\mathbf{115\\text{ k}\\Omega}'
+          'K_c = \\frac{1}{\\left|\\frac{s_d+z}{s_d+p}\\cdot\\frac{s_d+4}{(s_d+1)(s_d+2)(s_d+8)}\\right|} = \\frac{1}{\\left|\\frac{-1{,}335+j2}{-1{,}9125+j2}\\cdot\\frac{2+j2}{(-1+j2)(j2)(6+j2)}\\right|} = \\frac{1}{\\frac{2{,}4046\\cdot 2{,}8284}{2{,}7672\\cdot 2{,}2361\\cdot 2\\cdot 6{,}3246}} = \\frac{1}{\\frac{6{,}801}{78{,}27}} = \\frac{1}{0{,}08690} = \\mathbf{11{,}51} \\;;\\; K_{\\text{pos,novo}} = 21{,}9 \\implies e_{ss} = \\frac{1}{1+21{,}9} = 4{,}4\\% \\;;\\; R_1 = \\frac{1}{z C} = \\mathbf{150\\text{ k}\\Omega} \\;;\\; R_2 = \\beta R_1 = \\mathbf{1{,}14\\text{ M}\\Omega} \\;;\\; R_4 = K_c R_3 = \\mathbf{115\\text{ k}\\Omega}'
       }
     ],
     scilabCode: `// Slide 21 - Proposto C: G(s) = (s+4)/((s+1)(s+2)(s+8)) com Atraso
@@ -2028,7 +2030,7 @@ xgrid();`
         description:
           '$M_p$: $4{,}3\\% \\to 6{,}4\\%$; $t_s$: $4{,}78\\text{ s} \\to 6{,}02\\text{ s}$. Com $C = 10\\,\\mu\\text{F}$ e $R_3 = 10\\text{ k}\\Omega$, $R_1 = 5{,}5\\text{ M}\\Omega$ e $R_2 = 67\\text{ M}\\Omega$ são inviáveis no analógico — ideal implementar digitalmente:',
         latex:
-          'K_c = K_0\\frac{|s_d+p|}{|s_d+z|} = 16{,}54\\cdot\\frac{|-0{,}8985+j0{,}9|}{|-0{,}882+j0{,}9|} = 16{,}54\\cdot\\frac{\\sqrt{(-0{,}8985)^2+0{,}9^2}}{\\sqrt{(-0{,}882)^2+0{,}9^2}} = 16{,}54\\cdot\\frac{1{,}2717}{1{,}2601} = \\mathbf{16{,}69} \\;;\\; K_{\\text{vel,novo}} = 10{,}1 \\implies e_{ss} = \\frac{1}{10{,}1} = \\mathbf{0{,}099} \\;;\\; R_4 = K_c R_3 = \\mathbf{167\\text{ k}\\Omega}'
+          'K_c = \\frac{1}{\\left|\\frac{s_d+z}{s_d+p}\\cdot\\frac{1}{s_d(s_d+2)(s_d+10)}\\right|} = \\frac{1}{\\left|\\frac{-0{,}882+j0{,}9}{-0{,}8985+j0{,}9}\\cdot\\frac{1}{(-0{,}9+j0{,}9)(1{,}1+j0{,}9)(9{,}1+j0{,}9)}\\right|} = \\frac{1}{\\frac{1{,}2601}{1{,}2717\\cdot 1{,}2728\\cdot 1{,}4213\\cdot 9{,}1444}} = \\frac{1}{\\frac{1{,}2601}{21{,}037}} = \\frac{1}{0{,}05990} = \\mathbf{16{,}69} \\;;\\; K_{\\text{vel,novo}} = 10{,}1 \\implies e_{ss} = \\mathbf{0{,}099} \\;;\\; R_4 = K_c R_3 = \\mathbf{167\\text{ k}\\Omega}'
       }
     ],
     scilabCode: `// Slide 21 - Proposto D: G(s) = 1/(s(s+2)(s+10)) com Atraso
