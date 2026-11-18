@@ -1358,7 +1358,7 @@ xgrid();`
         description:
           'Isolando $K_c$ em $|K_c \\bar{G}_c(s_d) L(s_d)| = 1$ e calculando o 3º polo pela soma das raízes de $s^3 + p_c s^2 + K_c s + K_c z_c = 0$:',
         latex:
-          'K_c = \\frac{1}{|\\bar{G}_c(s_d)L(s_d)|} = \\frac{|s_d+p_c|\\cdot|s_d|^2}{|s_d+z_c|} = \\frac{|-3+j3+29{,}22|\\cdot|-3+j3|^2}{|-3+j3+2{,}657|} = \\frac{\\sqrt{26{,}22^2+3^2}\\cdot(3^2+3^2)}{\\sqrt{(-0{,}343)^2+3^2}} = \\frac{26{,}396 \\cdot 18}{3{,}020} \\approx \\mathbf{157{,}3} \\;;\\; p_3 = -p_c - (-2\\sigma_d) = -29{,}22 + 6 = \\mathbf{-23{,}22} \\;;\\; \\mathbf{G_c(s) = 157{,}3\\frac{s+2{,}657}{s+29{,}22}}'
+          'K_c = \\frac{1}{|\\bar{G}_c(s_d)L(s_d)|} = \\frac{1}{\\left|\\frac{s_d+z_c}{s_d+p_c}\\cdot\\frac{1}{s_d^2}\\right|} = \\frac{|s_d+p_c|\\cdot|s_d|^2}{|s_d+z_c|} = \\frac{|-3+j3+29{,}22|\\cdot|-3+j3|^2}{|-3+j3+2{,}657|} \\;;\\; K_c = \\frac{|26{,}22+j3|\\cdot(3^2+3^2)}{|-0{,}343+j3|} = \\frac{\\sqrt{26{,}22^2+3^2}\\cdot 18}{\\sqrt{(-0{,}343)^2+3^2}} = \\frac{\\sqrt{687{,}49+9}\\cdot 18}{\\sqrt{0{,}118+9}} = \\frac{\\sqrt{696{,}49}\\cdot 18}{\\sqrt{9{,}118}} \\;;\\; K_c = \\frac{26{,}391 \\cdot 18}{3{,}020} = \\frac{475{,}04}{3{,}020} \\approx \\mathbf{157{,}3} \\;;\\; p_3 = -p_c - (-2\\sigma_d) = -29{,}22 + 6 = \\mathbf{-23{,}22} \\;;\\; \\mathbf{G_c(s) = 157{,}3\\frac{s+2{,}657}{s+29{,}22}}'
       }
     ],
     scilabCode: `// Slide 02 (11/31) - PD Real (N=10): L(s) = 1/s^2, sd = -3+j3
@@ -1422,7 +1422,7 @@ xgrid();`
         description:
           'Pela condição de módulo $|K_c \\bar{G}_c(s_d) L(s_d)| = 1$, isolamos $K_c$ e aplicamos $|a+jb| = \\sqrt{a^2+b^2}$:',
         latex:
-          'K_c = \\frac{1}{|\\bar{G}_c(s_d)L(s_d)|} = \\frac{|s_d+p_c|\\cdot|s_d|\\cdot|s_d+3|}{|s_d+z_c|} = \\frac{|-3+j3+62{,}85|\\cdot|-3+j3|\\cdot|-3+j3+3|}{|-3+j3+5{,}714|} \\;;\\; K_c = \\frac{|59{,}85+j3|\\cdot|-3+j3|\\cdot|j3|}{|2{,}714+j3|} = \\frac{\\sqrt{59{,}85^2+3^2}\\cdot\\sqrt{(-3)^2+3^2}\\cdot 3}{\\sqrt{2{,}714^2+3^2}} \\;;\\; K_c = \\frac{59{,}925 \\cdot 4{,}2426 \\cdot 3}{4{,}0455} = \\frac{762{,}72}{4{,}0455} \\approx \\mathbf{188{,}5} \\;;\\; \\mathbf{G_c(s) = 188{,}5\\frac{s+5{,}714}{s+62{,}85}}'
+          'K_c = \\frac{1}{|\\bar{G}_c(s_d)L(s_d)|} = \\frac{1}{\\left|\\frac{s_d+z_c}{s_d+p_c}\\cdot\\frac{1}{s_d(s_d+3)}\\right|} = \\frac{|s_d+p_c|\\cdot|s_d|\\cdot|s_d+3|}{|s_d+z_c|} = \\frac{|-3+j3+62{,}85|\\cdot|-3+j3|\\cdot|-3+j3+3|}{|-3+j3+5{,}714|} \\;;\\; K_c = \\frac{|59{,}85+j3|\\cdot|-3+j3|\\cdot|j3|}{|2{,}714+j3|} = \\frac{\\sqrt{59{,}85^2+3^2}\\cdot\\sqrt{(-3)^2+3^2}\\cdot 3}{\\sqrt{2{,}714^2+3^2}} = \\frac{\\sqrt{3582{,}02+9}\\cdot\\sqrt{9+9}\\cdot 3}{\\sqrt{7{,}366+9}} \\;;\\; K_c = \\frac{\\sqrt{3591{,}02}\\cdot\\sqrt{18}\\cdot 3}{\\sqrt{16{,}366}} = \\frac{59{,}925 \\cdot 4{,}2426 \\cdot 3}{4{,}0455} = \\frac{762{,}72}{4{,}0455} \\approx \\mathbf{188{,}5} \\;;\\; \\mathbf{G_c(s) = 188{,}5\\frac{s+5{,}714}{s+62{,}85}}'
       },
       {
         title: '5. Passo 6 — Equações para $(K_p, T_d, K_d)$ e Fatoração em Malha Fechada',
@@ -1501,7 +1501,7 @@ xgrid();`
         description:
           'Isolando $K_c$ em $|K_c \\bar{G}_c(s_d)L(s_d)| = 1$ e calculando cada módulo $|a+jb| = \\sqrt{a^2+b^2}$:',
         latex:
-          'K_c = \\frac{1}{|\\bar{G}_c(s_d)L(s_d)|} = \\frac{|s_d+p_c|\\cdot|s_d|\\cdot|s_d+3|}{|s_d+z_c|} = \\frac{|-3+j3+50{,}81|\\cdot|-3+j3|\\cdot|j3|}{|2{,}646+j3|} = \\frac{\\sqrt{47{,}81^2+3^2}\\cdot\\sqrt{(-3)^2+3^2}\\cdot 3}{\\sqrt{2{,}646^2+3^2}} = \\frac{47{,}906\\cdot 4{,}2426\\cdot 3}{4{,}0000} \\approx \\mathbf{152{,}4} \\;;\\; \\mathbf{G_c(s) = 152{,}4\\frac{s+5{,}646}{s+50{,}81}}'
+          'K_c = \\frac{1}{|\\bar{G}_c(s_d)L(s_d)|} = \\frac{1}{\\left|\\frac{s_d+z_c}{s_d+p_c}\\cdot\\frac{1}{s_d(s_d+3)}\\right|} = \\frac{|s_d+p_c|\\cdot|s_d|\\cdot|s_d+3|}{|s_d+z_c|} = \\frac{|-3+j3+50{,}81|\\cdot|-3+j3|\\cdot|-3+j3+3|}{|-3+j3+5{,}646|} \\;;\\; K_c = \\frac{|47{,}81+j3|\\cdot|-3+j3|\\cdot|j3|}{|2{,}646+j3|} = \\frac{\\sqrt{47{,}81^2+3^2}\\cdot\\sqrt{(-3)^2+3^2}\\cdot 3}{\\sqrt{2{,}646^2+3^2}} = \\frac{\\sqrt{2285{,}80+9}\\cdot\\sqrt{9+9}\\cdot 3}{\\sqrt{7{,}001+9}} \\;;\\; K_c = \\frac{\\sqrt{2294{,}80}\\cdot\\sqrt{18}\\cdot 3}{\\sqrt{16{,}001}} = \\frac{47{,}904\\cdot 4{,}2426\\cdot 3}{4{,}0002} = \\frac{609{,}71}{4{,}0002} \\approx \\mathbf{152{,}4} \\;;\\; \\mathbf{G_c(s) = 152{,}4\\frac{s+5{,}646}{s+50{,}81}}'
       },
       {
         title: '4. Equações para $(K_p, T_d, K_d)$, Polo Rápido e Pré-Filtro $F(s)$',
@@ -1571,7 +1571,7 @@ xgrid();`
         description:
           'Isolando $K_c$ em $|K_c \\bar{G}_c(s_d) L(s_d)| = 1$ e calculando $|a+jb| = \\sqrt{a^2+b^2}$:',
         latex:
-          'K_c = \\frac{1}{|\\bar{G}_c(s_d)L(s_d)|} = \\frac{|s_d+p_c|\\cdot|s_d|\\cdot|s_d+3|}{|s_d+z_c|} = \\frac{|-3+j3+74{,}87|\\cdot|-3+j3|\\cdot|j3|}{|2{,}760+j3|} = \\frac{\\sqrt{71{,}87^2+3^2}\\cdot\\sqrt{(-3)^2+3^2}\\cdot 3}{\\sqrt{2{,}760^2+3^2}} = \\frac{71{,}937\\cdot 4{,}2426\\cdot 3}{4{,}0762} \\approx \\mathbf{224{,}6} \\;;\\; \\mathbf{G_c(s) = 224{,}6\\frac{s+5{,}760}{s+74{,}87}}'
+          'K_c = \\frac{1}{|\\bar{G}_c(s_d)L(s_d)|} = \\frac{1}{\\left|\\frac{s_d+z_c}{s_d+p_c}\\cdot\\frac{1}{s_d(s_d+3)}\\right|} = \\frac{|s_d+p_c|\\cdot|s_d|\\cdot|s_d+3|}{|s_d+z_c|} = \\frac{|-3+j3+74{,}87|\\cdot|-3+j3|\\cdot|-3+j3+3|}{|-3+j3+5{,}760|} \\;;\\; K_c = \\frac{|71{,}87+j3|\\cdot|-3+j3|\\cdot|j3|}{|2{,}760+j3|} = \\frac{\\sqrt{71{,}87^2+3^2}\\cdot\\sqrt{(-3)^2+3^2}\\cdot 3}{\\sqrt{2{,}760^2+3^2}} = \\frac{\\sqrt{5165{,}30+9}\\cdot\\sqrt{9+9}\\cdot 3}{\\sqrt{7{,}618+9}} \\;;\\; K_c = \\frac{\\sqrt{5174{,}30}\\cdot\\sqrt{18}\\cdot 3}{\\sqrt{16{,}618}} = \\frac{71{,}933\\cdot 4{,}2426\\cdot 3}{4{,}0765} = \\frac{915{,}55}{4{,}0765} \\approx \\mathbf{224{,}6} \\;;\\; \\mathbf{G_c(s) = 224{,}6\\frac{s+5{,}760}{s+74{,}87}}'
       },
       {
         title: '4. Equações para $(K_p, T_d, K_d)$, Polo Rápido e Pré-Filtro $F(s)$',
@@ -1641,7 +1641,7 @@ xgrid();`
         description:
           'Isolando $K_c$ em $|K_c \\bar{G}_c(s_d) L(s_d)| = 1$ e calculando $|a+jb| = \\sqrt{a^2+b^2}$:',
         latex:
-          'K_c = \\frac{1}{|\\bar{G}_c(s_d)L(s_d)|} = \\frac{|s_d+p_c|\\cdot|s_d|\\cdot|s_d+3|}{|s_d+z_c|} = \\frac{|-2+j2+82{,}94|\\cdot|-2+j2|\\cdot|1+j2|}{|5{,}540+j2|} = \\frac{\\sqrt{80{,}94^2+2^2}\\cdot\\sqrt{(-2)^2+2^2}\\cdot\\sqrt{1^2+2^2}}{\\sqrt{5{,}540^2+2^2}} = \\frac{80{,}964\\cdot 2{,}8284\\cdot 2{,}2361}{5{,}8899} \\approx \\mathbf{86{,}9} \\;;\\; \\mathbf{G_c(s) = 86{,}9\\frac{s+7{,}540}{s+82{,}94}}'
+          'K_c = \\frac{1}{|\\bar{G}_c(s_d)L(s_d)|} = \\frac{1}{\\left|\\frac{s_d+z_c}{s_d+p_c}\\cdot\\frac{1}{s_d(s_d+3)}\\right|} = \\frac{|s_d+p_c|\\cdot|s_d|\\cdot|s_d+3|}{|s_d+z_c|} = \\frac{|-2+j2+82{,}94|\\cdot|-2+j2|\\cdot|-2+j2+3|}{|-2+j2+7{,}540|} \\;;\\; K_c = \\frac{|80{,}94+j2|\\cdot|-2+j2|\\cdot|1+j2|}{|5{,}540+j2|} = \\frac{\\sqrt{80{,}94^2+2^2}\\cdot\\sqrt{(-2)^2+2^2}\\cdot\\sqrt{1^2+2^2}}{\\sqrt{5{,}540^2+2^2}} = \\frac{\\sqrt{6551{,}28+4}\\cdot\\sqrt{4+4}\\cdot\\sqrt{1+4}}{\\sqrt{30{,}692+4}} \\;;\\; K_c = \\frac{\\sqrt{6555{,}28}\\cdot\\sqrt{8}\\cdot\\sqrt{5}}{\\sqrt{34{,}692}} = \\frac{80{,}965\\cdot 2{,}8284\\cdot 2{,}2361}{5{,}8900} = \\frac{512{,}07}{5{,}8900} \\approx \\mathbf{86{,}9} \\;;\\; \\mathbf{G_c(s) = 86{,}9\\frac{s+7{,}540}{s+82{,}94}}'
       },
       {
         title: '4. Equações para $(K_p, T_d, K_d)$, Polo Rápido e Pré-Filtro $F(s)$',
