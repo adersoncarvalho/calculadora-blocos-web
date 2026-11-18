@@ -572,69 +572,179 @@ export const ControllersSection: React.FC<ControllersSectionProps> = ({ onBack, 
         {showDecisionGuide && (
           <div style={{ padding: '18px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
             <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text)', lineHeight: 1.55 }}>
-              Antes de sair calculando, todo projeto de controle começa por uma pergunta fundamental:{' '}
-              <strong>o que o sistema precisa melhorar?</strong> O defeito está no{' '}
-              <span style={{ color: 'var(--primary)', fontWeight: 700 }}>Regime Transitório</span> (lento, oscilatório, sobressinal %OS alto, Ts longo)
-              ou no <span style={{ color: 'var(--success)', fontWeight: 700 }}>Regime Permanente</span> (erro estacionário e_ss alto ou infinito)?
+              Todo projeto pelo <GlossaryTerm termKey="LGR">LGR</GlossaryTerm> começa calculando o polo desejado{' '}
+              <MathView math="s_d = -\sigma_d + j\omega_d" inline /> e a deficiência angular{' '}
+              <MathView math="\theta_{\text{def}} = -180^\circ - \angle L(s_d)" inline />:
             </p>
 
-            {/* Tabela Comparativa de Decisão */}
+            {/* Fluxograma Rápido por θdef */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '10px' }}>
+              <div
+                style={{
+                  background: 'var(--code-bg)',
+                  border: '1px solid rgba(5, 150, 105, 0.4)',
+                  borderLeft: '4px solid #059669',
+                  borderRadius: '6px',
+                  padding: '10px 14px',
+                  fontSize: '0.8rem',
+                  lineHeight: 1.5
+                }}
+              >
+                <div style={{ fontWeight: 800, color: '#34d399', marginBottom: '4px' }}>
+                  Caso 1: <MathView math="\theta_{\text{def}} = 0^\circ" inline /> (<MathView math="s_d" inline /> já pertence ao LGR original)
+                </div>
+                <div>
+                  • Erro já atende <MathView math="\implies" inline /> <strong>Controlador P</strong> (<MathView math="G_c = K" inline />)<br />
+                  • Reduzir erro finito sem mudar Tipo <MathView math="\implies" inline /> <strong>Atraso (Lag)</strong><br />
+                  • <strong>Zerar</strong> erro ao degrau (Tipo 0 <MathView math="\to" inline /> 1) <MathView math="\implies" inline /> <strong>PI</strong>
+                </div>
+              </div>
+
+              <div
+                style={{
+                  background: 'var(--code-bg)',
+                  border: '1px solid rgba(124, 58, 237, 0.4)',
+                  borderLeft: '4px solid #7c3aed',
+                  borderRadius: '6px',
+                  padding: '10px 14px',
+                  fontSize: '0.8rem',
+                  lineHeight: 1.5
+                }}
+              >
+                <div style={{ fontWeight: 800, color: '#a78bfa', marginBottom: '4px' }}>
+                  Caso 2: <MathView math="\theta_{\text{def}} > 0^\circ" inline /> (<MathView math="s_d" inline /> fora do LGR — falta avanço de fase)
+                </div>
+                <div>
+                  • Razão fixa <MathView math="r = N+1" inline /> (3º polo bem rápido) <MathView math="\implies" inline /> <strong>PD Real</strong><br />
+                  • Minimizar <MathView math="K_c" inline /> (bissetriz) ou cancelar polo lento <MathView math="\implies" inline /> <strong>Avanço (Lead)</strong>
+                </div>
+              </div>
+            </div>
+
+            {/* Tabela Comparativa Completa de Decisão */}
             <div style={{ overflowX: 'auto' }}>
               <table
                 style={{
                   width: '100%',
                   borderCollapse: 'collapse',
-                  fontSize: '0.79rem',
+                  fontSize: '0.78rem',
                   textAlign: 'left'
                 }}
               >
                 <thead>
                   <tr style={{ background: 'var(--code-bg)', borderBottom: '2px solid var(--card-border)' }}>
                     <th style={{ padding: '8px 10px', color: 'var(--text)' }}>Controlador</th>
-                    <th style={{ padding: '8px 10px', color: 'var(--text)' }}>Altera o Tipo?</th>
-                    <th style={{ padding: '8px 10px', color: 'var(--text)' }}>Foco Principal</th>
-                    <th style={{ padding: '8px 10px', color: 'var(--text)' }}>Quando é a Melhor Escolha?</th>
+                    <th style={{ padding: '8px 10px', color: 'var(--text)' }}>Condição em <MathView math="\theta_{\text{def}}" inline /></th>
+                    <th style={{ padding: '8px 10px', color: 'var(--text)' }}>Altera Tipo?</th>
+                    <th style={{ padding: '8px 10px', color: 'var(--text)' }}>Efeito no LGR / Transitório</th>
+                    <th style={{ padding: '8px 10px', color: 'var(--text)' }}>Efeito no Erro em Regime</th>
+                    <th style={{ padding: '8px 10px', color: 'var(--text)' }}>Quando Escolher (Critério Prático)</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr style={{ borderBottom: '1px solid var(--card-border)' }}>
-                    <td style={{ padding: '8px 10px', fontWeight: 700, color: '#0284c7' }}>Proporcional (P)</td>
+                    <td style={{ padding: '8px 10px', fontWeight: 700, color: '#38bdf8' }}>
+                      <button
+                        type="button"
+                        onClick={() => handleSelectCategory('P')}
+                        style={{ background: 'none', border: 'none', padding: 0, color: 'inherit', fontWeight: 800, cursor: 'pointer', textDecoration: 'underline' }}
+                      >
+                        Proporcional (P)
+                      </button>
+                      <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 500 }}>
+                        <MathView math="G_c(s) = K" inline />
+                      </div>
+                    </td>
+                    <td style={{ padding: '8px 10px' }}><MathView math="\theta_{\text{def}} = 0^\circ" inline /></td>
                     <td style={{ padding: '8px 10px' }}>Não</td>
-                    <td style={{ padding: '8px 10px' }}>Ganho estático K</td>
+                    <td style={{ padding: '8px 10px', color: 'var(--text-muted)' }}>Move os polos ao longo do LGR original da planta.</td>
+                    <td style={{ padding: '8px 10px', color: 'var(--text-muted)' }}>Reduz erro finito ao aumentar <MathView math="K" inline />.</td>
                     <td style={{ padding: '8px 10px', color: 'var(--text-muted)' }}>
-                      Quando o Tipo atual já atende à entrada e basta ajustar K para atingir um erro finito aceitável (sem violar a estabilidade).
+                      Quando <MathView math="s_d" inline /> já está no LGR e o erro com <MathView math="K_0" inline /> já atende às especificações.
                     </td>
                   </tr>
                   <tr style={{ borderBottom: '1px solid var(--card-border)', background: 'var(--code-bg)' }}>
-                    <td style={{ padding: '8px 10px', fontWeight: 700, color: '#d97706' }}>PD / PD Real</td>
-                    <td style={{ padding: '8px 10px' }}>Não</td>
-                    <td style={{ padding: '8px 10px' }}>Transitório (%OS, Ts)</td>
+                    <td style={{ padding: '8px 10px', fontWeight: 700, color: '#34d399' }}>
+                      <button
+                        type="button"
+                        onClick={() => handleSelectCategory('PI')}
+                        style={{ background: 'none', border: 'none', padding: 0, color: 'inherit', fontWeight: 800, cursor: 'pointer', textDecoration: 'underline' }}
+                      >
+                        PI
+                      </button>
+                      <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 500 }}>
+                        <MathView math="K_c\frac{s+z_i}{s}" inline />
+                      </div>
+                    </td>
+                    <td style={{ padding: '8px 10px' }}><MathView math="\theta_{\text{def}} \approx 0^\circ" inline /> (perda <MathView math="\le 10^\circ" inline />)</td>
+                    <td style={{ padding: '8px 10px', fontWeight: 700, color: 'var(--success)' }}>Sim (+1)</td>
+                    <td style={{ padding: '8px 10px', color: 'var(--text-muted)' }}>Mantém <MathView math="s_d" inline /> intacto usando dipolo (<MathView math="z_i \le |s_{\text{lenta}}|/1{,}1" inline />).</td>
+                    <td style={{ padding: '8px 10px', color: 'var(--text-muted)' }}><strong>Zera</strong> o erro ao degrau (Tipo 0 <MathView math="\to" inline /> 1).</td>
                     <td style={{ padding: '8px 10px', color: 'var(--text-muted)' }}>
-                      Quando o sistema é lento ou oscilatório e o erro estacionário já é aceitável. Adiciona zero que puxa o LGR para a esquerda.
+                      Planta Tipo 0 com transitório já bom em <MathView math="s_d" inline />, mas precisa <strong>zerar</strong> <MathView math="e_{ss}" inline /> ao degrau.
                     </td>
                   </tr>
                   <tr style={{ borderBottom: '1px solid var(--card-border)' }}>
-                    <td style={{ padding: '8px 10px', fontWeight: 700, color: '#059669' }}>PI</td>
-                    <td style={{ padding: '8px 10px', fontWeight: 700, color: 'var(--success)' }}>Sim (+1)</td>
-                    <td style={{ padding: '8px 10px' }}>Zerar erro / Mudar Tipo</td>
+                    <td style={{ padding: '8px 10px', fontWeight: 700, color: '#f87171' }}>
+                      <button
+                        type="button"
+                        onClick={() => handleSelectCategory('Lag')}
+                        style={{ background: 'none', border: 'none', padding: 0, color: 'inherit', fontWeight: 800, cursor: 'pointer', textDecoration: 'underline' }}
+                      >
+                        Atraso (Lag)
+                      </button>
+                      <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 500 }}>
+                        <MathView math="K_c\frac{s+z}{s+p}\;(p < z)" inline />
+                      </div>
+                    </td>
+                    <td style={{ padding: '8px 10px' }}><MathView math="\theta_{\text{def}} \approx 0^\circ" inline /> (perda <MathView math="\le 10^\circ" inline />)</td>
+                    <td style={{ padding: '8px 10px' }}>Não</td>
+                    <td style={{ padding: '8px 10px', color: 'var(--text-muted)' }}>Mantém <MathView math="s_d" inline /> (dipolo e regra da cauda no Tipo 1).</td>
+                    <td style={{ padding: '8px 10px', color: 'var(--text-muted)' }}>Multiplica <MathView math="K_{\text{pos}}" inline /> ou <MathView math="K_{\text{vel}}" inline /> por <MathView math="\beta = z/p" inline />.</td>
                     <td style={{ padding: '8px 10px', color: 'var(--text-muted)' }}>
-                      Quando se precisa <strong>ZERAR</strong> um erro finito (ex.: Tipo 0 ao degrau) ou transformar erro ∞ em finito (ex.: Tipo 0 à rampa).
+                      Transitório já bom em <MathView math="s_d" inline /> com <MathView math="K_0" inline />, mas precisa <strong>reduzir</strong> erro finito sem mudar o Tipo.
                     </td>
                   </tr>
                   <tr style={{ borderBottom: '1px solid var(--card-border)', background: 'var(--code-bg)' }}>
-                    <td style={{ padding: '8px 10px', fontWeight: 700, color: '#7c3aed' }}>Avanço de Fase (Lead)</td>
+                    <td style={{ padding: '8px 10px', fontWeight: 700, color: '#fbbf24' }}>
+                      <button
+                        type="button"
+                        onClick={() => handleSelectCategory('PD')}
+                        style={{ background: 'none', border: 'none', padding: 0, color: 'inherit', fontWeight: 800, cursor: 'pointer', textDecoration: 'underline' }}
+                      >
+                        PD Real
+                      </button>
+                      <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 500 }}>
+                        <MathView math="K_c\frac{s+z_c}{s+p_c}\;(r=N+1)" inline />
+                      </div>
+                    </td>
+                    <td style={{ padding: '8px 10px' }}><MathView math="\theta_{\text{def}} > 0^\circ" inline /></td>
                     <td style={{ padding: '8px 10px' }}>Não</td>
-                    <td style={{ padding: '8px 10px' }}>Transitório (Tp, Ts, %OS)</td>
+                    <td style={{ padding: '8px 10px', color: 'var(--text-muted)' }}>Puxa o LGR p/ esquerda com 3º polo bem rápido (reduz <MathView math="t_s" inline /> e <MathView math="M_p" inline />).</td>
+                    <td style={{ padding: '8px 10px', color: 'var(--text-muted)' }}>Melhora via <MathView math="K_p = K_c/r" inline /> (não muda o Tipo).</td>
                     <td style={{ padding: '8px 10px', color: 'var(--text-muted)' }}>
-                      Quando se precisa acelerar o transitório como no PD, mas usando compensador real (z &lt; p) com ganho limitado em alta frequência para evitar ruído.
+                      Falta avanço de fase e quer razão fixa (<MathView math="N=10 \implies r=11" inline />); usar pré-filtro <MathView math="F(s)" inline /> se precisar segurar <MathView math="M_p" inline /> e <MathView math="u(0^+)" inline />.
                     </td>
                   </tr>
                   <tr>
-                    <td style={{ padding: '8px 10px', fontWeight: 700, color: '#dc2626' }}>Atraso de Fase (Lag)</td>
+                    <td style={{ padding: '8px 10px', fontWeight: 700, color: '#a78bfa' }}>
+                      <button
+                        type="button"
+                        onClick={() => handleSelectCategory('Lead')}
+                        style={{ background: 'none', border: 'none', padding: 0, color: 'inherit', fontWeight: 800, cursor: 'pointer', textDecoration: 'underline' }}
+                      >
+                        Avanço (Lead)
+                      </button>
+                      <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 500 }}>
+                        <MathView math="K_c\frac{s+z_c}{s+p_c}\;(z_c < p_c)" inline />
+                      </div>
+                    </td>
+                    <td style={{ padding: '8px 10px' }}><MathView math="\theta_{\text{def}} > 0^\circ" inline /></td>
                     <td style={{ padding: '8px 10px' }}>Não</td>
-                    <td style={{ padding: '8px 10px' }}>Erro Permanente (β = z/p)</td>
+                    <td style={{ padding: '8px 10px', color: 'var(--text-muted)' }}>Puxa o LGR p/ esquerda com ganho <MathView math="K_c" inline /> moderado.</td>
+                    <td style={{ padding: '8px 10px', color: 'var(--text-muted)' }}>Melhora moderada via <MathView math="K_p = K_c/r" inline />.</td>
                     <td style={{ padding: '8px 10px', color: 'var(--text-muted)' }}>
-                      Quando o transitório (polos dominantes sd) JÁ é satisfatório com ganho K0, mas o erro estacionário finito ainda está acima do limite permitido.
+                      Falta avanço e quer escolher <MathView math="r" inline />: <strong>bissetriz</strong> (minimiza <MathView math="K_c" inline />) ou <strong>cancelamento</strong> (2ª ordem pura sem zeros).
                     </td>
                   </tr>
                 </tbody>
