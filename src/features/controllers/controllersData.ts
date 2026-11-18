@@ -1162,23 +1162,23 @@ xgrid();`
       {
         title: '1. Método da Deficiência Angular em $s_d = -3 + j3$',
         description:
-          'Pela condição de ângulo do LGR, $\\angle G_c(s_d) + \\angle L(s_d) = -180^\\circ$. Como $L(s) = 1/s^2$ tem dois polos na origem, cada polo contribui com $\\theta_p = \\operatorname{atan2}(3, -3) = 180^\\circ - \\arctan(3/3) = 135^\\circ$ (2º quadrante). Para $r = N+1 = 11$ e $s_d$ no 2º quadrante ($\\beta = 45^\\circ$), a fase máxima de 1 estágio PD Real é $\\varphi_{\\max} = 104{,}7^\\circ > 90^\\circ$, bastando $m = 1$ estágio:',
+          'Pela condição de ângulo do LGR, $\\angle G_c(s_d) + \\angle L(s_d) = -180^\\circ$. Como $L(s) = 1/s^2$ tem dois polos na origem ($p_{1,2} = 0$) e $s_d = -3 + j3$ está no 2º quadrante:',
         latex:
-          '\\angle L(s_d) = 0^\\circ - 2\\cdot 135^\\circ = -270^\\circ \\;;\\; \\theta_{\\text{def}} = -180^\\circ - (-270^\\circ) = \\mathbf{+90^\\circ} \\;(\\text{folga } 104{,}7^\\circ - 90^\\circ = 14{,}7^\\circ)'
+          '\\theta_p = 180^\\circ - \\arctan\\left(\\frac{\\omega_d}{\\sigma_d}\\right) = 180^\\circ - \\arctan\\left(\\frac{3}{3}\\right) = 135^\\circ \\;;\\; \\angle L(s_d) = \\sum\\theta_z - \\sum\\theta_p = 0^\\circ - 2\\theta_p = -270^\\circ \\;;\\; \\theta_{\\text{def}} = -180^\\circ - \\angle L(s_d) = -180^\\circ - (-270^\\circ) = \\mathbf{+90^\\circ}'
       },
       {
-        title: '2. Derivação do Polinômio em $z_c$ ($\\varphi = 90^\\circ \\implies \\cot 90^\\circ = 0$)',
+        title: '2. Derivação do Polinômio em $z_c$ ($r = N+1$, $\\varphi = 90^\\circ \\implies \\cot 90^\\circ = 0$)',
         description:
-          'Impondo $\\angle(s_d + z_c) - \\angle(s_d + r z_c) = 90^\\circ$ em $s_d = -\\sigma_d + j\\omega_d$ ($\\sigma_d = 3,\\; \\omega_d = 3,\\; r = 11$), o produto escalar da parte real do quociente anula-se: $c_2 = r = 11$, $c_1 = -[\\sigma_d(r+1) + \\omega_d(r-1)\\cot 90^\\circ] = -3(12) = -36$ e $c_0 = \\sigma_d^2 + \\omega_d^2 = 18$. Resolvendo por Bhaskara e escolhendo a maior raiz (a menor $z_c = 0{,}616$ geraria polo lento em $-0{,}78$ quase cancelado pelo zero):',
+          'Da condição de fase $\\cot\\varphi = \\frac{(\\sigma_d - z_c)(\\sigma_d - r z_c) + \\omega_d^2}{\\omega_d(r-1)z_c}$ com $p_c = r z_c$, obtém-se $c_2 z_c^2 + c_1 z_c + c_0 = 0$. Escolhemos a maior raiz por Bhaskara (a menor $0{,}616$ gera polo lento em $-0{,}78$):',
         latex:
-          '11 z_c^2 - 36 z_c + 18 = 0 \\implies \\Delta = (-36)^2 - 4\\cdot 11\\cdot 18 = 1296 - 792 = 504 \\;(\\sqrt{504} = 22{,}45) \\;;\\; z_c = \\frac{36 + 22{,}45}{2\\cdot 11} = \\mathbf{2{,}657} \\;;\\; p_c = r\\cdot z_c = 11 \\cdot 2{,}657 = \\mathbf{29{,}22}'
+          'r = N + 1 = 10 + 1 = 11 \\;;\\; c_2 = r = 11 \\;;\\; c_1 = -[\\sigma_d(r+1) + \\omega_d(r-1)\\cot\\varphi] = -[3(11+1) + 3(11-1)\\cot 90^\\circ] = -36 \\;;\\; c_0 = \\sigma_d^2 + \\omega_d^2 = 3^2 + 3^2 = 18 \\;;\\; c_2 z_c^2 + c_1 z_c + c_0 = 0 \\implies 11 z_c^2 - 36 z_c + 18 = 0 \\;;\\; \\Delta = c_1^2 - 4 c_2 c_0 = (-36)^2 - 4\\cdot 11\\cdot 18 = 504 \\;(\\sqrt{\\Delta} = 22{,}45) \\;;\\; z_c = \\frac{-c_1 + \\sqrt{\\Delta}}{2 c_2} = \\frac{36 + 22{,}45}{2\\cdot 11} = \\mathbf{2{,}657} \\;;\\; p_c = r\\cdot z_c = 11 \\cdot 2{,}657 = \\mathbf{29{,}22}'
       },
       {
-        title: '3. Ganho $K_c$ pela Condição de Módulo e Polos de Malha Fechada',
+        title: '3. Ganho $K_c$ pela Condição de Módulo e 3º Polo de Malha Fechada',
         description:
-          'Pela condição de módulo $|K_c \\bar{G}_c(s_d) L(s_d)| = 1$, isolamos $K_c$ e calculamos o módulo de cada fator complexo $|a + jb| = \\sqrt{a^2 + b^2}$. Pela soma das raízes da equação característica $s^3 + 29{,}22 s^2 + K_c s + 2{,}657 K_c = 0$, o 3º polo é $p_3 = -(29{,}22 - 6) = -23{,}22$:',
+          'Isolando $K_c$ em $|K_c \\bar{G}_c(s_d) L(s_d)| = 1$ e calculando o 3º polo pela soma das raízes de $s^3 + p_c s^2 + K_c s + K_c z_c = 0$:',
         latex:
-          'K_c = \\frac{1}{\\left|\\frac{s_d+2{,}657}{(s_d+29{,}22)s_d^2}\\right|} = \\frac{|s_d+29{,}22|\\cdot|s_d|^2}{|s_d+2{,}657|} = \\frac{|-3+j3+29{,}22|\\cdot|-3+j3|^2}{|-3+j3+2{,}657|} \\;;\\; K_c = \\frac{|26{,}22+j3|\\cdot 18}{|-0{,}343+j3|} = \\frac{\\sqrt{26{,}22^2+3^2}\\cdot 18}{\\sqrt{(-0{,}343)^2+3^2}} = \\frac{26{,}396 \\cdot 18}{3{,}020} \\approx \\mathbf{157{,}3} \\;;\\; \\mathbf{G_c(s) = 157{,}3\\frac{s+2{,}657}{s+29{,}22}}'
+          'K_c = \\frac{1}{|\\bar{G}_c(s_d)L(s_d)|} = \\frac{|s_d+p_c|\\cdot|s_d|^2}{|s_d+z_c|} = \\frac{|-3+j3+29{,}22|\\cdot|-3+j3|^2}{|-3+j3+2{,}657|} = \\frac{\\sqrt{26{,}22^2+3^2}\\cdot(3^2+3^2)}{\\sqrt{(-0{,}343)^2+3^2}} = \\frac{26{,}396 \\cdot 18}{3{,}020} \\approx \\mathbf{157{,}3} \\;;\\; p_3 = -p_c - (-2\\sigma_d) = -29{,}22 + 6 = \\mathbf{-23{,}22} \\;;\\; \\mathbf{G_c(s) = 157{,}3\\frac{s+2{,}657}{s+29{,}22}}'
       }
     ],
     scilabCode: `// Slide 02 (11/31) - PD Real (N=10): L(s) = 1/s^2, sd = -3+j3
@@ -1219,51 +1219,51 @@ xgrid();`
       {
         title: '1. Passo 1 — Método de Conversão das Especificações em Polo Desejado ($s_d$)',
         description:
-          'A partir de $\\zeta = 0{,}707 = \\frac{\\sqrt{2}}{2}$ e $\\omega_d = 3\\text{ rad/s}$, notamos que $\\sqrt{1-\\zeta^2} = 0{,}707 = \\zeta$, logo $\\frac{\\zeta}{\\sqrt{1-\\zeta^2}} = 1$. Assim, a atenuação real $\\sigma_d = \\frac{\\zeta\\omega_d}{\\sqrt{1-\\zeta^2}}$ iguala $\\omega_d = 3$, formando $s_d = -\\sigma_d + j\\omega_d = -3 + j3$. O sobressinal $M_p$, tempo de pico $t_p$ e tempo de acomodação $t_s$ (critério $2\\%$) seguem diretamente:',
+          'Equações de 2ª ordem padrão a partir de $\\zeta = 0{,}707$ e $\\omega_d = 3\\text{ rad/s}$ ($s_d = -\\sigma_d + j\\omega_d$):',
         latex:
-          'M_p = e^{-\\frac{\\pi\\zeta}{\\sqrt{1-\\zeta^2}}} = e^{-\\pi} = 4{,}3\\% \\;;\\; t_p = \\frac{\\pi}{\\omega_d} = \\frac{\\pi}{3} = 1{,}05\\text{ s} \\;;\\; \\sigma_d = \\frac{0{,}707\\cdot 3}{0{,}707} = 3 \\;;\\; t_s \\approx \\frac{4}{\\sigma_d} = 1{,}33\\text{ s} \\;;\\; \\mathbf{s_d = -3 + j3}'
+          'M_p = e^{-\\frac{\\pi\\zeta}{\\sqrt{1-\\zeta^2}}} = e^{-\\frac{\\pi\\cdot 0{,}707}{\\sqrt{1-0{,}707^2}}} = e^{-\\pi} = 4{,}3\\% \\;;\\; t_p = \\frac{\\pi}{\\omega_d} = \\frac{\\pi}{3} = 1{,}05\\text{ s} \\;;\\; \\sigma_d = \\frac{\\zeta\\cdot\\omega_d}{\\sqrt{1-\\zeta^2}} = \\frac{0{,}707\\cdot 3}{0{,}707} = 3 \\;;\\; t_s \\approx \\frac{4}{\\sigma_d} = \\frac{4}{3} = 1{,}33\\text{ s} \\;;\\; s_d = -\\sigma_d + j\\omega_d = \\mathbf{-3 + j3}'
       },
       {
         title: '2. Passo 2 — Método da Deficiência Angular ($\\theta_{\\text{def}}$) por Trigonometria',
         description:
-          'Um ponto $s_d$ só pertence ao LGR se $\\angle G_c(s_d) + \\angle L(s_d) = -180^\\circ$. Para $L(s) = \\frac{1}{s(s+3)}$ (polos em $0$ e $-3$), traçamos os vetores de cada polo até $s_d$: $s_d - 0 = -3 + j3$ (no 2º quadrante, onde $\\operatorname{atan2}(y,x) = 180^\\circ - \\arctan(y/|x|) = 180^\\circ - 45^\\circ = 135^\\circ$) e $s_d - (-3) = j3$ (sobre $+j\\omega$, logo $90^\\circ$). Como $\\theta_{\\text{def}} > 0$, falta avanço de fase $\\implies$ PD Real:',
+          'Condição de ângulo do LGR: $\\angle G_c(s_d) + \\angle L(s_d) = -180^\\circ$. Calculando o ângulo de cada polo ($p_1 = 0$, $p_2 = -3$) até $s_d = -3 + j3$:',
         latex:
-          '\\theta_1 = 180^\\circ - \\arctan\\left(\\frac{3}{3}\\right) = 135^\\circ \\;;\\; \\theta_2 = 90^\\circ \\;;\\; \\angle L(s_d) = 0^\\circ - (135^\\circ + 90^\\circ) = -225^\\circ \\;;\\; \\theta_{\\text{def}} = -180^\\circ - (-225^\\circ) = \\mathbf{+45^\\circ}'
+          '\\theta_1 = 180^\\circ - \\arctan\\left(\\frac{\\omega_d}{|-\\sigma_d - p_1|}\\right) = 180^\\circ - \\arctan\\left(\\frac{3}{3}\\right) = 135^\\circ \\;;\\; \\theta_2 = \\operatorname{atan2}(\\omega_d,\\, -\\sigma_d - p_2) = \\operatorname{atan2}(3, 0) = 90^\\circ \\;;\\; \\angle L(s_d) = \\sum\\theta_z - \\sum\\theta_p = 0^\\circ - (\\theta_1 + \\theta_2) = -(135^\\circ + 90^\\circ) = -225^\\circ \\;;\\; \\theta_{\\text{def}} = -180^\\circ - \\angle L(s_d) = -180^\\circ - (-225^\\circ) = \\mathbf{+45^\\circ}'
       },
       {
-        title: '3. Passos 3 e 4 — Derivação do Polinômio em $z_c$ ($N = 10 \\implies r = 11$)',
+        title: '3. Passos 3 e 4 — Equações do Polinômio em $z_c$ ($N = 10 \\implies r = N + 1$)',
         description:
-          'Na forma padrão do PD Real $G_c(s) = K_p\\left(1 + \\frac{N s}{s + N/T_d}\\right) = K_c\\frac{s+z_c}{s+p_c}$, tem-se $r = \\frac{p_c}{z_c} = N + 1 = 11$. Impondo que o estágio forneça $\\varphi = 45^\\circ$ via $\\cot\\varphi = \\frac{\\operatorname{Re}[(s_d+z_c)(\\overline{s_d+p_c})]}{\\operatorname{Im}[(s_d+z_c)(\\overline{s_d+p_c})]}$ com $p_c = r z_c$, chega-se à equação quadrática $c_2 z_c^2 + c_1 z_c + c_0 = 0$, onde $c_2 = r$, $c_1 = -[\\sigma_d(r+1) + \\omega_d(r-1)\\cot\\varphi]$ e $c_0 = \\sigma_d^2 + \\omega_d^2$. Escolhemos a maior raiz ($5{,}714$), descartando $0{,}286$ para evitar um zero lento próximo à origem:',
+          'Da condição de fase $\\angle(s_d + z_c) - \\angle(s_d + r z_c) = \\varphi$ ($\\varphi = 45^\\circ$) com $p_c = r z_c$, obtém-se $c_2 z_c^2 + c_1 z_c + c_0 = 0$. Escolhe-se a maior raiz por Bhaskara (descarta-se $0{,}286$ para evitar zero lento):',
         latex:
-          'c_2 = 11 \\;;\\; c_1 = -[3\\cdot 12 + 3\\cdot 10\\cdot 1] = -66 \\;;\\; c_0 = 3^2 + 3^2 = 18 \\;;\\; 11 z_c^2 - 66 z_c + 18 = 0 \\implies \\Delta = (-66)^2 - 4\\cdot 11\\cdot 18 = 3564 \\;(\\sqrt{3564} = 59{,}70) \\;;\\; z_c = \\frac{66 + 59{,}70}{2\\cdot 11} = \\mathbf{5{,}714} \\;;\\; p_c = 11\\cdot 5{,}714 = \\mathbf{62{,}85}'
+          'r = N + 1 = 10 + 1 = 11 \\;;\\; c_2 = r = 11 \\;;\\; c_1 = -[\\sigma_d(r+1) + \\omega_d(r-1)\\cot\\varphi] = -[3(11+1) + 3(11-1)\\cot 45^\\circ] = -66 \\;;\\; c_0 = \\sigma_d^2 + \\omega_d^2 = 3^2 + 3^2 = 18 \\;;\\; c_2 z_c^2 + c_1 z_c + c_0 = 0 \\implies 11 z_c^2 - 66 z_c + 18 = 0 \\;;\\; \\Delta = c_1^2 - 4 c_2 c_0 = (-66)^2 - 4\\cdot 11\\cdot 18 = 3564 \\;(\\sqrt{\\Delta} = 59{,}70) \\;;\\; z_c = \\frac{-c_1 + \\sqrt{\\Delta}}{2 c_2} = \\frac{66 + 59{,}70}{2\\cdot 11} = \\mathbf{5{,}714} \\;;\\; p_c = r\\cdot z_c = 11\\cdot 5{,}714 = \\mathbf{62{,}85}'
       },
       {
         title: '4. Passo 5 — Método da Condição de Módulo para $K_c$ (Passo a Passo)',
         description:
-          'Pela condição de módulo $|K_c \\bar{G}_c(s_d) L(s_d)| = 1$, isolamos $K_c = \\frac{1}{|\\bar{G}_c(s_d)L(s_d)|}$ e calculamos cada distância euclidiana no plano $s$ por $|a + jb| = \\sqrt{a^2 + b^2}$:',
+          'Pela condição de módulo $|K_c \\bar{G}_c(s_d) L(s_d)| = 1$, isolamos $K_c$ e aplicamos $|a+jb| = \\sqrt{a^2+b^2}$:',
         latex:
-          'K_c = \\frac{1}{\\left|\\frac{s_d+5{,}714}{(s_d+62{,}85)s_d(s_d+3)}\\right|} = \\frac{|s_d+62{,}85|\\cdot|s_d|\\cdot|s_d+3|}{|s_d+5{,}714|} = \\frac{|-3+j3+62{,}85|\\cdot|-3+j3|\\cdot|-3+j3+3|}{|-3+j3+5{,}714|} \\;;\\; K_c = \\frac{|59{,}85+j3|\\cdot|-3+j3|\\cdot|j3|}{|2{,}714+j3|} = \\frac{\\sqrt{59{,}85^2+3^2}\\cdot\\sqrt{(-3)^2+3^2}\\cdot 3}{\\sqrt{2{,}714^2+3^2}} \\;;\\; K_c = \\frac{59{,}925 \\cdot 4{,}2426 \\cdot 3}{4{,}0455} = \\frac{762{,}72}{4{,}0455} \\approx \\mathbf{188{,}5} \\;;\\; \\mathbf{G_c(s) = 188{,}5\\frac{s+5{,}714}{s+62{,}85}}'
+          'K_c = \\frac{1}{|\\bar{G}_c(s_d)L(s_d)|} = \\frac{|s_d+p_c|\\cdot|s_d|\\cdot|s_d+3|}{|s_d+z_c|} = \\frac{|-3+j3+62{,}85|\\cdot|-3+j3|\\cdot|-3+j3+3|}{|-3+j3+5{,}714|} \\;;\\; K_c = \\frac{|59{,}85+j3|\\cdot|-3+j3|\\cdot|j3|}{|2{,}714+j3|} = \\frac{\\sqrt{59{,}85^2+3^2}\\cdot\\sqrt{(-3)^2+3^2}\\cdot 3}{\\sqrt{2{,}714^2+3^2}} \\;;\\; K_c = \\frac{59{,}925 \\cdot 4{,}2426 \\cdot 3}{4{,}0455} = \\frac{762{,}72}{4{,}0455} \\approx \\mathbf{188{,}5} \\;;\\; \\mathbf{G_c(s) = 188{,}5\\frac{s+5{,}714}{s+62{,}85}}'
       },
       {
-        title: '5. Passo 6 — Conversão para $(K_p, T_d, K_d)$ e Fatoração em Malha Fechada',
+        title: '5. Passo 6 — Equações para $(K_p, T_d, K_d)$ e Fatoração em Malha Fechada',
         description:
-          'Comparando $G_c(s) = K_c\\frac{s+z_c}{s+p_c}$ com a forma paralela filtrada $K_p\\left(1 + \\frac{Ns}{s+N/T_d}\\right)$, obtemos $K_p = K_c/r$, $T_d = N/p_c$ e $K_d = K_p T_d$. Expandindo $1 + G_c(s)L(s) = 0$ temos $s^3 + (3+p_c)s^2 + (3p_c+K_c)s + K_c z_c = 0$: como a soma das raízes é $-(3+p_c) = -65{,}85$ e duas raízes são $-3 \\pm j3$ (soma $-6$), o 3º polo rápido é $-65{,}85 - (-6) = -59{,}85$ ($20\\times$ mais rápido que $\\sigma_d = 3$). Sem pré-filtro $M_p = 7{,}0\\%$ ($t_p = 0{,}79\\text{ s}$) devido ao zero em $-5{,}714$; aplicando o pré-filtro $F(s) = \\frac{5{,}714}{s+5{,}714}$ na referência, cancela-se esse zero e recupera-se $M_p = 4{,}3\\%$ ($t_p = 1{,}06\\text{ s}$):',
+          'Comparando $G_c(s) = K_c\\frac{s+z_c}{s+p_c}$ com $K_p\\left(1 + \\frac{Ns}{s+N/T_d}\\right)$ e usando a soma das raízes de $s(s+3)(s+p_c) + K_c(s+z_c) = 0$. Sem pré-filtro $M_p = 7{,}0\\%$ ($t_p = 0{,}79\\text{ s}$); com pré-filtro $F(s) = \\frac{z_c}{s+z_c}$: $M_p = 4{,}3\\%$ ($t_p = 1{,}06\\text{ s}$):',
         latex:
-          'K_p = \\frac{K_c}{r} = \\frac{188{,}5}{11} = 17{,}14 \\;;\\; T_d = \\frac{N}{p_c} = \\frac{10}{62{,}85} = 0{,}159\\text{ s} \\;;\\; K_d = K_p T_d = 2{,}73 \\;;\\; s^3 + 65{,}85s^2 + 377{,}1s + 1077{,}3 = (s^2+6s+18)(s+59{,}85) = 0'
+          'K_p = \\frac{K_c}{r} = \\frac{188{,}5}{11} = 17{,}14 \\;;\\; T_d = \\frac{N}{p_c} = \\frac{10}{62{,}85} = 0{,}159\\text{ s} \\;;\\; K_d = K_p T_d = 17{,}14\\cdot 0{,}159 = 2{,}73 \\;;\\; p_3 = -(3 + p_c) - (-2\\sigma_d) = -(3 + 62{,}85) + 6 = -59{,}85 \\;;\\; s^3 + 65{,}85s^2 + 377{,}1s + 1077{,}3 = (s^2+6s+18)(s+59{,}85) = 0'
       },
       {
         title: '6. Regra dos 10 V (E9) e Erro em Regime Permanente (E10) — Slide 26',
         description:
-          'Pelo Teorema do Valor Inicial, um degrau de erro $\\Delta e$ gera impulso inicial de controle $u(0^+) = \\lim_{s\\to\\infty} G_c(s)\\Delta e = K_c\\Delta e = 188{,}5\\Delta e$; sem pré-filtro, o amp-op ($\\pm 10\\text{ V}$) satura para $\\Delta e > 0{,}053\\text{ V}$. Com $F(s)$, o pico simulado cai para $15{,}3\\Delta e$, aumentando em $12\\times$ a faixa linear ($\\Delta e \\le 0{,}65\\text{ V}$). Para o erro em regime, avaliamos $K_{\\text{vel}} = \\lim_{s\\to 0} s G_c(s) L(s) = G_c(0)\\lim_{s\\to 0} s L(s) = K_p \\cdot \\frac{1}{3}$:',
+          'Teorema do Valor Inicial para o pico de controle $u(0^+)$ e constante de erro de velocidade $K_{\\text{vel}}$ para rampa unitária:',
         latex:
-          'u(0^+) = K_c\\Delta e = 188{,}5\\,\\Delta e \\implies \\Delta e \\le \\frac{10}{188{,}5} = 0{,}053\\text{ V} \\;;\\; \\text{com } F(s):\\; u_{\\text{pico}} = 15{,}3\\,\\Delta e \\implies \\Delta e \\le \\frac{10}{15{,}3} = \\mathbf{0{,}65\\text{ V}} \\;;\\; K_{\\text{vel}} = 17{,}14 \\cdot \\frac{1}{3} = 5{,}71 \\;;\\; e_{ss,\\text{rampa}} = \\frac{1}{5{,}71} = \\mathbf{0{,}175\\text{ V}} \\;;\\; e_{ss,\\text{degrau}} = 0'
+          'u(0^+) = \\lim_{s\\to\\infty} s\\,G_c(s)\\frac{\\Delta e}{s} = K_c\\Delta e = 188{,}5\\,\\Delta e \\implies \\Delta e \\le \\frac{10}{K_c} = \\frac{10}{188{,}5} = 0{,}053\\text{ V} \\;;\\; \\text{com } F(s):\\; u_{\\text{pico}} = 15{,}3\\,\\Delta e \\implies \\Delta e \\le \\frac{10}{15{,}3} = \\mathbf{0{,}65\\text{ V}} \\;;\\; K_{\\text{vel}} = \\lim_{s\\to 0} s\\,G_c(s)L(s) = K_p\\lim_{s\\to 0}\\frac{1}{s+3} = \\frac{17{,}14}{3} = 5{,}71 \\;;\\; e_{ss,\\text{rampa}} = \\frac{1}{K_{\\text{vel}}} = \\frac{1}{5{,}71} = \\mathbf{0{,}175\\text{ V}} \\;;\\; e_{ss,\\text{degrau}} = 0'
       },
       {
         title: '7. Método de Síntese Analógica com Amp-Op (E11 e E12) — Slides 27–28',
         description:
-          'No estágio inversor com $Z_1 = R_1\\parallel C_1$ na entrada e $Z_2 = R_2\\parallel C_2$ na realimentação, a função de transferência é $\\frac{Z_2(s)}{Z_1(s)} = \\frac{C_1}{C_2}\\cdot\\frac{s + 1/(R_1 C_1)}{s + 1/(R_2 C_2)}$. Igualando termo a termo a $K_c\\frac{s+z_c}{s+p_c}$ e escolhendo $C_1 = 10\\,\\mu\\text{F}$, determinamos $R_1$, $R_2$ e $C_2$ (seguidos de inversor unitário de $10\\text{ k}\\Omega$ e subtrator $e = r - y$). Valores comerciais (E96): $R_1 = 17{,}4\\text{ k}\\Omega$, $R_2 = 301\\text{ k}\\Omega$ e $C_2 = 47\\text{ nF}\\parallel 6{,}8\\text{ nF} = 53{,}8\\text{ nF}$ ($z_c = 5{,}75$, $p_c = 61{,}75$, $K_p = 17{,}3$, desvios $< 2\\%$):',
+          'Da razão de impedâncias $\\frac{Z_2(s)}{Z_1(s)} = \\frac{C_1}{C_2}\\frac{s + 1/(R_1 C_1)}{s + 1/(R_2 C_2)} = K_c\\frac{s+z_c}{s+p_c}$, escolhendo $C_1 = 10\\,\\mu\\text{F}$ (com valores comerciais E96: $R_1 = 17{,}4\\text{ k}\\Omega$, $R_2 = 301\\text{ k}\\Omega$, $C_2 = 47\\text{ nF}\\parallel 6{,}8\\text{ nF} = 53{,}8\\text{ nF}$, desvios $<2\\%$):',
         latex:
-          'R_1 = \\frac{1}{z_c C_1} = \\frac{1}{5{,}714\\cdot 10^{-5}} = \\mathbf{17{,}5\\text{ k}\\Omega} \\;;\\; R_2 = K_p R_1 = 17{,}14\\cdot 17{,}5\\text{ k}\\Omega = \\mathbf{300\\text{ k}\\Omega} \\;;\\; C_2 = \\frac{1}{p_c R_2} = \\frac{1}{62{,}85\\cdot 300\\cdot 10^3} = \\mathbf{53{,}0\\text{ nF}} \\;;\\; \\frac{C_1}{C_2} = \\frac{10\\,\\mu\\text{F}}{53{,}0\\text{ nF}} = 188{,}5 = K_c \\;;\\; \\frac{\\text{GBW}}{K_c} = \\frac{1\\text{ MHz}}{188{,}5} = 5{,}3\\text{ kHz} \\gg \\frac{p_c}{2\\pi} = 10\\text{ Hz}'
+          'R_1 = \\frac{1}{z_c C_1} = \\frac{1}{5{,}714\\cdot 10^{-5}} = \\mathbf{17{,}5\\text{ k}\\Omega} \\;;\\; R_2 = K_p R_1 = 17{,}14\\cdot 17{,}5\\text{ k}\\Omega = \\mathbf{300\\text{ k}\\Omega} \\;;\\; C_2 = \\frac{1}{p_c R_2} = \\frac{1}{62{,}85\\cdot 300\\cdot 10^3} = \\mathbf{53{,}0\\text{ nF}} \\;;\\; K_c = \\frac{C_1}{C_2} = \\frac{10\\,\\mu\\text{F}}{53{,}0\\text{ nF}} = 188{,}5 \\;;\\; f_{\\text{disp}} = \\frac{\\text{GBW}}{K_c} = \\frac{1\\text{ MHz}}{188{,}5} = 5{,}3\\text{ kHz} \\gg f_p = \\frac{p_c}{2\\pi} = \\frac{62{,}85}{6{,}283} = 10\\text{ Hz}'
       }
     ],
     scilabCode: `// Slide 02 - PD Real (N=10): L(s) = 1/(s(s+3)), sd = -3+j3
@@ -1305,37 +1305,37 @@ xgrid();`
       {
         title: '1. Polo Desejado $s_d$ e Método da Deficiência Angular ($\\theta_{\\text{def}}$)',
         description:
-          'A partir de $\\zeta = 0{,}707$ e $\\omega_d = 3\\text{ rad/s}$, obtemos $\\sigma_d = \\frac{\\zeta\\omega_d}{\\sqrt{1-\\zeta^2}} = 3$ e $s_d = -3 + j3$. Para $L(s) = \\frac{1}{s(s+3)}$, os vetores dos polos $0$ e $-3$ até $s_d$ são $-3+j3$ (2º quadrante: $180^\\circ - \\arctan(3/3) = 135^\\circ$) e $j3$ ($90^\\circ$). Pela condição de ângulo do LGR ($\\angle G_c + \\angle L = -180^\\circ$):',
+          'Calculando $\\sigma_d$ a partir de $\\zeta = 0{,}707$ e $\\omega_d = 3\\text{ rad/s}$, e aplicando a condição de ângulo do LGR $\\angle G_c(s_d) + \\angle L(s_d) = -180^\\circ$:',
         latex:
-          '\\theta_1 = 180^\\circ - \\arctan(1) = 135^\\circ \\;;\\; \\theta_2 = 90^\\circ \\;;\\; \\angle L(s_d) = -(135^\\circ + 90^\\circ) = -225^\\circ \\implies \\theta_{\\text{def}} = -180^\\circ - (-225^\\circ) = \\mathbf{+45{,}0^\\circ}'
+          '\\sigma_d = \\frac{\\zeta\\omega_d}{\\sqrt{1-\\zeta^2}} = \\frac{0{,}707\\cdot 3}{0{,}707} = 3 \\implies s_d = -\\sigma_d + j\\omega_d = -3 + j3 \\;;\\; \\theta_1 = 180^\\circ - \\arctan\\left(\\frac{3}{3}\\right) = 135^\\circ \\;;\\; \\theta_2 = \\operatorname{atan2}(3, 0) = 90^\\circ \\;;\\; \\angle L(s_d) = -(135^\\circ + 90^\\circ) = -225^\\circ \\;;\\; \\theta_{\\text{def}} = -180^\\circ - \\angle L(s_d) = -180^\\circ - (-225^\\circ) = \\mathbf{+45{,}0^\\circ}'
       },
       {
-        title: '2. Derivação do Polinômio em $z_c$ para $N = 8$ ($r = N + 1 = 9$)',
+        title: '2. Equações do Polinômio em $z_c$ para $N = 8$ ($r = N + 1$)',
         description:
-          'Impondo $\\angle(s_d + z_c) - \\angle(s_d + r z_c) = \\varphi = 45^\\circ$ ($\\cot 45^\\circ = 1$), aplicamos as fórmulas do método: $c_2 = r = 9$, $c_1 = -[\\sigma_d(r+1) + \\omega_d(r-1)\\cot\\varphi] = -[3\\cdot 10 + 3\\cdot 8\\cdot 1] = -54{,}0$ e $c_0 = \\sigma_d^2 + \\omega_d^2 = 18$. Resolvemos por Bhaskara e escolhemos a maior raiz (evitando um zero lento em $0{,}354$):',
+          'Com $\\varphi = 45^\\circ$ e $p_c = r z_c$, substituímos $\\sigma_d = 3$, $\\omega_d = 3$ e $r = 9$ nas equações do polinômio e resolvemos por Bhaskara (descarta-se $0{,}354$ para evitar zero lento):',
         latex:
-          '9z_c^2 - 54{,}0 z_c + 18 = 0 \\implies \\Delta = (-54)^2 - 4\\cdot 9\\cdot 18 = 2916 - 648 = 2268 \\;(\\sqrt{\\Delta} = 47{,}62) \\;;\\; z_c = \\frac{54{,}0 + 47{,}62}{2\\cdot 9} = \\mathbf{5{,}646} \\;;\\; p_c = 9\\cdot 5{,}646 = \\mathbf{50{,}81}'
+          'r = N + 1 = 8 + 1 = 9 \\;;\\; c_2 = r = 9 \\;;\\; c_1 = -[\\sigma_d(r+1) + \\omega_d(r-1)\\cot\\varphi] = -[3(9+1) + 3(9-1)\\cot 45^\\circ] = -54{,}0 \\;;\\; c_0 = \\sigma_d^2 + \\omega_d^2 = 3^2 + 3^2 = 18 \\;;\\; c_2 z_c^2 + c_1 z_c + c_0 = 0 \\implies 9z_c^2 - 54{,}0 z_c + 18 = 0 \\;;\\; \\Delta = c_1^2 - 4 c_2 c_0 = (-54)^2 - 4\\cdot 9\\cdot 18 = 2268 \\;(\\sqrt{\\Delta} = 47{,}62) \\;;\\; z_c = \\frac{-c_1 + \\sqrt{\\Delta}}{2 c_2} = \\frac{54{,}0 + 47{,}62}{2\\cdot 9} = \\mathbf{5{,}646} \\;;\\; p_c = r\\cdot z_c = 9\\cdot 5{,}646 = \\mathbf{50{,}81}'
       },
       {
         title: '3. Método da Condição de Módulo para o Ganho $K_c$',
         description:
-          'Isolando $K_c$ em $|K_c \\bar{G}_c(s_d)L(s_d)| = 1$ e calculando cada módulo complexo por $|a+jb| = \\sqrt{a^2+b^2}$:',
+          'Isolando $K_c$ em $|K_c \\bar{G}_c(s_d)L(s_d)| = 1$ e calculando cada módulo $|a+jb| = \\sqrt{a^2+b^2}$:',
         latex:
-          'K_c = \\frac{|s_d+50{,}81|\\cdot|s_d|\\cdot|s_d+3|}{|s_d+5{,}646|} = \\frac{|-3+j3+50{,}81|\\cdot|-3+j3|\\cdot|j3|}{|2{,}646+j3|} = \\frac{\\sqrt{47{,}81^2+3^2}\\cdot\\sqrt{(-3)^2+3^2}\\cdot 3}{\\sqrt{2{,}646^2+3^2}} = \\frac{47{,}906\\cdot 4{,}2426\\cdot 3}{4{,}0000} \\approx \\mathbf{152{,}4} \\;;\\; \\mathbf{G_c(s) = 152{,}4\\frac{s+5{,}646}{s+50{,}81}}'
+          'K_c = \\frac{1}{|\\bar{G}_c(s_d)L(s_d)|} = \\frac{|s_d+p_c|\\cdot|s_d|\\cdot|s_d+3|}{|s_d+z_c|} = \\frac{|-3+j3+50{,}81|\\cdot|-3+j3|\\cdot|j3|}{|2{,}646+j3|} = \\frac{\\sqrt{47{,}81^2+3^2}\\cdot\\sqrt{(-3)^2+3^2}\\cdot 3}{\\sqrt{2{,}646^2+3^2}} = \\frac{47{,}906\\cdot 4{,}2426\\cdot 3}{4{,}0000} \\approx \\mathbf{152{,}4} \\;;\\; \\mathbf{G_c(s) = 152{,}4\\frac{s+5{,}646}{s+50{,}81}}'
       },
       {
-        title: '4. Parâmetros $(K_p, T_d, K_d)$, Polo Rápido de Malha Fechada e Pré-Filtro $F(s)$',
+        title: '4. Equações para $(K_p, T_d, K_d)$, Polo Rápido e Pré-Filtro $F(s)$',
         description:
-          'Usamos $K_p = K_c/r$, $T_d = N/p_c$ e $K_d = K_p T_d$. Pela soma das raízes de $1 + G_c(s)L(s) = 0$, o 3º polo é $p_3 = -(3+p_c) - (-6) = -(53{,}81 - 6) = -47{,}81$. Sem $F(s)$: $M_p = 7{,}1\\%$, $t_p = 0{,}79\\text{ s}$; com $F(s) = \\frac{5{,}646}{s+5{,}646}$: $M_p = 4{,}3\\%$, $t_p = 1{,}07\\text{ s}$:',
+          'Sem $F(s)$: $M_p = 7{,}1\\%$, $t_p = 0{,}79\\text{ s}$; com $F(s) = \\frac{5{,}646}{s+5{,}646}$: $M_p = 4{,}3\\%$, $t_p = 1{,}07\\text{ s}$:',
         latex:
-          'K_p = \\frac{152{,}4}{9} = \\mathbf{16{,}94} \\;;\\; T_d = \\frac{8}{50{,}81} = \\mathbf{0{,}157\\text{ s}} \\;;\\; K_d = 16{,}94\\cdot 0{,}157 = 2{,}67 \\;;\\; \\text{Polos MF: } -3 \\pm j3 \\text{ e } -47{,}81'
+          'K_p = \\frac{K_c}{r} = \\frac{152{,}4}{9} = \\mathbf{16{,}94} \\;;\\; T_d = \\frac{N}{p_c} = \\frac{8}{50{,}81} = \\mathbf{0{,}157\\text{ s}} \\;;\\; K_d = K_p T_d = 16{,}94\\cdot 0{,}157 = 2{,}67 \\;;\\; p_3 = -(3 + p_c) - (-2\\sigma_d) = -(3 + 50{,}81) + 6 = \\mathbf{-47{,}81}'
       },
       {
         title: '5. Regra dos 10 V, Erro à Rampa ($K_{\\text{vel}}$) e Dimensionamento RC ($C_1 = 10\\,\\mu\\text{F}$)',
         description:
-          'Pico de atuação por volt de $\\Delta e$: $u(0^+) = K_c\\Delta e = 152{,}4\\Delta e$ sem filtro ($\\Delta e \\le 0{,}066\\text{ V}$) e $14{,}8\\Delta e$ com $F(s)$ ($\\Delta e \\le 0{,}68\\text{ V}$). Calculando $K_{\\text{vel}} = K_p \\lim_{s\\to 0} s L(s)$ e os componentes a partir de $z_c = 1/(R_1 C_1)$, $K_p = R_2/R_1$ e $p_c = 1/(R_2 C_2)$:',
+          'Pico de atuação por volt de $\\Delta e$: $152{,}4$ (sem $F$) e $14{,}8$ (com $F$). Aplicando as equações de erro em regime e da razão de impedâncias $Z_2(s)/Z_1(s)$:',
         latex:
-          'K_{\\text{vel}} = 16{,}94\\cdot\\frac{1}{3} = 5{,}65 \\;;\\; e_{ss,\\text{rampa}} = \\frac{1}{5{,}65} = 0{,}177\\text{ V} \\;;\\; R_1 = \\frac{1}{5{,}646\\cdot 10^{-5}} = \\mathbf{17{,}7\\text{ k}\\Omega} \\;;\\; R_2 = 16{,}94\\cdot 17{,}7\\text{ k}\\Omega = \\mathbf{300\\text{ k}\\Omega} \\;;\\; C_2 = \\frac{1}{50{,}81\\cdot 300\\cdot 10^3} = \\mathbf{65{,}6\\text{ nF}}'
+          'K_{\\text{vel}} = K_p\\lim_{s\\to 0}\\frac{1}{s+3} = \\frac{16{,}94}{3} = 5{,}65 \\;;\\; e_{ss,\\text{rampa}} = \\frac{1}{K_{\\text{vel}}} = \\frac{1}{5{,}65} = 0{,}177\\text{ V} \\;;\\; R_1 = \\frac{1}{z_c C_1} = \\frac{1}{5{,}646\\cdot 10^{-5}} = \\mathbf{17{,}7\\text{ k}\\Omega} \\;;\\; R_2 = K_p R_1 = 16{,}94\\cdot 17{,}7\\text{ k}\\Omega = \\mathbf{300\\text{ k}\\Omega} \\;;\\; C_2 = \\frac{1}{p_c R_2} = \\frac{1}{50{,}81\\cdot 300\\cdot 10^3} = \\mathbf{65{,}6\\text{ nF}}'
       }
     ],
     scilabCode: `// Slide 31 - Proposto 1: N = 8, L(s) = 1/(s(s+3)), sd = -3+j3
@@ -1375,37 +1375,37 @@ xgrid();`
       {
         title: '1. Polo Desejado $s_d$ e Método da Deficiência Angular ($\\theta_{\\text{def}}$)',
         description:
-          'Com $\\zeta = 0{,}707$ e $\\omega_d = 3\\text{ rad/s}$, $\\sigma_d = 3$ e $s_d = -3 + j3$. Os polos da planta em $0$ e $-3$ contribuem com $\\theta_1 = 180^\\circ - \\arctan(3/3) = 135^\\circ$ e $\\theta_2 = 90^\\circ$. Pela condição de ângulo $\\angle G_c(s_d) + \\angle L(s_d) = -180^\\circ$:',
+          'Calculando $\\sigma_d$ a partir de $\\zeta = 0{,}707$ e $\\omega_d = 3\\text{ rad/s}$, e aplicando $\\angle G_c(s_d) + \\angle L(s_d) = -180^\\circ$:',
         latex:
-          '\\angle L(s_d) = 0^\\circ - (135^\\circ + 90^\\circ) = -225^\\circ \\implies \\theta_{\\text{def}} = -180^\\circ - (-225^\\circ) = \\mathbf{+45{,}0^\\circ}'
+          '\\sigma_d = \\frac{\\zeta\\omega_d}{\\sqrt{1-\\zeta^2}} = \\frac{0{,}707\\cdot 3}{0{,}707} = 3 \\implies s_d = -\\sigma_d + j\\omega_d = -3 + j3 \\;;\\; \\theta_1 = 180^\\circ - \\arctan\\left(\\frac{3}{3}\\right) = 135^\\circ \\;;\\; \\theta_2 = \\operatorname{atan2}(3, 0) = 90^\\circ \\;;\\; \\angle L(s_d) = -(135^\\circ + 90^\\circ) = -225^\\circ \\;;\\; \\theta_{\\text{def}} = -180^\\circ - \\angle L(s_d) = -180^\\circ - (-225^\\circ) = \\mathbf{+45{,}0^\\circ}'
       },
       {
-        title: '2. Derivação do Polinômio em $z_c$ para $N = 12$ ($r = N + 1 = 13$)',
+        title: '2. Equações do Polinômio em $z_c$ para $N = 12$ ($r = N + 1$)',
         description:
-          'Impondo $\\varphi = 45^\\circ$ ($\\cot 45^\\circ = 1$) na equação quadrática do PD Real: $c_2 = r = 13$, $c_1 = -[\\sigma_d(r+1) + \\omega_d(r-1)\\cot\\varphi] = -[3\\cdot 14 + 3\\cdot 12\\cdot 1] = -78{,}0$ e $c_0 = \\sigma_d^2 + \\omega_d^2 = 18$. Resolvendo por Bhaskara e escolhendo a maior raiz (evitando $z_c = 0{,}240$ perto da origem):',
+          'Com $\\varphi = 45^\\circ$ e $p_c = r z_c$, substituímos $\\sigma_d = 3$, $\\omega_d = 3$ e $r = 13$ nas equações do polinômio e resolvemos por Bhaskara (descarta-se $0{,}240$):',
         latex:
-          '13z_c^2 - 78{,}0 z_c + 18 = 0 \\implies \\Delta = (-78)^2 - 4\\cdot 13\\cdot 18 = 6084 - 936 = 5148 \\;(\\sqrt{\\Delta} = 71{,}75) \\;;\\; z_c = \\frac{78{,}0 + 71{,}75}{2\\cdot 13} = \\mathbf{5{,}760} \\;;\\; p_c = 13\\cdot 5{,}760 = \\mathbf{74{,}87}'
+          'r = N + 1 = 12 + 1 = 13 \\;;\\; c_2 = r = 13 \\;;\\; c_1 = -[\\sigma_d(r+1) + \\omega_d(r-1)\\cot\\varphi] = -[3(13+1) + 3(13-1)\\cot 45^\\circ] = -78{,}0 \\;;\\; c_0 = \\sigma_d^2 + \\omega_d^2 = 3^2 + 3^2 = 18 \\;;\\; c_2 z_c^2 + c_1 z_c + c_0 = 0 \\implies 13z_c^2 - 78{,}0 z_c + 18 = 0 \\;;\\; \\Delta = c_1^2 - 4 c_2 c_0 = (-78)^2 - 4\\cdot 13\\cdot 18 = 5148 \\;(\\sqrt{\\Delta} = 71{,}75) \\;;\\; z_c = \\frac{-c_1 + \\sqrt{\\Delta}}{2 c_2} = \\frac{78{,}0 + 71{,}75}{2\\cdot 13} = \\mathbf{5{,}760} \\;;\\; p_c = r\\cdot z_c = 13\\cdot 5{,}760 = \\mathbf{74{,}87}'
       },
       {
         title: '3. Método da Condição de Módulo para o Ganho $K_c$',
         description:
-          'Isolando $K_c$ em $|K_c \\bar{G}_c(s_d) L(s_d)| = 1$ e calculando cada distância $|a+jb| = \\sqrt{a^2+b^2}$:',
+          'Isolando $K_c$ em $|K_c \\bar{G}_c(s_d) L(s_d)| = 1$ e calculando $|a+jb| = \\sqrt{a^2+b^2}$:',
         latex:
-          'K_c = \\frac{|s_d+74{,}87|\\cdot|s_d|\\cdot|s_d+3|}{|s_d+5{,}760|} = \\frac{|-3+j3+74{,}87|\\cdot|-3+j3|\\cdot|j3|}{|2{,}760+j3|} = \\frac{\\sqrt{71{,}87^2+3^2}\\cdot\\sqrt{(-3)^2+3^2}\\cdot 3}{\\sqrt{2{,}760^2+3^2}} = \\frac{71{,}937\\cdot 4{,}2426\\cdot 3}{4{,}0762} \\approx \\mathbf{224{,}6} \\;;\\; \\mathbf{G_c(s) = 224{,}6\\frac{s+5{,}760}{s+74{,}87}}'
+          'K_c = \\frac{1}{|\\bar{G}_c(s_d)L(s_d)|} = \\frac{|s_d+p_c|\\cdot|s_d|\\cdot|s_d+3|}{|s_d+z_c|} = \\frac{|-3+j3+74{,}87|\\cdot|-3+j3|\\cdot|j3|}{|2{,}760+j3|} = \\frac{\\sqrt{71{,}87^2+3^2}\\cdot\\sqrt{(-3)^2+3^2}\\cdot 3}{\\sqrt{2{,}760^2+3^2}} = \\frac{71{,}937\\cdot 4{,}2426\\cdot 3}{4{,}0762} \\approx \\mathbf{224{,}6} \\;;\\; \\mathbf{G_c(s) = 224{,}6\\frac{s+5{,}760}{s+74{,}87}}'
       },
       {
-        title: '4. Parâmetros $(K_p, T_d, K_d)$, Polo Rápido de Malha Fechada e Pré-Filtro $F(s)$',
+        title: '4. Equações para $(K_p, T_d, K_d)$, Polo Rápido e Pré-Filtro $F(s)$',
         description:
-          'Calculando $K_p = K_c/r$, $T_d = N/p_c$ e $K_d = K_p T_d$. Pela soma dos polos de $1 + G_c(s)L(s) = 0$, $p_3 = -(3+p_c) - (-6) = -(77{,}87 - 6) = -71{,}87$. Sem $F(s)$: $M_p = 7{,}0\\%$, $t_p = 0{,}79\\text{ s}$; com $F(s) = \\frac{5{,}760}{s+5{,}760}$: $M_p = 4{,}3\\%$, $t_p = 1{,}06\\text{ s}$:',
+          'Sem $F(s)$: $M_p = 7{,}0\\%$, $t_p = 0{,}79\\text{ s}$; com $F(s) = \\frac{5{,}760}{s+5{,}760}$: $M_p = 4{,}3\\%$, $t_p = 1{,}06\\text{ s}$:',
         latex:
-          'K_p = \\frac{224{,}6}{13} = \\mathbf{17{,}28} \\;;\\; T_d = \\frac{12}{74{,}87} = \\mathbf{0{,}160\\text{ s}} \\;;\\; K_d = 17{,}28\\cdot 0{,}160 = 2{,}77 \\;;\\; \\text{Polos MF: } -3 \\pm j3 \\text{ e } -71{,}87'
+          'K_p = \\frac{K_c}{r} = \\frac{224{,}6}{13} = \\mathbf{17{,}28} \\;;\\; T_d = \\frac{N}{p_c} = \\frac{12}{74{,}87} = \\mathbf{0{,}160\\text{ s}} \\;;\\; K_d = K_p T_d = 17{,}28\\cdot 0{,}160 = 2{,}77 \\;;\\; p_3 = -(3 + p_c) - (-2\\sigma_d) = -(3 + 74{,}87) + 6 = \\mathbf{-71{,}87}'
       },
       {
         title: '5. Regra dos 10 V, Erro à Rampa ($K_{\\text{vel}}$) e Dimensionamento RC ($C_1 = 10\\,\\mu\\text{F}$)',
         description:
-          'Pico de atuação por volt de $\\Delta e$: $u(0^+) = 224{,}6\\Delta e$ sem filtro ($\\Delta e \\le 0{,}045\\text{ V}$) e $15{,}6\\Delta e$ com $F(s)$ ($\\Delta e \\le 0{,}64\\text{ V}$). Calculando $K_{\\text{vel}} = K_p \\lim_{s\\to 0} s L(s)$ e os componentes via $z_c = 1/(R_1 C_1)$, $K_p = R_2/R_1$ e $p_c = 1/(R_2 C_2)$:',
+          'Pico de atuação por volt de $\\Delta e$: $224{,}6$ (sem $F$) e $15{,}6$ (com $F$). Aplicando as equações de erro em regime e da razão de impedâncias $Z_2(s)/Z_1(s)$:',
         latex:
-          'K_{\\text{vel}} = 17{,}28\\cdot\\frac{1}{3} = 5{,}76 \\;;\\; e_{ss,\\text{rampa}} = \\frac{1}{5{,}76} = 0{,}174\\text{ V} \\;;\\; R_1 = \\frac{1}{5{,}760\\cdot 10^{-5}} = \\mathbf{17{,}4\\text{ k}\\Omega} \\;;\\; R_2 = 17{,}28\\cdot 17{,}4\\text{ k}\\Omega = \\mathbf{300\\text{ k}\\Omega} \\;;\\; C_2 = \\frac{1}{74{,}87\\cdot 300\\cdot 10^3} = \\mathbf{44{,}5\\text{ nF}}'
+          'K_{\\text{vel}} = K_p\\lim_{s\\to 0}\\frac{1}{s+3} = \\frac{17{,}28}{3} = 5{,}76 \\;;\\; e_{ss,\\text{rampa}} = \\frac{1}{K_{\\text{vel}}} = \\frac{1}{5{,}76} = 0{,}174\\text{ V} \\;;\\; R_1 = \\frac{1}{z_c C_1} = \\frac{1}{5{,}760\\cdot 10^{-5}} = \\mathbf{17{,}4\\text{ k}\\Omega} \\;;\\; R_2 = K_p R_1 = 17{,}28\\cdot 17{,}4\\text{ k}\\Omega = \\mathbf{300\\text{ k}\\Omega} \\;;\\; C_2 = \\frac{1}{p_c R_2} = \\frac{1}{74{,}87\\cdot 300\\cdot 10^3} = \\mathbf{44{,}5\\text{ nF}}'
       }
     ],
     scilabCode: `// Slide 31 - Proposto 2: N = 12, L(s) = 1/(s(s+3)), sd = -3+j3
@@ -1445,37 +1445,37 @@ xgrid();`
       {
         title: '1. Polo Desejado $s_d = -2 + j2$ e Método da Deficiência Angular ($\\theta_{\\text{def}}$)',
         description:
-          'Com $\\zeta = 0{,}707$ e $\\omega_d = 2\\text{ rad/s}$, $\\sigma_d = 2$ e $s_d = -2 + j2$. Traçamos os vetores dos polos $0$ e $-3$ até $s_d$: $s_d - 0 = -2 + j2$ (2º quadrante: $180^\\circ - \\arctan(2/2) = 135^\\circ$) e $s_d - (-3) = 1 + j2$ (1º quadrante: $\\arctan(2/1) = 63{,}43^\\circ$). Pela condição de ângulo $\\angle G_c(s_d) + \\angle L(s_d) = -180^\\circ$:',
+          'Calculando $\\sigma_d$ a partir de $\\zeta = 0{,}707$ e $\\omega_d = 2\\text{ rad/s}$, e aplicando $\\angle G_c(s_d) + \\angle L(s_d) = -180^\\circ$:',
         latex:
-          '\\theta_1 = 180^\\circ - 45^\\circ = 135^\\circ \\;;\\; \\theta_2 = \\arctan(2) = 63{,}43^\\circ \\;;\\; \\angle L(s_d) = -(135^\\circ + 63{,}43^\\circ) = -198{,}43^\\circ \\implies \\theta_{\\text{def}} = -180^\\circ - (-198{,}43^\\circ) = \\mathbf{+18{,}4^\\circ}'
+          '\\sigma_d = \\frac{\\zeta\\omega_d}{\\sqrt{1-\\zeta^2}} = \\frac{0{,}707\\cdot 2}{0{,}707} = 2 \\implies s_d = -\\sigma_d + j\\omega_d = -2 + j2 \\;;\\; \\theta_1 = 180^\\circ - \\arctan\\left(\\frac{2}{2}\\right) = 135^\\circ \\;;\\; \\theta_2 = \\arctan\\left(\\frac{2}{3-2}\\right) = 63{,}43^\\circ \\;;\\; \\angle L(s_d) = -(135^\\circ + 63{,}43^\\circ) = -198{,}43^\\circ \\;;\\; \\theta_{\\text{def}} = -180^\\circ - \\angle L(s_d) = -180^\\circ - (-198{,}43^\\circ) = \\mathbf{+18{,}4^\\circ}'
       },
       {
-        title: '2. Derivação do Polinômio em $z_c$ para $N = 10$ ($r = 11$, $\\cot 18{,}43^\\circ = 3$)',
+        title: '2. Equações do Polinômio em $z_c$ para $N = 10$ ($r = N + 1$, $\\cot 18{,}43^\\circ = 3$)',
         description:
-          'Como $\\tan\\theta_{\\text{def}} = 1/3$, temos $\\cot\\varphi = 3$. Aplicando as fórmulas do polinômio com $\\sigma_d = 2$, $\\omega_d = 2$ e $r = 11$: $c_2 = 11$, $c_1 = -[2\\cdot 12 + 2\\cdot 10\\cdot 3] = -84{,}0$ e $c_0 = 2^2 + 2^2 = 8$. Resolvendo por Bhaskara e escolhendo a maior raiz (evitando $z_c = 0{,}096$ perto da origem):',
+          'Substituindo $\\sigma_d = 2$, $\\omega_d = 2$, $r = 11$ e $\\cot\\varphi = 3$ nas equações do polinômio e resolvendo por Bhaskara (descarta-se $0{,}096$):',
         latex:
-          '11z_c^2 - 84{,}0 z_c + 8 = 0 \\implies \\Delta = (-84)^2 - 4\\cdot 11\\cdot 8 = 7056 - 352 = 6704 \\;(\\sqrt{\\Delta} = 81{,}88) \\;;\\; z_c = \\frac{84{,}0 + 81{,}88}{2\\cdot 11} = \\mathbf{7{,}540} \\;;\\; p_c = 11\\cdot 7{,}540 = \\mathbf{82{,}94}'
+          'r = N + 1 = 10 + 1 = 11 \\;;\\; c_2 = r = 11 \\;;\\; c_1 = -[\\sigma_d(r+1) + \\omega_d(r-1)\\cot\\varphi] = -[2(11+1) + 2(11-1)\\cdot 3] = -84{,}0 \\;;\\; c_0 = \\sigma_d^2 + \\omega_d^2 = 2^2 + 2^2 = 8 \\;;\\; c_2 z_c^2 + c_1 z_c + c_0 = 0 \\implies 11z_c^2 - 84{,}0 z_c + 8 = 0 \\;;\\; \\Delta = c_1^2 - 4 c_2 c_0 = (-84)^2 - 4\\cdot 11\\cdot 8 = 6704 \\;(\\sqrt{\\Delta} = 81{,}88) \\;;\\; z_c = \\frac{-c_1 + \\sqrt{\\Delta}}{2 c_2} = \\frac{84{,}0 + 81{,}88}{2\\cdot 11} = \\mathbf{7{,}540} \\;;\\; p_c = r\\cdot z_c = 11\\cdot 7{,}540 = \\mathbf{82{,}94}'
       },
       {
         title: '3. Método da Condição de Módulo para o Ganho $K_c$',
         description:
-          'Isolando $K_c$ em $|K_c \\bar{G}_c(s_d) L(s_d)| = 1$ e calculando cada distância $|a+jb| = \\sqrt{a^2+b^2}$:',
+          'Isolando $K_c$ em $|K_c \\bar{G}_c(s_d) L(s_d)| = 1$ e calculando $|a+jb| = \\sqrt{a^2+b^2}$:',
         latex:
-          'K_c = \\frac{|s_d+82{,}94|\\cdot|s_d|\\cdot|s_d+3|}{|s_d+7{,}540|} = \\frac{|-2+j2+82{,}94|\\cdot|-2+j2|\\cdot|1+j2|}{|5{,}540+j2|} = \\frac{\\sqrt{80{,}94^2+2^2}\\cdot\\sqrt{(-2)^2+2^2}\\cdot\\sqrt{1^2+2^2}}{\\sqrt{5{,}540^2+2^2}} = \\frac{80{,}964\\cdot 2{,}8284\\cdot 2{,}2361}{5{,}8899} \\approx \\mathbf{86{,}9} \\;;\\; \\mathbf{G_c(s) = 86{,}9\\frac{s+7{,}540}{s+82{,}94}}'
+          'K_c = \\frac{1}{|\\bar{G}_c(s_d)L(s_d)|} = \\frac{|s_d+p_c|\\cdot|s_d|\\cdot|s_d+3|}{|s_d+z_c|} = \\frac{|-2+j2+82{,}94|\\cdot|-2+j2|\\cdot|1+j2|}{|5{,}540+j2|} = \\frac{\\sqrt{80{,}94^2+2^2}\\cdot\\sqrt{(-2)^2+2^2}\\cdot\\sqrt{1^2+2^2}}{\\sqrt{5{,}540^2+2^2}} = \\frac{80{,}964\\cdot 2{,}8284\\cdot 2{,}2361}{5{,}8899} \\approx \\mathbf{86{,}9} \\;;\\; \\mathbf{G_c(s) = 86{,}9\\frac{s+7{,}540}{s+82{,}94}}'
       },
       {
-        title: '4. Parâmetros $(K_p, T_d, K_d)$, Polo Rápido de Malha Fechada e Pré-Filtro $F(s)$',
+        title: '4. Equações para $(K_p, T_d, K_d)$, Polo Rápido e Pré-Filtro $F(s)$',
         description:
-          'Calculando $K_p = K_c/r$, $T_d = N/p_c$ e $K_d = K_p T_d$. Pela soma dos polos de $1 + G_c(s)L(s) = 0$, $p_3 = -(3+p_c) - (-4) = -(85{,}94 - 4) = -81{,}94$. Sem $F(s)$: $M_p = 4{,}8\\%$, $t_p = 1{,}41\\text{ s}$; com $F(s) = \\frac{7{,}540}{s+7{,}540}$: $M_p = 4{,}3\\%$, $t_p = 1{,}58\\text{ s}$:',
+          'Sem $F(s)$: $M_p = 4{,}8\\%$, $t_p = 1{,}41\\text{ s}$; com $F(s) = \\frac{7{,}540}{s+7{,}540}$: $M_p = 4{,}3\\%$, $t_p = 1{,}58\\text{ s}$:',
         latex:
-          'K_p = \\frac{86{,}9}{11} = \\mathbf{7{,}90} \\;;\\; T_d = \\frac{10}{82{,}94} = \\mathbf{0{,}121\\text{ s}} \\;;\\; K_d = 7{,}90\\cdot 0{,}121 = 0{,}95 \\;;\\; \\text{Polos MF: } -2 \\pm j2 \\text{ e } -81{,}94'
+          'K_p = \\frac{K_c}{r} = \\frac{86{,}9}{11} = \\mathbf{7{,}90} \\;;\\; T_d = \\frac{N}{p_c} = \\frac{10}{82{,}94} = \\mathbf{0{,}121\\text{ s}} \\;;\\; K_d = K_p T_d = 7{,}90\\cdot 0{,}121 = 0{,}95 \\;;\\; p_3 = -(3 + p_c) - (-2\\sigma_d) = -(3 + 82{,}94) + 4 = \\mathbf{-81{,}94}'
       },
       {
         title: '5. Regra dos 10 V, Erro à Rampa ($K_{\\text{vel}}$) e Dimensionamento RC ($C_1 = 10\\,\\mu\\text{F}$)',
         description:
-          'Pico de atuação por volt de $\\Delta e$: $u(0^+) = 86{,}9\\Delta e$ sem filtro ($\\Delta e \\le 0{,}115\\text{ V}$) e apenas $7{,}5\\Delta e$ com $F(s)$ ($\\Delta e \\le 1{,}33\\text{ V}$). Calculando $K_{\\text{vel}} = K_p \\lim_{s\\to 0} s L(s)$ e os componentes via $z_c = 1/(R_1 C_1)$, $K_p = R_2/R_1$ e $p_c = 1/(R_2 C_2)$:',
+          'Pico de atuação por volt de $\\Delta e$: $86{,}9$ (sem $F$) e $7{,}5$ (com $F$). Aplicando as equações de erro em regime e da razão de impedâncias $Z_2(s)/Z_1(s)$:',
         latex:
-          'K_{\\text{vel}} = 7{,}90\\cdot\\frac{1}{3} = 2{,}63 \\;;\\; e_{ss,\\text{rampa}} = \\frac{1}{2{,}63} = 0{,}380\\text{ V} \\;;\\; R_1 = \\frac{1}{7{,}540\\cdot 10^{-5}} = \\mathbf{13{,}3\\text{ k}\\Omega} \\;;\\; R_2 = 7{,}90\\cdot 13{,}3\\text{ k}\\Omega = \\mathbf{105\\text{ k}\\Omega} \\;;\\; C_2 = \\frac{1}{82{,}94\\cdot 105\\cdot 10^3} = \\mathbf{115{,}0\\text{ nF}}'
+          'K_{\\text{vel}} = K_p\\lim_{s\\to 0}\\frac{1}{s+3} = \\frac{7{,}90}{3} = 2{,}63 \\;;\\; e_{ss,\\text{rampa}} = \\frac{1}{K_{\\text{vel}}} = \\frac{1}{2{,}63} = 0{,}380\\text{ V} \\;;\\; R_1 = \\frac{1}{z_c C_1} = \\frac{1}{7{,}540\\cdot 10^{-5}} = \\mathbf{13{,}3\\text{ k}\\Omega} \\;;\\; R_2 = K_p R_1 = 7{,}90\\cdot 13{,}3\\text{ k}\\Omega = \\mathbf{105\\text{ k}\\Omega} \\;;\\; C_2 = \\frac{1}{p_c R_2} = \\frac{1}{82{,}94\\cdot 105\\cdot 10^3} = \\mathbf{115{,}0\\text{ nF}}'
       }
     ],
     scilabCode: `// Slide 31 - Proposto 3: N = 10, L(s) = 1/(s(s+3)), sd = -2+j2
