@@ -33,12 +33,20 @@ import { InteractiveTimeChart } from '@/components/InteractiveTimeChart';
 
 export type SplitPanelMode = 'split' | 'circuit-maximized' | 'calc-maximized';
 
+export interface ReportSectionsConfig {
+  validation: boolean;
+  equations: boolean;
+  graphical: boolean;
+  steadyState: boolean;
+}
+
 interface MasonDeductionViewProps {
   analysis: MasonAnalysis;
   graph?: DiagramGraph;
   inputElement?: DiagramElement | null;
   outputElement?: DiagramElement | null;
   splitMode?: SplitPanelMode;
+  reportSections?: ReportSectionsConfig;
   onChangeSplitMode?: (mode: SplitPanelMode) => void;
   onClose?: () => void;
 }
@@ -85,6 +93,7 @@ export const MasonDeductionView: React.FC<MasonDeductionViewProps> = ({
   inputElement,
   outputElement,
   splitMode = 'split',
+  reportSections = { validation: true, equations: true, graphical: true, steadyState: true },
   onChangeSplitMode,
   onClose
 }) => {
@@ -978,7 +987,7 @@ export const MasonDeductionView: React.FC<MasonDeductionViewProps> = ({
             PAINEL DE VALIDAÇÃO TOPOLÓGICA DO CIRCUITO (ABA 2: MEMORIAL PASSO A PASSO)
             ================================================================= */}
         {resultTab === 'memorial' && (<>
-        {fullSys.validationReport && (
+        {reportSections.validation && fullSys.validationReport && (
           <section
             style={{
               background: 'var(--card-bg)',

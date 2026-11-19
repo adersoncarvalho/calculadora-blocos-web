@@ -207,6 +207,12 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
     dir: 'right' | 'left';
   } | null>(null);
   const [summerEditId, setSummerEditId] = useState<string | null>(null);
+  const [reportSections, setReportSections] = useState({
+    validation: true,
+    equations: true,
+    graphical: true,
+    steadyState: true
+  });
 
   // Redução de Mason e Visualização Dividida (Painel 1: Circuito | Painel 2: Cálculos)
   const [analysisResult, setAnalysisResult] = useState<MasonAnalysis | null>(null);
@@ -834,6 +840,11 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
 
       // Atalhos rápidos estilo PSIM / CAD (sem Ctrl)
       if (!isCtrlOrCmd && !e.altKey) {
+        if (keyLow === 'b') {
+          e.preventDefault();
+          setIsSidebarCollapsed(prev => !prev);
+          return;
+        }
         if (keyLow === 'w') {
           e.preventDefault();
           setActiveTool('connect');
@@ -2192,48 +2203,46 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
   }[] = [
     {
       id: 'select',
-      icon: '↖',
-      label: 'Selecionar / Mover',
-      tooltip: 'Selecionar / Mover: selecione elementos, arraste blocos ou abra caixa de seleção múltipla'
+      icon: '',
+      label: 'Selecionar (V)',
+      tooltip: 'Selecionar / Mover (V): selecione elementos, arraste blocos ou abra caixa de seleção múltipla'
     },
     {
       id: 'pan',
-      icon: '✋',
-      label: 'Mover Tela',
-      tooltip: 'Mover Tela: arraste o fundo da área de trabalho para movimentar a visualização sem deslocar os blocos'
+      icon: '',
+      label: 'Mover Tela (H)',
+      tooltip: 'Mover Tela (H): arraste o fundo da área de trabalho para movimentar a visualização'
     },
     {
       id: 'connect',
-      icon: '🔗',
-      label: 'Criar Conexão',
-      tooltip: 'Criar Conexão: passe o mouse sobre um bloco para exibir os 8 pontos de conexão e interligar elementos'
+      icon: '',
+      label: 'Criar Conexão (W)',
+      tooltip: 'Criar Conexão (W): exibe os pinos de conexão nos elementos para interligar fios'
     },
     {
       id: 'adjust',
-      icon: '✥',
-      label: 'Ajustar Conexão',
-      tooltip: 'Ajustar Conexão: arraste manualmente os segmentos horizontais e verticais ou dobras das linhas na grade de 20px'
+      icon: '',
+      label: 'Ajustar Fio',
+      tooltip: 'Ajustar Fio: arraste manualmente segmentos horizontais/verticais das linhas na grade'
     },
     {
       id: 'polarity',
-      icon: '±',
-      label: 'Configurar Polaridade',
-      tooltip: 'Configurar Polaridade: clique em uma linha conectada a um somador ou no sinal +/- para alternar entre entrada positiva (+) e negativa (−)',
-      accentColor: '#10b981'
+      icon: '',
+      label: 'Polaridade (±)',
+      tooltip: 'Configurar Polaridade: clique em uma linha conectada a um somador para alternar entre + e −'
     },
     {
       id: 'cut',
-      icon: '✂️',
-      label: 'Cortar Conexão',
-      tooltip: 'Cortar Conexão: clique diretamente sobre uma linha de conexão para removê-la sem afetar os blocos',
-      accentColor: '#f59e0b'
+      icon: '',
+      label: 'Cortar Fio',
+      tooltip: 'Cortar Fio: clique diretamente sobre uma linha de conexão para removê-la'
     },
     {
       id: 'delete',
-      icon: '🗑️',
-      label: 'Excluir Elemento',
-      tooltip: 'Excluir Elemento: clique sobre qualquer bloco, somador ou conexão para excluí-lo do diagrama',
-      accentColor: '#ef4444'
+      icon: '',
+      label: 'Excluir',
+      tooltip: 'Excluir: clique sobre qualquer bloco, somador ou conexão para excluí-lo',
+      accentColor: 'var(--danger)'
     }
   ];
 
@@ -2324,10 +2333,10 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
                 type="button"
                 className="filter-btn"
                 onClick={() => setIsSidebarCollapsed(true)}
-                title="Recolher painel esquerdo para ampliar a área de desenho"
-                style={{ padding: '5px 9px', fontSize: '0.75rem', fontWeight: 600 }}
+                title="Ocultar gaveta esquerda para ampliar a área de desenho (Atalho B)"
+                style={{ padding: '5px 10px', fontSize: '0.74rem', fontWeight: 600, borderRadius: '2px', justifyContent: 'center' }}
               >
-                Recolher painel
+                Ocultar Gaveta (B)
               </button>
             </div>
           </div>
@@ -2506,18 +2515,18 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
                   title={tool.tooltip}
                   style={{
                     padding: '7px 8px',
-                    fontSize: '0.76rem',
-                    fontWeight: isActive ? 800 : 600,
+                    fontSize: '0.75rem',
+                    fontWeight: isActive ? 700 : 500,
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '6px',
-                    textAlign: 'left',
-                    background: isActive ? 'rgba(56, 189, 248, 0.16)' : undefined,
+                    justifyContent: 'center',
+                    textAlign: 'center',
+                    borderRadius: '2px',
+                    background: isActive ? 'rgba(30, 58, 95, 0.14)' : undefined,
                     borderColor: isActive ? 'var(--primary)' : undefined,
                     color: isActive ? 'var(--primary)' : tool.accentColor
                   }}
                 >
-                  <span style={{ fontSize: '0.88rem' }}>{tool.icon}</span>
                   <span>{tool.label}</span>
                 </button>
               );
@@ -2535,21 +2544,31 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
               style={{
                 opacity: selectedIds.length === 0 ? 0.45 : 1,
                 padding: '6px 8px',
-                fontSize: '0.75rem',
-                fontWeight: 700
+                fontSize: '0.74rem',
+                fontWeight: 600,
+                borderRadius: '2px',
+                justifyContent: 'center',
+                textAlign: 'center'
               }}
               title="Duplicar (Ctrl+D): duplica o elemento selecionado gerando nova identificação exclusiva"
             >
-              📑 Duplicar (Ctrl+D)
+              Duplicar (Ctrl+D)
             </button>
             <button
               type="button"
               className="filter-btn"
               onClick={handleToggleSign}
-              style={{ padding: '6px 8px', fontSize: '0.75rem', color: 'var(--success)', fontWeight: 700 }}
+              style={{
+                padding: '6px 8px',
+                fontSize: '0.74rem',
+                fontWeight: 600,
+                borderRadius: '2px',
+                justifyContent: 'center',
+                textAlign: 'center'
+              }}
               title="Alternar Sinal (+ / -): inverte o sinal da entrada do somador ou conexão selecionada"
             >
-              ± Sinal (+ / −)
+              Sinal (+ / −)
             </button>
           </div>
 
@@ -2572,70 +2591,70 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
                 data-testid="add-input-r"
                 className="filter-btn"
                 onClick={handleAddInput}
-                style={{ padding: '7px 8px', fontSize: '0.76rem', fontWeight: 700, textAlign: 'left' }}
-                title="Adicionar Entrada R(s): insere um terminal de entrada de referência independente"
+                style={{ padding: '7px 8px', fontSize: '0.75rem', fontWeight: 600, borderRadius: '2px', justifyContent: 'center', textAlign: 'center' }}
+                title="Adicionar Entrada R(s)"
               >
-                ＋ Entrada R(s)
+                + Entrada R(s)
               </button>
               <button
                 type="button"
                 data-testid="add-output-c"
                 className="filter-btn"
                 onClick={handleAddOutput}
-                style={{ padding: '7px 8px', fontSize: '0.76rem', fontWeight: 700, textAlign: 'left' }}
-                title="Adicionar Saída C(s)/Y(s): insere um terminal de saída independente"
+                style={{ padding: '7px 8px', fontSize: '0.75rem', fontWeight: 600, borderRadius: '2px', justifyContent: 'center', textAlign: 'center' }}
+                title="Adicionar Saída C(s)/Y(s)"
               >
-                ＋ Saída C(s)
+                + Saída C(s)
               </button>
               <button
                 type="button"
                 data-testid="add-block-g"
                 className="filter-btn"
                 onClick={() => handleAddBlock(false)}
-                style={{ padding: '7px 8px', fontSize: '0.76rem', fontWeight: 700, textAlign: 'left', color: 'var(--primary)' }}
-                title="Adicionar Bloco G(s): insere bloco direto genérico G1(s), G2(s)... sem função predefinida"
+                style={{ padding: '7px 8px', fontSize: '0.75rem', fontWeight: 600, borderRadius: '2px', justifyContent: 'center', textAlign: 'center' }}
+                title="Adicionar Bloco G(s)"
               >
-                ＋ Bloco G(s)
+                + Bloco G(s)
               </button>
               <button
                 type="button"
                 data-testid="add-block-h"
                 className="filter-btn"
                 onClick={() => handleAddBlock(true)}
-                style={{ padding: '7px 8px', fontSize: '0.76rem', fontWeight: 700, textAlign: 'left', color: 'var(--accent)' }}
-                title="Adicionar Bloco H(s): insere bloco de realimentação genérico H1(s), H2(s)... sem função predefinida"
+                style={{ padding: '7px 8px', fontSize: '0.75rem', fontWeight: 600, borderRadius: '2px', justifyContent: 'center', textAlign: 'center' }}
+                title="Adicionar Bloco H(s)"
               >
-                ＋ Bloco H(s)
+                + Bloco H(s)
               </button>
               <button
                 type="button"
                 data-testid="add-disturbance-w"
                 className="filter-btn"
                 onClick={handleAddDisturbance}
-                style={{ padding: '7px 8px', fontSize: '0.76rem', fontWeight: 700, textAlign: 'left', color: '#d97706' }}
-                title="Adicionar Perturbação D(s): insere uma entrada independente de distúrbio externo"
+                style={{ padding: '7px 8px', fontSize: '0.75rem', fontWeight: 600, borderRadius: '2px', justifyContent: 'center', textAlign: 'center' }}
+                title="Adicionar Perturbação D(s)"
               >
-                ＋ Perturbação D(s)
+                + Perturbação D(s)
               </button>
               <button
                 type="button"
                 data-testid="add-noise-n"
                 className="filter-btn"
                 onClick={handleAddNoise}
-                style={{ padding: '7px 8px', fontSize: '0.76rem', fontWeight: 700, textAlign: 'left', color: '#8b5cf6' }}
-                title="Adicionar Ruído N(s): insere uma entrada independente de ruído de medição/processo"
+                style={{ padding: '7px 8px', fontSize: '0.75rem', fontWeight: 600, borderRadius: '2px', justifyContent: 'center', textAlign: 'center' }}
+                title="Adicionar Ruído N(s)"
               >
-                ＋ Ruído N(s)
+                + Ruído N(s)
               </button>
               <button
                 type="button"
                 data-testid="add-summer"
                 className="filter-btn"
                 onClick={handleAddSummer}
-                style={{ padding: '7px 8px', fontSize: '0.76rem', fontWeight: 700, textAlign: 'left', color: 'var(--success)', gridColumn: 'span 2' }}
-                title="Adicionar Somador: insere um ponto de soma de sinais com múltiplas entradas (+/-)"
+                style={{ padding: '7px 8px', fontSize: '0.75rem', fontWeight: 600, borderRadius: '2px', justifyContent: 'center', textAlign: 'center', gridColumn: 'span 2' }}
+                title="Adicionar Somador ∑"
               >
-                ⊕ Somador ∑
+                + Somador ∑
               </button>
             </div>
           </div>
@@ -2647,38 +2666,38 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
               className="filter-btn"
               onClick={handleUndo}
               disabled={historyStep <= 0}
-              style={{ opacity: historyStep <= 0 ? 0.4 : 1, padding: '6px 8px', fontSize: '0.74rem' }}
-              title="Desfazer (Ctrl+Z): desfaz a última operação realizada"
+              style={{ opacity: historyStep <= 0 ? 0.4 : 1, padding: '6px 8px', fontSize: '0.74rem', borderRadius: '2px', justifyContent: 'center', textAlign: 'center' }}
+              title="Desfazer (Ctrl+Z)"
             >
-              ↶ Desfazer
+              Desfazer
             </button>
             <button
               type="button"
               className="filter-btn"
               onClick={handleRedo}
               disabled={historyStep >= history.length - 1}
-              style={{ opacity: historyStep >= history.length - 1 ? 0.4 : 1, padding: '6px 8px', fontSize: '0.74rem' }}
-              title="Refazer (Ctrl+Y): refaz a operação desfeita"
+              style={{ opacity: historyStep >= history.length - 1 ? 0.4 : 1, padding: '6px 8px', fontSize: '0.74rem', borderRadius: '2px', justifyContent: 'center', textAlign: 'center' }}
+              title="Refazer (Ctrl+Y)"
             >
-              ↷ Refazer
+              Refazer
             </button>
             <button
               type="button"
               className="filter-btn"
               onClick={handleAutoLayout}
-              style={{ padding: '6px 8px', fontSize: '0.74rem' }}
-              title="Auto-Organizar: distribui e alinha os elementos automaticamente na grade"
+              style={{ padding: '6px 8px', fontSize: '0.74rem', borderRadius: '2px', justifyContent: 'center', textAlign: 'center' }}
+              title="Auto-Organizar elementos na grade"
             >
-              📐 Auto-Organizar
+              Auto-Organizar
             </button>
             <button
               type="button"
               className="filter-btn"
               onClick={handleClearAll}
-              style={{ padding: '6px 8px', fontSize: '0.74rem', color: 'var(--danger)' }}
-              title="Limpar Diagrama: remove todos os elementos após confirmação"
+              style={{ padding: '6px 8px', fontSize: '0.74rem', color: 'var(--danger)', borderRadius: '2px', justifyContent: 'center', textAlign: 'center' }}
+              title="Limpar Diagrama"
             >
-              🗑️ Limpar Tudo
+              Limpar Tudo
             </button>
             <button
               type="button"
@@ -2687,19 +2706,19 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
                 setPastedImageForModal(null);
                 setShowVisionModal(true);
               }}
-              style={{ padding: '6px 8px', fontSize: '0.74rem', color: 'var(--primary)' }}
-              title="Importar IA: reconhece diagrama a partir de imagem ou print (Ctrl+V)"
+              style={{ padding: '6px 8px', fontSize: '0.74rem', borderRadius: '2px', justifyContent: 'center', textAlign: 'center' }}
+              title="Importar diagrama a partir de imagem (Ctrl+V)"
             >
-              📷 Importar IA
+              Importar Imagem
             </button>
             <button
               type="button"
               className="filter-btn"
               onClick={handleCopyDiagramAsImage}
-              style={{ padding: '6px 8px', fontSize: '0.74rem' }}
-              title="Copiar PNG: copia a imagem do circuito atual para a área de transferência"
+              style={{ padding: '6px 8px', fontSize: '0.74rem', borderRadius: '2px', justifyContent: 'center', textAlign: 'center' }}
+              title="Copiar diagrama como imagem PNG"
             >
-              📋 Copiar PNG
+              Copiar PNG
             </button>
           </div>
 
@@ -2865,15 +2884,69 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
               </div>
             )}
 
+            {/* Caixas de Seleção: Conteúdo do Relatório (Gráfico RK4 e Código Scilab sempre ativos) */}
+            <div
+              style={{
+                background: 'var(--code-bg)',
+                border: '1px solid var(--card-border)',
+                borderRadius: '2px',
+                padding: '8px 10px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '6px'
+              }}
+            >
+              <div style={{ fontSize: '0.68rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                Conteúdo do Memorial (Opcional):
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '5px 8px', fontSize: '0.73rem', color: 'var(--text)' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer', margin: 0 }}>
+                  <input
+                    type="checkbox"
+                    checked={reportSections.validation}
+                    onChange={e => setReportSections(p => ({ ...p, validation: e.target.checked }))}
+                  />
+                  <span>Validação 8/8</span>
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer', margin: 0 }}>
+                  <input
+                    type="checkbox"
+                    checked={reportSections.equations}
+                    onChange={e => setReportSections(p => ({ ...p, equations: e.target.checked }))}
+                  />
+                  <span>Equações &amp; Mason</span>
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer', margin: 0 }}>
+                  <input
+                    type="checkbox"
+                    checked={reportSections.graphical}
+                    onChange={e => setReportSections(p => ({ ...p, graphical: e.target.checked }))}
+                  />
+                  <span>Redução Gráfica</span>
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer', margin: 0 }}>
+                  <input
+                    type="checkbox"
+                    checked={reportSections.steadyState}
+                    onChange={e => setReportSections(p => ({ ...p, steadyState: e.target.checked }))}
+                  />
+                  <span>Regime (TVF)</span>
+                </label>
+              </div>
+              <div style={{ fontSize: '0.67rem', color: 'var(--text-muted)' }}>
+                Resumo T(s), Gráfico RK4 e Código Scilab sempre incluídos.
+              </div>
+            </div>
+
             <button
               type="button"
               data-testid="run-mason-btn"
               className="btn-primary"
               onClick={handleRunMason}
-              style={{ width: '100%', padding: '8px 12px', fontSize: '0.82rem', fontWeight: 800 }}
-              title="Resolver algebricamente o diagrama (equações dos somadores, substituição, superposição, TVF e Scilab)"
+              style={{ width: '100%', padding: '8px 12px', fontSize: '0.82rem', fontWeight: 700, borderRadius: '2px', justifyContent: 'center' }}
+              title="Resolver algebricamente o diagrama"
             >
-              ⚡ Resolver Diagrama (Álgebra de Blocos)
+              Resolver Diagrama
             </button>
           </div>
         </div>
@@ -3678,9 +3751,9 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
               fontWeight: 800,
               boxShadow: '0 4px 15px rgba(0,0,0,0.25)'
             }}
-            title="Expandir painel lateral de ferramentas e propriedades"
+            title="Mostrar gaveta de ferramentas e propriedades (Atalho B)"
           >
-            ▶ Ferramentas & Propriedades
+            Mostrar Gaveta (B)
           </button>
         )}
 
@@ -4312,7 +4385,7 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
                           y={y - 20}
                           width="80"
                           height="40"
-                          rx="20"
+                          rx="2"
                           fill={
                             isLightTheme
                               ? '#ffffff'
@@ -4354,13 +4427,13 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
                     const isFeedback = el.dir === 'left';
                     const rawExpr = (el.expr ?? '').trim();
                     const hasDefinedExpr = Boolean(rawExpr);
-                    const mainColor = isFeedback
-                      ? isLightTheme
-                        ? '#b45309'
-                        : '#d97706'
-                      : isLightTheme
-                      ? '#1e3a5f'
-                      : '#60a5fa';
+                    const mainColor = isLightTheme
+                      ? isFeedback
+                        ? '#475569'
+                        : '#334155'
+                      : isFeedback
+                      ? '#94a3b8'
+                      : '#cbd5e1';
 
                     // Detecta fração simples de topo (ex: 10/(s+2) ou Km/((1+s*tau1)*(1+s*tau2))) para desenhar linha de fração estilo Simulink
                     let fracNum: string | null = null;
@@ -4421,33 +4494,23 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
                           y={y - 30}
                           width="120"
                           height="60"
-                          rx="4"
+                          rx="2"
                           fill={
                             isLightTheme
                               ? '#ffffff'
-                              : isFeedback
-                              ? '#1c1917'
                               : '#161d27'
                           }
-                          stroke={isSelected ? '#b45309' : isConnectingSource ? '#166534' : mainColor}
-                          strokeWidth={isSelected || isConnectingSource ? 2.5 : 1.7}
+                          stroke={isSelected ? 'var(--primary)' : isConnectingSource ? '#10b981' : mainColor}
+                          strokeWidth={isSelected || isConnectingSource ? 2.4 : 1.5}
                         />
-                        {/* Badge Superior Discreto com Código e Sentido Técnico (acima do pino N para nunca colidir) */}
+                        {/* Badge Superior Discreto com Código e Sentido Técnico (cantos retos, acima do pino N) */}
                         <rect
-                          x={x - 38}
+                          x={x - 36}
                           y={y - 47}
-                          width="76"
+                          width="72"
                           height="15"
-                          rx="3"
-                          fill={
-                            isLightTheme
-                              ? isFeedback
-                                ? '#fef3c7'
-                                : '#f0f4f8'
-                              : isFeedback
-                              ? '#292524'
-                              : '#1e293b'
-                          }
+                          rx="1"
+                          fill={isLightTheme ? '#f1f5f9' : '#1e293b'}
                           stroke={mainColor}
                           strokeWidth="0.9"
                         />
@@ -4924,6 +4987,7 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
               inputElement={analysisSnapshot?.inputEl}
               outputElement={analysisSnapshot?.outputEl}
               splitMode={splitMode}
+              reportSections={reportSections}
               onChangeSplitMode={setSplitMode}
               onClose={() => {
                 setAnalysisResult(null);
