@@ -891,8 +891,19 @@ export function computeSmartConnectionPath(
         } else {
           rawPoints = [p1, { x: p2.x, y: p1.y }, p2];
         }
-      } else if (Math.abs(p1.y - p2.y) < 4 && p2.x > p1.x && !pathIntersectsAnyBox([p1, p2], obstacles)) {
+      } else if (
+        Math.abs(p1.y - p2.y) < 4 &&
+        ((p2.x > p1.x && startPort.side !== 'W' && endPort.side !== 'E') ||
+          (p2.x < p1.x && startPort.side === 'W' && endPort.side === 'E')) &&
+        !pathIntersectsAnyBox([p1, p2], obstacles)
+      ) {
         rawPoints = [p1, { x: p2.x, y: p1.y }, p2];
+      } else if (
+        startPort.side === 'W' &&
+        endPort.side === 'E' &&
+        p2.x < p1.x
+      ) {
+        rawPoints = computeOrthogonalGridSegment(p1, p2, obstacles, false);
       } else if (p2.x > p1.x && !isFeedback) {
         rawPoints = computeOrthogonalGridSegment(p1, p2, obstacles, preferVerticalEnd);
       } else {
