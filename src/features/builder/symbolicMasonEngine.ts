@@ -706,7 +706,48 @@ export function analyzeCompleteBlockDiagram(
   preferredInputId?: string,
   preferredOutputId?: string
 ): CompleteSystemAnalysis {
-  const { graph: normalizedGraph, corrections } = normalizeSignalDirections(rawGraph);
+  // Contrai nós de ramificação explícitos ('pickoff') para que todas as suas saídas
+  // herdem diretamente o nó pai (suporta múltiplos pickoffs encadeados).
+  const pickoffIds = new Set(rawGraph.elements.filter(e => e.type === 'pickoff').map(e => e.id));
+  let contractedGraph = rawGraph;
+  if (pickoffIds.size > 0) {
+    let conns = rawGraph.connections.map(c => ({ ...c }));
+    let guard = 0;
+    while (guard < pickoffIds.size + 4) {
+      guard++;
+      let changed = false;
+      for (const pid of pickoffIds) {
+        const incoming = conns.filter(c => c.to === pid);
+        const outgoing = conns.filter(c => c.from === pid);
+        if (incoming.length > 0 && outgoing.length > 0) {
+          const remaining = conns.filter(c => c.from !== pid && c.to !== pid);
+          for (const inc of incoming) {
+            for (const out of outgoing) {
+              if (inc.from !== out.to) {
+                remaining.push({
+                  ...out,
+                  id: `${inc.id}__${out.id}`,
+                  from: inc.from,
+                  fromPort: inc.fromPort,
+                  sign: out.sign ?? inc.sign
+                });
+              }
+            }
+          }
+          conns = remaining;
+          changed = true;
+        }
+      }
+      if (!changed) break;
+    }
+    conns = conns.filter(c => !pickoffIds.has(c.from) && !pickoffIds.has(c.to));
+    contractedGraph = {
+      elements: rawGraph.elements.filter(e => !pickoffIds.has(e.id)),
+      connections: conns
+    };
+  }
+
+  const { graph: normalizedGraph, corrections } = normalizeSignalDirections(contractedGraph);
   const validConnections = normalizedGraph.connections.filter(
     c => !c.isPending && c.from && c.to && c.from !== c.to
   );
@@ -979,6 +1020,14 @@ export function analyzeCompleteBlockDiagram(
       }
 
       const bInfo = nodeInfoMap[curId];
+      if (!bInfo) {
+        const inConnsFallback = validConnections.filter(c => c.to === curId);
+        if (inConnsFallback.length === 1) {
+          curId = inConnsFallback[0].from;
+          continue;
+        }
+        break;
+      }
       blockNamesText.unshift(bInfo.signalSymbol);
       blockNamesLatex.unshift(bInfo.signalLatex);
       accumulatedGain = ratMul(curEl.rat || ratOne(), accumulatedGain);

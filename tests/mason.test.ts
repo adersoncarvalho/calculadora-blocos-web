@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { computeMasonAnalysis, DiagramGraph } from '../src/core/reduction/mason';
+import { analyzeCompleteBlockDiagram } from '../src/features/builder/symbolicMasonEngine';
 import { parseRatExpr } from '../src/core/algebra/parser';
 import { polyToCompact } from '../src/core/algebra/polynomial';
 
@@ -70,5 +71,31 @@ describe('Regra de Mason em Grafos de Blocos', () => {
     // T(s) = 8 / (s + 9)
     expect(polyToCompact(res.totalT.num)).toBe('8');
     expect(polyToCompact(res.totalT.den)).toBe('s + 9');
+  });
+
+  it('deve resolver corretamente circuito com nó de ramificação explícito (pickoff) sem erro de runtime', () => {
+    const graph: DiagramGraph = {
+      elements: [
+        { id: 'IN', code: 'R1', type: 'input', name: 'R(s)', x: 120, y: 240 },
+        { id: 's1', code: 'S1', type: 'summer', name: 'S1', x: 260, y: 240 },
+        { id: 'g1', code: 'G1', type: 'block', name: 'G1(s)', expr: '10/(s+2)', num: '10', den: 's+2', x: 440, y: 240, dir: 'right' },
+        { id: 'p1', code: 'P1', type: 'pickoff', name: '•', x: 540, y: 240 },
+        { id: 'h1', code: 'H1', type: 'block', name: 'H1(s)', expr: '1', num: '1', den: '1', x: 440, y: 360, dir: 'left' },
+        { id: 'OUT', code: 'C1', type: 'output', name: 'C(s)', x: 640, y: 240 }
+      ],
+      connections: [
+        { id: 'c1', from: 'IN', to: 's1', sign: '+' },
+        { id: 'c2', from: 's1', to: 'g1', sign: '+' },
+        { id: 'c3', from: 'g1', to: 'p1', sign: '+' },
+        { id: 'c4', from: 'p1', to: 'OUT', sign: '+' },
+        { id: 'c5', from: 'p1', to: 'h1', sign: '+' },
+        { id: 'c6', from: 'h1', to: 's1', sign: '-' }
+      ]
+    };
+
+    const full = analyzeCompleteBlockDiagram(graph, 'IN', 'OUT');
+    expect(full.outputByInputPairs.length).toBe(1);
+    expect(polyToCompact(full.outputByInputPairs[0].transferFunction.num)).toBe('10');
+    expect(polyToCompact(full.outputByInputPairs[0].transferFunction.den)).toBe('s + 12');
   });
 });
