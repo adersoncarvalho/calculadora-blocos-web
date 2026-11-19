@@ -32,6 +32,7 @@ interface MemorialStep {
 interface DesignerResult {
   chosenType: 'P' | 'PD' | 'PI' | 'Lead' | 'Lag' | 'LeadLag' | 'PD_PI';
   reason: string;
+  warnings: string[];
   systemType: number;
   order: number;
   sd: { re: number; im: number };
@@ -47,10 +48,13 @@ interface DesignerResult {
 }
 
 function renderRichMathText(text: string): React.ReactNode {
-  const parts = text.split(/(\$[^$]+\$)/g);
+  const parts = text.split(/(\$[^$]+\$|\*\*[^*]+\*\*)/g);
   return parts.map((part, idx) => {
     if (part.startsWith('$') && part.endsWith('$') && part.length > 2) {
       return <MathView key={`rm-${idx}`} math={part.slice(1, -1)} inline />;
+    }
+    if (part.startsWith('**') && part.endsWith('**') && part.length > 4) {
+      return <strong key={`rb-${idx}`}>{part.slice(2, -2)}</strong>;
     }
     return <React.Fragment key={`rt-${idx}`}>{part}</React.Fragment>;
   });
@@ -433,6 +437,13 @@ export const PlantDesignerView: React.FC = () => {
 
       const plantLatex = `\\frac{${formatPolyLatex(numG)}}{${formatFactorList(poles)}}`;
       const steps: MemorialStep[] = [];
+      const warnings: string[] = [];
+
+      if (thetaDef < -2) {
+        warnings.push(
+          `Atenção: o déficit angular é negativo ($\\theta_{\\text{def}} = ${fmtPt(thetaDef, 1)}^\\circ < 0^\\circ$). O ponto $s_d$ está à direita do LGR original — um controlador P puro não faz o LGR passar por $s_d$.`
+        );
+      }
 
       // Passo 1: Triagem + sd + Ângulo
       steps.push({
@@ -494,6 +505,11 @@ export const PlantDesignerView: React.FC = () => {
         } else {
           // Polinômio quadrático r*zc^2 - [sigma*(r+1) + omega*(r-1)*cot(phi)]*zc + (sigma^2 + omega^2) = 0
           const phiMax = (Math.asin((r - 1) / (r + 1)) * 180) / Math.PI;
+          if (phiNeeded > phiMax - 0.5) {
+            warnings.push(
+              `Atenção: $\\theta_{\\text{def}} = ${fmtPt(phiNeeded, 1)}^\\circ$ excede o avanço máximo de 1 estágio com $N = ${fmtPt(N, 1)}$ ($\\varphi_{\\max} = ${fmtPt(phiMax, 1)}^\\circ$). O polo $s_d$ não será atingido exatamente — aumente $N$ ou divida em $m = 2$ estágios.`
+            );
+          }
           const phiUse = Math.min(phiNeeded, phiMax - 0.5);
           const cotPhi = 1 / Math.tan((phiUse * Math.PI) / 180);
           const c2 = r;
@@ -675,6 +691,11 @@ export const PlantDesignerView: React.FC = () => {
       } else {
         // Compensador por Atraso de Fase (Lag) — Passos 0 a 7
         const isTipo1 = systemType >= 1 && inputKind === 'ramp';
+        if (essReqFrac < 0.005) {
+          warnings.push(
+            'Atenção: um Compensador por Atraso de Fase (Lag) nunca atinge erro nulo ($e_{ss} = 0\\%$) em planta Tipo 0 (somente um integrador/PI zera o erro). O projeto abaixo foi calculado para o limite prático $e_{ss} = 0{,}5\\%$.'
+          );
+        }
         const Kreq = isTipo1
           ? 1 / Math.max(0.005, essReqFrac)
           : Math.max(1, 1 / Math.max(0.005, essReqFrac) - 1);
@@ -760,6 +781,7 @@ title('Esforço de Controle u(t) — Regra dos 10 V'); xgrid();`;
         result: {
           chosenType,
           reason,
+          warnings,
           systemType,
           order,
           sd,
@@ -932,13 +954,13 @@ title('Esforço de Controle u(t) — Regra dos 10 V'); xgrid();`;
           {specMode === 'sd' ? (
             <>
               <div>
-                <label style={{ display: 'block', fontSize: '0.73rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '4px' }}>
+                <label style={{ display: 'block', fontSize: '0.73rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '4px', textTransform: 'none' }}>
                   σd (parte real positiva)
                 </label>
                 <input type="text" value={sigmaStr} onChange={e => setSigmaStr(e.target.value)} style={inputStyle} />
               </div>
               <div>
-                <label style={{ display: 'block', fontSize: '0.73rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '4px' }}>
+                <label style={{ display: 'block', fontSize: '0.73rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '4px', textTransform: 'none' }}>
                   ωd (parte imaginária)
                 </label>
                 <input type="text" value={omegaStr} onChange={e => setOmegaStr(e.target.value)} style={inputStyle} />
@@ -1112,6 +1134,22 @@ title('Esforço de Controle u(t) — Regra dos 10 V'); xgrid();`;
                 <strong>🎯 Controlador Projetado ({design.result.chosenType === 'LeadLag' ? 'Avanço + Atraso' : design.result.chosenType === 'PD_PI' ? 'PD Real + PI' : design.result.chosenType}):</strong>{' '}
                 {renderRichMathText(design.result.reason)}
               </div>
+
+              {design.result.warnings.map((w, wi) => (
+                <div
+                  key={`dw-${wi}`}
+                  style={{
+                    background: 'rgba(245, 158, 11, 0.12)',
+                    border: '1px solid #f59e0b',
+                    borderRadius: '6px',
+                    padding: '9px 13px',
+                    fontSize: '0.8rem',
+                    color: 'var(--text)'
+                  }}
+                >
+                  ⚠️ {renderRichMathText(w)}
+                </div>
+              ))}
 
               <ControllerBlockDiagram
                 title={`Diagrama de Blocos — Controlador ${design.result.chosenType} Projetado`}

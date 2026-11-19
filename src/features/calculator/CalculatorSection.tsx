@@ -860,7 +860,11 @@ xgrid();
               <div style={{ background: 'var(--code-bg)', padding: '12px', borderRadius: '8px', border: '1px solid var(--card-border)' }}>
                 <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Ganho DC Estático (s → 0)</div>
                 <div style={{ fontSize: '0.92rem', fontWeight: 700, color: 'var(--text)', marginTop: '4px' }}>
-                  {calculation.stability.dcGain !== null ? calculation.stability.dcGain : '∞ (Integrador presente)'}
+                  {calculation.stability.dcGain !== null
+                    ? calculation.stability.dcGain
+                    : calculation.stability.isUnivariate === false
+                    ? 'Simbólico / N/A'
+                    : '∞ (Integrador presente)'}
                 </div>
               </div>
 
@@ -870,6 +874,11 @@ xgrid();
                   <div style={{ fontSize: '0.92rem', fontWeight: 700, color: 'var(--accent)', marginTop: '4px' }}>
                     {calculation.stability.secondOrderParams.regime} (ζ = {calculation.stability.secondOrderParams.zeta}, ωn = {calculation.stability.secondOrderParams.wn} rad/s)
                   </div>
+                  {calculation.stability.secondOrderParams.hasFiniteZeros && (
+                    <div style={{ fontSize: '0.7rem', color: '#f59e0b', marginTop: '3px' }}>
+                      ⚠️ Contém zero(s) finito(s): Mp e ts reais podem diferir da fórmula protótipo.
+                    </div>
+                  )}
                 </div>
               )}
             </div>

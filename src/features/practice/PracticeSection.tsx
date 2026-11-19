@@ -196,7 +196,7 @@ export const PracticeSection: React.FC<PracticeSectionProps> = ({ onBack, onNavi
             </p>
 
             <div style={{ margin: '18px 0', padding: '16px', background: 'var(--code-bg)', borderRadius: '8px', textAlign: 'center', border: '1px solid var(--card-border)' }}>
-              <MathView math="T(s) = \\frac{G(s)}{1 + G(s)H(s)}" block />
+              <MathView math="T(s) = \frac{G(s)}{1 + G(s)H(s)}" block />
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '20px' }}>
@@ -274,7 +274,7 @@ export const PracticeSection: React.FC<PracticeSectionProps> = ({ onBack, onNavi
                 onClick={() => handleL2Check('int_loop')}
                 style={{ textAlign: 'left', padding: '12px 16px', fontSize: '0.9rem' }}
               >
-                B) Resolver a malha interna local <MathView math="\\frac{G_2}{1+G_2 H_1}" inline /> para transformá-la em um único bloco equivalente
+                B) Resolver a malha interna local <MathView math="\frac{G_2}{1+G_2 H_1}" inline /> para transformá-la em um único bloco equivalente
               </button>
               <button
                 type="button"
@@ -316,7 +316,7 @@ export const PracticeSection: React.FC<PracticeSectionProps> = ({ onBack, onNavi
               </h3>
             </div>
             <p style={{ fontSize: '0.92rem', color: 'var(--text-muted)', lineHeight: '1.6' }}>
-              Dada a planta <MathView math="G(s) = \\frac{8}{s + 2}" inline /> em malha fechada com realimentação unitária negativa (<MathView math="H(s) = 1" inline />), calcule e insira a função de transferência equivalente <MathView math="T(s) = \\frac{C(s)}{R(s)}" inline />:
+              Dada a planta <MathView math="G(s) = \frac{8}{s + 2}" inline /> em malha fechada com realimentação unitária negativa (<MathView math="H(s) = 1" inline />), calcule e insira a função de transferência equivalente <MathView math="T(s) = \frac{C(s)}{R(s)}" inline />:
             </p>
 
             <div style={{ display: 'flex', gap: '10px', marginTop: '16px', flexWrap: 'wrap' }}>
@@ -325,7 +325,7 @@ export const PracticeSection: React.FC<PracticeSectionProps> = ({ onBack, onNavi
                 className="input-text"
                 value={l3Input}
                 onChange={e => setL3Input(e.target.value)}
-                placeholder="Ex: 8/(s+10)"
+                placeholder="Ex: (8/(s+2))/(1 + 8/(s+2)) ou forma reduzida"
                 style={{
                   flex: 1,
                   minWidth: '260px',
@@ -358,7 +358,7 @@ export const PracticeSection: React.FC<PracticeSectionProps> = ({ onBack, onNavi
 
             {showHint && (
               <div style={{ marginTop: '14px', padding: '12px 16px', background: 'rgba(234,179,8,0.1)', border: '1px solid rgba(234,179,8,0.3)', borderRadius: '6px', fontSize: '0.86rem', color: 'var(--text-muted)' }}>
-                <b>Dica:</b> Desenvolva o denominador: <MathView math="1 + G(s)H(s) = 1 + \\frac{8}{s+2} = \\frac{(s+2) + 8}{s+2} = \\frac{s+10}{s+2}" inline />. Ao dividir <MathView math="G(s)" inline />, os denominadores <MathView math="s+2" inline /> cancelam-se.
+                <b>Dica:</b> Desenvolva o denominador: <MathView math="1 + G(s)H(s) = 1 + \frac{8}{s+2} = \frac{(s+2) + 8}{s+2} = \frac{s+10}{s+2}" inline />. Ao dividir <MathView math="G(s)" inline />, os denominadores <MathView math="s+2" inline /> cancelam-se.
               </div>
             )}
 

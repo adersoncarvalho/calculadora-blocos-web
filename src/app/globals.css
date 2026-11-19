@@ -3375,6 +3375,60 @@ body:not(.light-theme) button.btn-secondary:hover {
   border-color: var(--primary) !important;
 }
 
+/* Contraste corrigido no Modo Claro (Light Mode) para botões secundários e filtros */
+body.light-theme .filter-btn,
+body.light-theme button.filter-btn {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border: 1px solid #cbd5e1 !important;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08) !important;
+}
+
+body.light-theme .filter-btn:hover,
+body.light-theme button.filter-btn:hover {
+  background: #f0f9ff !important;
+  border-color: #0284c7 !important;
+  color: #0369a1 !important;
+}
+
+body.light-theme .filter-btn.active,
+body.light-theme button.filter-btn.active {
+  background: #e0f2fe !important;
+  border-color: #0284c7 !important;
+  color: #0369a1 !important;
+  font-weight: 700 !important;
+}
+
+body.light-theme button.btn-secondary {
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+  border: 1px solid #cbd5e1 !important;
+}
+
+body.light-theme button.btn-secondary:hover {
+  background: #e2e8f0 !important;
+  color: #0369a1 !important;
+  border-color: #0284c7 !important;
+}
+
+/* Evita sobreposição de diagramas SVG na Home e melhora responsividade da navbar */
+.diagram-preview-box,
+.topology-diagram-container {
+  overflow: hidden;
+  max-height: 260px;
+}
+
+@media (max-width: 768px) {
+  .global-navbar {
+    padding: 6px 10px !important;
+  }
+  .global-navbar button,
+  .global-navbar a {
+    padding: 5px 8px !important;
+    font-size: 0.74rem !important;
+  }
+}
+
 /* ============================================================================
    GLOBAL STICKY NAVBAR & PRINT STYLES
    ============================================================================ */

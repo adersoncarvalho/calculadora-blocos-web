@@ -22,12 +22,13 @@ export type SecondOrderRegime = "Subamortecido" | "Criticamente Amortecido" | "S
 
 export interface StabilityReport {
   isStable: boolean;
+  isUnivariate?: boolean;
   stabilityText: string;
   poles: ComplexNumber[];
   zeros: ComplexNumber[];
   order: number;
   systemType: number; // Tipo 0, 1, 2... (número de integradores puros / polos na origem)
-  dcGain: number | null; // null se infinito
+  dcGain: number | null; // null se infinito ou multivariado
   secondOrderParams?: {
     wn: number;
     zeta: number;
@@ -35,6 +36,7 @@ export interface StabilityReport {
     ts2Percent: number;
     ts5Percent: number;
     regime: SecondOrderRegime;
+    hasFiniteZeros?: boolean;
   };
 }
 
@@ -96,7 +98,7 @@ export function computeRootsPoly(coeffsAsc: number[]): ComplexNumber[] {
     return { re: resRe, im: resIm };
   };
 
-  for (let iter = 0; iter < 100; iter++) {
+  for (let iter = 0; iter < 500; iter++) {
     let maxDiff = 0;
     for (let i = 0; i < n; i++) {
       const fz = evalPolyC(roots[i]);
@@ -113,7 +115,7 @@ export function computeRootsPoly(coeffsAsc: number[]): ComplexNumber[] {
         }
       }
       const denomMagSq = denomRe * denomRe + denomIm * denomIm;
-      if (denomMagSq > 1e-18) {
+      if (denomMagSq > 1e-22) {
         const deltaRe = (fz.re * denomRe + fz.im * denomIm) / denomMagSq;
         const deltaIm = (fz.im * denomRe - fz.re * denomIm) / denomMagSq;
         roots[i].re -= deltaRe;
@@ -121,30 +123,36 @@ export function computeRootsPoly(coeffsAsc: number[]): ComplexNumber[] {
         maxDiff = Math.max(maxDiff, Math.hypot(deltaRe, deltaIm));
       }
     }
-    if (maxDiff < 1e-9) break;
+    if (maxDiff < 1e-11) break;
   }
 
   return roots.map(r => ({
-    re: Math.abs(r.re) < 1e-6 ? 0 : Number(r.re.toFixed(4)),
-    im: Math.abs(r.im) < 1e-6 ? 0 : Number(r.im.toFixed(4))
+    re: Math.abs(r.re) < 1e-5 ? 0 : Number(r.re.toFixed(4)),
+    im: Math.abs(r.im) < 1e-5 ? 0 : Number(r.im.toFixed(4))
   }));
 }
 
 /**
  * Critério de Estabilidade de Routh-Hurwitz para coeficientes em ordem decrescente s^n, s^(n-1)...
+ * Suporta Caso 1 (zero isolado na 1ª coluna) e Caso 2 (linha inteira de zeros via polinômio auxiliar dP/ds).
  */
-export function checkRouthHurwitz(coeffsDesc: number[]): { isStable: boolean; firstColumn: number[] } {
+export function checkRouthHurwitz(coeffsDesc: number[]): {
+  isStable: boolean;
+  firstColumn: number[];
+  hasZeroRow?: boolean;
+} {
   const n = coeffsDesc.length - 1;
   if (n <= 0) return { isStable: true, firstColumn: [coeffsDesc[0] || 1] };
 
-  // Se algum coeficiente for nulo ou tiver sinal trocado, não é estável
+  // Se algum coeficiente for nulo ou tiver sinal trocado, não é estritamente estável (Hurwitz)
   const sign0 = Math.sign(coeffsDesc[0]);
-  if (coeffsDesc.some(c => Math.sign(c) !== sign0)) {
+  if (sign0 === 0 || coeffsDesc.some(c => Math.sign(c) !== sign0)) {
     return { isStable: false, firstColumn: coeffsDesc };
   }
 
   const cols = Math.ceil((n + 1) / 2);
   const table: number[][] = Array.from({ length: n + 1 }, () => new Array(cols).fill(0));
+  let hasZeroRow = false;
 
   // Preencher primeiras 2 linhas
   for (let j = 0; j < cols; j++) {
@@ -154,10 +162,24 @@ export function checkRouthHurwitz(coeffsDesc: number[]): { isStable: boolean; fi
 
   // Preencher demais linhas da tabela
   for (let i = 2; i <= n; i++) {
+    // Verifica se a linha anterior (i - 1) é inteira nula (Caso 2: polinômio auxiliar)
+    const prevRowAllZero = table[i - 1].every(v => Math.abs(v) < 1e-9);
+    if (prevRowAllZero) {
+      hasZeroRow = true;
+      const auxDeg = n - (i - 2); // grau do polinômio auxiliar P(s) na linha i - 2
+      for (let j = 0; j < cols; j++) {
+        const exp = auxDeg - 2 * j;
+        table[i - 1][j] = exp > 0 ? table[i - 2][j] * exp : 0;
+      }
+    }
+
     const pivot = table[i - 1][0];
     if (Math.abs(pivot) < 1e-9) {
-      table[i - 1][0] = 1e-6; // epsilon regularizer
+      // Caso 1: zero isolado na 1ª coluna (regularização ε > 0 escalada pela ordem de grandeza da tabela)
+      const scale = Math.max(1, Math.abs(table[0][0]));
+      table[i - 1][0] = 1e-6 * scale;
     }
+
     for (let j = 0; j < cols - 1; j++) {
       const a = table[i - 1][0];
       const b = table[i - 2][j + 1] || 0;
@@ -168,14 +190,16 @@ export function checkRouthHurwitz(coeffsDesc: number[]): { isStable: boolean; fi
   }
 
   const firstCol = table.map(r => r[0]);
-  const isStable = firstCol.every(v => v * firstCol[0] > 0);
-  return { isStable, firstColumn: firstCol };
+  // Se houve linha inteira de zeros, há polos simétricos (eixo jω ou SPD) → não é assintoticamente estável
+  const isStable = !hasZeroRow && firstCol.every(v => v * firstCol[0] > 0);
+  return { isStable, firstColumn: firstCol, hasZeroRow };
 }
 
 export function analyzeTransferFunction(T: RatFunc): StabilityReport {
   if (!isUnivariateInS(T.num) || !isUnivariateInS(T.den)) {
     return {
       isStable: true,
+      isUnivariate: false,
       stabilityText: "Análise restrita a sistemas univariados em s",
       poles: [],
       zeros: [],
@@ -208,8 +232,23 @@ export function analyzeTransferFunction(T: RatFunc): StabilityReport {
   }
 
   // Avaliação de estabilidade rigorosa pelo mapa de polos no plano complexo s
-  const hasRhpPoles = poles.some(p => p.re > 1e-5);
-  const hasJOmegaPoles = poles.some(p => Math.abs(p.re) <= 1e-5);
+  const hasRhpPoles = poles.some(p => p.re > 1e-4);
+  const jOmegaPoles = poles.filter(p => Math.abs(p.re) <= 1e-4);
+  const hasJOmegaPoles = jOmegaPoles.length > 0;
+
+  // Verifica multiplicidade de polos sobre o eixo jω / origem (polos repetidos em jω → BIBO-instável!)
+  let hasRepeatedJOmegaPole = originPoles >= 2;
+  if (!hasRepeatedJOmegaPole && jOmegaPoles.length >= 2) {
+    for (let i = 0; i < jOmegaPoles.length; i++) {
+      for (let j = i + 1; j < jOmegaPoles.length; j++) {
+        if (Math.hypot(jOmegaPoles[i].re - jOmegaPoles[j].re, jOmegaPoles[i].im - jOmegaPoles[j].im) < 1e-2) {
+          hasRepeatedJOmegaPole = true;
+          break;
+        }
+      }
+      if (hasRepeatedJOmegaPole) break;
+    }
+  }
 
   let stabilityText = "Sistema Estável (Polos no Semiplano Esquerdo)";
   let isStable = true;
@@ -217,14 +256,17 @@ export function analyzeTransferFunction(T: RatFunc): StabilityReport {
   if (hasRhpPoles) {
     stabilityText = "Sistema Instável (Possui polo(s) no Semiplano Direito)";
     isStable = false;
+  } else if (hasRepeatedJOmegaPole) {
+    stabilityText = "Sistema Instável (Polo(s) múltiplo(s) sobre o eixo jω / origem — BIBO-instável)";
+    isStable = false;
   } else if (hasJOmegaPoles || originPoles > 0) {
-    stabilityText = "Marginalmente Estável (Possui polo(s) sobre o Eixo Imaginário / Origem)";
+    stabilityText = "Marginalmente Estável (Polo(s) simples sobre o Eixo Imaginário / Origem)";
     isStable = false;
   }
 
-  // Parâmetros de 2ª Ordem canônicos
+  // Parâmetros de 2ª Ordem canônicos (somente válidos quando a2 > 0, a0 > 0 e a1 >= 0)
   let secondOrderParams: StabilityReport["secondOrderParams"] = undefined;
-  if (order === 2 && uD[2] > 0) {
+  if (order === 2 && uD[2] > 0 && uD[0] > 0 && uD[1] >= 0) {
     const a2 = uD[2];
     const a1 = uD[1];
     const a0 = uD[0];
@@ -247,8 +289,8 @@ export function analyzeTransferFunction(T: RatFunc): StabilityReport {
       percentOvershoot = 0;
     }
 
-    const ts2 = (zeta > 0 && wn > 0) ? 4 / (zeta * wn) : Infinity;
-    const ts5 = (zeta > 0 && wn > 0) ? 3 / (zeta * wn) : Infinity;
+    const ts2 = zeta > 0 && wn > 0 ? 4 / (zeta * wn) : Infinity;
+    const ts5 = zeta > 0 && wn > 0 ? 3 / (zeta * wn) : Infinity;
 
     secondOrderParams = {
       wn: Number(wn.toFixed(4)),
@@ -256,12 +298,14 @@ export function analyzeTransferFunction(T: RatFunc): StabilityReport {
       percentOvershoot: Number(percentOvershoot.toFixed(2)),
       ts2Percent: Number(ts2.toFixed(4)),
       ts5Percent: Number(ts5.toFixed(4)),
-      regime
+      regime,
+      hasFiniteZeros: zeros.length > 0
     };
   }
 
   return {
     isStable,
+    isUnivariate: true,
     stabilityText,
     poles,
     zeros,

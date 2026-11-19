@@ -33,7 +33,9 @@ export interface RatFunc {
 export function ratSimplify(num: Polynomial, den: Polynomial): RatFunc {
   let N = polyNormalize(num);
   let D = polyNormalize(den);
-  if (polyIsZero(D)) D = polyFromNumber(1);
+  if (polyIsZero(D)) {
+    throw new Error("Divisão por zero: o denominador não pode ser nulo.");
+  }
   if (polyIsZero(N)) return { num: [], den: polyFromNumber(1) };
 
   if (polyEqual(N, D)) {

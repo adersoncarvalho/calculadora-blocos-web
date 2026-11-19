@@ -28,6 +28,36 @@ interface SimulationsGallerySectionProps {
   onNavigate?: (view: 'builder' | 'guide' | 'practice') => void;
 }
 
+function fixPtAccents(str: string): string {
+  return str
+    .replace(/\bRealimentacao\b/g, 'Realimentação')
+    .replace(/\brealimentacao\b/g, 'realimentação')
+    .replace(/\bEstavel\b/g, 'Estável')
+    .replace(/\bInstavel\b/g, 'Instável')
+    .replace(/\bEquacao Caracteristica\b/g, 'Equação Característica')
+    .replace(/\bEquacao\b/g, 'Equação')
+    .replace(/\bCaracteristica\b/g, 'Característica')
+    .replace(/\bReducao\b/g, 'Redução')
+    .replace(/\bFuncao\b/g, 'Função')
+    .replace(/\bTransferencia\b/g, 'Transferência')
+    .replace(/\bAssociacao\b/g, 'Associação')
+    .replace(/\bMultiplas\b/g, 'Múltiplas')
+    .replace(/\bNumerico\b/g, 'Numérico');
+}
+
+function renderSimText(raw: string): React.ReactNode {
+  const txt = fixPtAccents(raw || '');
+  // Se o texto inteiro parece uma expressão LaTeX (ex.: \frac{20}{2})
+  if (/^\\(frac|zeta|omega|infty)/.test(txt.trim()) || (!txt.includes(' ') && txt.includes('\\'))) {
+    return <MathView math={txt.trim()} inline />;
+  }
+  // Converte ocorrências inline de \frac{...}{...}, \zeta = ..., \omega_n = ...
+  const parts = txt.split(/(\\(?:frac\{[^}]+\}\{[^}]+\}|zeta\s*=\s*[0-9.,]+|omega_n\s*=\s*[0-9.,]+|infty))/g);
+  return parts.map((p, i) =>
+    p.startsWith('\\') ? <MathView key={`sm-${i}`} math={p} inline /> : <React.Fragment key={`st-${i}`}>{p}</React.Fragment>
+  );
+}
+
 export const SimulationsGallerySection: React.FC<SimulationsGallerySectionProps> = ({ onBack, onNavigate }) => {
   const [filter, setFilter] = useState<string>('all');
   const [search, setSearch] = useState<string>('');
@@ -209,18 +239,18 @@ export const SimulationsGallerySection: React.FC<SimulationsGallerySectionProps>
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                   <span style={{ fontSize: '0.74rem', background: 'rgba(56,189,248,0.15)', color: 'var(--primary)', padding: '2px 8px', borderRadius: '4px', fontWeight: 700 }}>
-                    Caso #{item.num} • {item.topoBadge}
+                    Caso #{item.num} • {fixPtAccents(item.topoBadge)}
                   </span>
-                  <span style={{ fontSize: '0.74rem', fontWeight: 700, color: item.estabilidade.includes('Estável') ? 'var(--success)' : 'var(--danger)' }}>
-                    {item.estabilidade}
+                  <span style={{ fontSize: '0.74rem', fontWeight: 700, color: fixPtAccents(item.estabilidade).includes('Estável') && !fixPtAccents(item.estabilidade).includes('Instável') ? 'var(--success)' : 'var(--danger)' }}>
+                    {fixPtAccents(item.estabilidade)}
                   </span>
                 </div>
 
                 <h3 style={{ fontSize: '1.02rem', margin: '4px 0 6px 0', color: 'var(--text)', fontWeight: 700 }}>
-                  {item.titulo}
+                  {renderSimText(item.titulo)}
                 </h3>
                 <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: '0 0 12px 0' }}>
-                  {item.subtitulo}
+                  {renderSimText(item.subtitulo)}
                 </p>
 
                 {/* Diagrama Esquemático SVG */}
@@ -248,11 +278,11 @@ export const SimulationsGallerySection: React.FC<SimulationsGallerySectionProps>
 
                 {/* Parâmetros Dinâmicos Resumidos */}
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '6px', fontSize: '0.78rem', marginBottom: '12px' }}>
-                  <div style={{ background: 'rgba(2, 6, 23, 0.4)', padding: '6px 8px', borderRadius: '4px' }}>
-                    <span style={{ color: 'var(--text-muted)' }}>Ordem:</span> <b>{item.ordem}</b>
+                  <div style={{ background: 'var(--code-bg)', border: '1px solid var(--card-border)', padding: '6px 8px', borderRadius: '4px' }}>
+                    <span style={{ color: 'var(--text-muted)' }}>Ordem:</span> <b>{fixPtAccents(item.ordem)}</b>
                   </div>
-                  <div style={{ background: 'rgba(2, 6, 23, 0.4)', padding: '6px 8px', borderRadius: '4px' }}>
-                    <span style={{ color: 'var(--text-muted)' }}>Ganho DC:</span> <b>{item.ganhoDC}</b>
+                  <div style={{ background: 'var(--code-bg)', border: '1px solid var(--card-border)', padding: '6px 8px', borderRadius: '4px' }}>
+                    <span style={{ color: 'var(--text-muted)' }}>Ganho DC:</span> <b>{renderSimText(item.ganhoDC)}</b>
                   </div>
                 </div>
 
@@ -260,10 +290,10 @@ export const SimulationsGallerySection: React.FC<SimulationsGallerySectionProps>
                 {isExpanded && (
                   <div style={{ marginTop: '14px', paddingTop: '14px', borderTop: '1px solid var(--card-border)' }}>
                     <div style={{ fontWeight: 700, fontSize: '0.84rem', color: 'var(--primary)', marginBottom: '4px' }}>
-                      {item.stepTitle}
+                      {fixPtAccents(item.stepTitle)}
                     </div>
                     <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: '0 0 8px 0' }}>
-                      {item.stepDesc}
+                      {renderSimText(item.stepDesc)}
                     </p>
                     <div style={{ background: 'var(--code-bg)', padding: '8px', borderRadius: '6px', marginBottom: '8px' }}>
                       <MathView math={item.stepLatex} block />

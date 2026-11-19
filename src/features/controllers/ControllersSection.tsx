@@ -51,10 +51,17 @@ function renderProseWithGlossary(text: string, prefix: string): React.ReactNode 
  * e destaca siglas/símbolos com tooltip explicativo ao passar o mouse.
  */
 function renderRichMathText(text: string): React.ReactNode {
-  const parts = text.split(/(\$[^$]+\$)/g);
+  const parts = text.split(/(\$[^$]+\$|\*\*[^*]+\*\*)/g);
   return parts.map((part, idx) => {
     if (part.startsWith('$') && part.endsWith('$') && part.length > 2) {
       return <MathView key={`m-${idx}`} math={part.slice(1, -1)} inline />;
+    }
+    if (part.startsWith('**') && part.endsWith('**') && part.length > 4) {
+      return (
+        <strong key={`b-${idx}`}>
+          {renderProseWithGlossary(part.slice(2, -2), `b-${idx}`)}
+        </strong>
+      );
     }
     return <React.Fragment key={`t-${idx}`}>{renderProseWithGlossary(part, `t-${idx}`)}</React.Fragment>;
   });

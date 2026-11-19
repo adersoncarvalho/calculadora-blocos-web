@@ -495,15 +495,25 @@ export const MasonDeductionView: React.FC<MasonDeductionViewProps> = ({
     if (!series || series.length === 0) return null;
 
     const xValues = series[0].t;
-    const chartSeries = series.map((s, idx) => ({
-      id: `scilab-series-${idx}`,
-      label: `${s.label} (regime ≈ ${s.finalValue.toFixed(4)})`,
-      values: s.y,
-      color: s.color,
-      strokeWidth: 2.3,
-      showLandmarks: idx === series.length - 1 || series.length === 1,
-      landmarkMode: 'output' as const
-    }));
+    const chartSeries = series.map((s, idx) => {
+      const len = s.y.length;
+      const tailDiff = len >= 6 ? Math.abs(s.y[len - 1] - s.y[len - 6]) : 0;
+      const isConverged =
+        Number.isFinite(s.finalValue) &&
+        Math.abs(s.finalValue) < 1e4 &&
+        tailDiff < 0.03 * Math.max(1, Math.abs(s.finalValue));
+      return {
+        id: `scilab-series-${idx}`,
+        label: isConverged
+          ? `${s.label} (regime ≈ ${s.finalValue.toFixed(4)})`
+          : `${s.label} (sem regime permanente — instável/integrador)`,
+        values: s.y,
+        color: s.color,
+        strokeWidth: 2.3,
+        showLandmarks: isConverged && (idx === series.length - 1 || series.length === 1),
+        landmarkMode: 'output' as const
+      };
+    });
 
     return (
       <div style={{ marginBottom: '0.9rem' }}>

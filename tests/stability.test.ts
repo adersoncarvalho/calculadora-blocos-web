@@ -46,4 +46,40 @@ describe('Análise de Estabilidade, Polos e Parâmetros Canônicos', () => {
     const routh = checkRouthHurwitz([1, 1, 2, 24]);
     expect(routh.isStable).toBe(false);
   });
+
+  it('deve classificar polos múltiplos na origem ou eixo jω como BIBO-instáveis: T(s) = 1/s^2', () => {
+    const T = parseRatExpr('1/s^2');
+    const analysis = analyzeTransferFunction(T);
+    expect(analysis.isStable).toBe(false);
+    expect(analysis.stabilityText).toContain('Instável');
+  });
+
+  it('deve tratar Caso 2 (linha inteira de zeros) no Routh-Hurwitz: D(s) = s^3 + 2s^2 + s + 2', () => {
+    const routh = checkRouthHurwitz([1, 2, 1, 2]);
+    expect(routh.hasZeroRow).toBe(true);
+    expect(routh.isStable).toBe(false);
+  });
+
+  it('não deve gerar NaN nas métricas de 2ª ordem quando a0 <= 0 ou a1 < 0', () => {
+    const T = parseRatExpr('1/(s^2 + 2*s - 3)');
+    const analysis = analyzeTransferFunction(T);
+    expect(analysis.isStable).toBe(false);
+    expect(analysis.secondOrderParams).toBeUndefined();
+  });
+
+  it('deve rejeitar divisão por zero e expoentes fracionários, e aceitar notação científica e expoentes negativos', () => {
+    expect(() => parseRatExpr('1/0')).toThrow(/Divisão por zero/);
+    expect(() => parseRatExpr('s^1.5')).toThrow(/Expoente/);
+
+    const invS = parseRatExpr('s^-1');
+    const invAnalysis = analyzeTransferFunction(invS);
+    expect(invAnalysis.order).toBe(1);
+    expect(invAnalysis.systemType).toBe(1);
+
+    const sci = parseRatExpr('1e9/(s+1e9)');
+    const sciAnalysis = analyzeTransferFunction(sci);
+    expect(sciAnalysis.isUnivariate).toBe(true);
+    expect(sciAnalysis.isStable).toBe(true);
+    expect(sciAnalysis.dcGain).toBe(1);
+  });
 });

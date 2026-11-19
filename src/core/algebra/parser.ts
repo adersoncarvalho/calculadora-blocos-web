@@ -74,6 +74,21 @@ export function parseRatExpr(str: string): RatFunc {
       while (i < s.length && /[0-9.]/.test(s[i])) {
         numStr += s[i++];
       }
+      // Suporte a notação científica (ex.: 1e9, 2.5e-3, 1E+4)
+      if (i < s.length && (s[i] === "e" || s[i] === "E")) {
+        const nextCh = s[i + 1];
+        const nextNextCh = s[i + 2];
+        if (
+          (nextCh && /[0-9]/.test(nextCh)) ||
+          ((nextCh === "+" || nextCh === "-") && nextNextCh && /[0-9]/.test(nextNextCh))
+        ) {
+          numStr += s[i++];
+          if (s[i] === "+" || s[i] === "-") numStr += s[i++];
+          while (i < s.length && /[0-9]/.test(s[i])) {
+            numStr += s[i++];
+          }
+        }
+      }
       tokens.push({ type: "num", val: parseFloat(numStr) || 0 });
       continue;
     }
@@ -159,9 +174,33 @@ export function parseRatExpr(str: string): RatFunc {
     let base = parsePrimary();
     if (peek() && peek()!.type === "op" && peek()!.val === "^") {
       consume();
+      let sign = 1;
+      let hasParen = false;
+      if (peek() && peek()!.type === "op" && peek()!.val === "(") {
+        consume();
+        hasParen = true;
+      }
+      if (peek() && peek()!.type === "op" && (peek()!.val === "-" || peek()!.val === "+")) {
+        if (consume().val === "-") sign = -1;
+      }
       const expTok = consume();
-      const exp = expTok && expTok.type === "num" ? Math.max(0, Math.round(expTok.val as number)) : 1;
-      base = ratSimplify(polyPow(base.num, exp), polyPow(base.den, exp));
+      if (hasParen && peek() && peek()!.type === "op" && peek()!.val === ")") {
+        consume();
+      }
+      if (!expTok || expTok.type !== "num") {
+        throw new Error("Expoente inválido: utilize um número inteiro (ex.: s^2 ou s^-1).");
+      }
+      const rawExp = sign * (expTok.val as number);
+      if (Math.abs(rawExp - Math.round(rawExp)) > 1e-6) {
+        throw new Error(`Expoente não inteiro (${rawExp}) não é suportado em funções racionais de Laplace.`);
+      }
+      const exp = Math.round(rawExp);
+      if (exp < 0) {
+        const absExp = Math.abs(exp);
+        base = ratSimplify(polyPow(base.den, absExp), polyPow(base.num, absExp));
+      } else {
+        base = ratSimplify(polyPow(base.num, exp), polyPow(base.den, exp));
+      }
     }
     return base;
   }
@@ -189,7 +228,13 @@ export function parseRatExpr(str: string): RatFunc {
 
   try {
     return parseExpr();
-  } catch {
+  } catch (err) {
+    if (
+      err instanceof Error &&
+      (err.message.includes("Divisão por zero") || err.message.includes("Expoente"))
+    ) {
+      throw err;
+    }
     return ratFromPoly(polyFromVar(str.trim()));
   }
 }
