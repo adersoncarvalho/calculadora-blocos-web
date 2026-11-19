@@ -1717,13 +1717,70 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
     }
 
     if (activeTool === 'connect' && !activeDraft) {
-      const clickPt = getLogicalCoordinates(e.clientX, e.clientY);
-      setActiveDraft({
+      const rawPt = getLogicalCoordinates(e.clientX, e.clientY);
+      const segA = currentPoints[segmentIndex] || rawPt;
+      const segB = currentPoints[segmentIndex + 1] || rawPt;
+      // Projeta o clique exatamente sobre a linha clicada e ajusta na grade
+      const px =
+        orientation === 'vertical'
+          ? segA.x
+          : snapToGrid(Math.max(Math.min(segA.x, segB.x), Math.min(Math.max(segA.x, segB.x), rawPt.x)), GRID_SIZE);
+      const py =
+        orientation === 'horizontal'
+          ? segA.y
+          : snapToGrid(Math.max(Math.min(segA.y, segB.y), Math.min(Math.max(segA.y, segB.y), rawPt.y)), GRID_SIZE);
+
+      const pickoffId = `pick_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+      const pickoffEl: DiagramElement = {
+        id: pickoffId,
+        code: `P${graph.elements.filter(el => el.type === 'pickoff').length + 1}`,
+        type: 'pickoff',
+        name: '•',
+        x: px,
+        y: py
+      };
+
+      const isLeftToRight = segB.x >= segA.x;
+      const isTopToBottom = segB.y >= segA.y;
+      const inPort: CompassDirection =
+        orientation === 'horizontal' ? (isLeftToRight ? 'W' : 'E') : isTopToBottom ? 'N' : 'S';
+      const outPort: CompassDirection =
+        orientation === 'horizontal' ? (isLeftToRight ? 'E' : 'W') : isTopToBottom ? 'S' : 'N';
+      const branchPort: CompassDirection = orientation === 'horizontal' ? 'S' : 'E';
+
+      const connBefore: DiagramConnection = {
+        id: `${conn.id}_a_${Date.now()}`,
         from: conn.from,
-        fromPort: (conn.fromPort as CompassDirection) || 'E',
-        waypoints: [snapPointToGrid(clickPt, GRID_SIZE)]
+        to: pickoffId,
+        fromPort: conn.fromPort,
+        toPort: inPort,
+        sign: '+'
+      };
+      const connAfter: DiagramConnection = {
+        id: `${conn.id}_b_${Date.now()}`,
+        from: pickoffId,
+        to: conn.to,
+        fromPort: outPort,
+        toPort: conn.toPort,
+        sign: conn.sign
+      };
+
+      const updated: DiagramGraph = {
+        elements: [...graph.elements, pickoffEl],
+        connections: [
+          ...graph.connections.filter(c => c.id !== conn.id),
+          connBefore,
+          connAfter
+        ]
+      };
+      setGraph(updated);
+      pushHistory(updated);
+      setActiveDraft({
+        from: pickoffId,
+        fromPort: branchPort,
+        waypoints: []
       });
-      showToast('🔗 Derivação iniciada na linha! Clique em um dos 8 pontos de outro bloco para conectar.');
+      showToast('Ponto de derivação criado na linha — clique no pino de destino para conectar.');
       return;
     }
 
@@ -4156,6 +4213,38 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
                     <rect x={x - 64} y={y - 34} width="128" height="68" fill="transparent" pointerEvents="all" />
                   )}
 
+                  {/* A0. PONTO DE RAMIFICAÇÃO / DERIVAÇÃO (SOLDER DOT — BOLINHA CHEIA NA LINHA) */}
+                  {el.type === 'pickoff' && (
+                    <>
+                      {(isSelected || isConnectingSource) && (
+                        <circle
+                          cx={x}
+                          cy={y}
+                          r="11"
+                          fill="rgba(16, 185, 129, 0.22)"
+                          stroke="#10b981"
+                          strokeWidth="1.5"
+                        />
+                      )}
+                      <circle
+                        cx={x}
+                        cy={y}
+                        r="6.2"
+                        fill={
+                          isSelected
+                            ? '#f59e0b'
+                            : isConnectingSource
+                            ? '#10b981'
+                            : isLightTheme
+                            ? '#1e3a5f'
+                            : '#38bdf8'
+                        }
+                        stroke={isLightTheme ? '#ffffff' : '#0f172a'}
+                        strokeWidth="1.8"
+                      />
+                    </>
+                  )}
+
                   {/* A. SOMADOR */}
                   {el.type === 'summer' && (
                     <>
@@ -4355,10 +4444,10 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
                           stroke={isSelected ? '#b45309' : isConnectingSource ? '#166534' : mainColor}
                           strokeWidth={isSelected || isConnectingSource ? 2.5 : 1.7}
                         />
-                        {/* Badge Superior Discreto com Código e Sentido Técnico */}
+                        {/* Badge Superior Discreto com Código e Sentido Técnico (acima do pino N para nunca colidir) */}
                         <rect
                           x={x - 38}
-                          y={y - 39}
+                          y={y - 47}
                           width="76"
                           height="15"
                           rx="3"
@@ -4376,7 +4465,7 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
                         />
                         <text
                           x={x}
-                          y={y - 28.5}
+                          y={y - 36.5}
                           fill={isLightTheme ? '#111827' : '#f1f5f9'}
                           fontSize="8.8"
                           fontFamily="var(--font-mono), monospace"

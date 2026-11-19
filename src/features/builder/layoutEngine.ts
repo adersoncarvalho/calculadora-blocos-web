@@ -96,6 +96,17 @@ export function getElementBoundingBox(el: DiagramElement, padding: number = 0): 
   const x = el.x ?? 100;
   const y = el.y ?? 100;
 
+  if (el.type === 'pickoff') {
+    const r = 6;
+    return {
+      id: el.id,
+      left: x - r - padding,
+      top: y - r - padding,
+      right: x + r + padding,
+      bottom: y + r + padding
+    };
+  }
+
   if (el.type === 'summer') {
     const r = 20;
     return {
@@ -137,6 +148,16 @@ export function getElementBoundingBox(el: DiagramElement, padding: number = 0): 
 export function getElementEightPorts(el: DiagramElement): PortPosition[] {
   const x = el.x ?? 100;
   const y = el.y ?? 100;
+
+  if (el.type === 'pickoff') {
+    const r = 6;
+    return [
+      { side: 'N', label: 'Norte (N)', x, y: y - r, dx: 0, dy: -1 },
+      { side: 'E', label: 'Leste (L)', x: x + r, y, dx: 1, dy: 0 },
+      { side: 'S', label: 'Sul (S)', x, y: y + r, dx: 0, dy: 1 },
+      { side: 'W', label: 'Oeste (O)', x: x - r, y, dx: -1, dy: 0 }
+    ];
+  }
 
   if (el.type === 'summer') {
     const r = 20;
