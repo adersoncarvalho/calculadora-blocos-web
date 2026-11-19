@@ -3944,7 +3944,7 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
                     strokeLinejoin="round"
                     fill="none"
                     markerEnd={
-                      conn.isPending
+                      conn.isPending || tgt.type === 'pickoff'
                         ? undefined
                         : isCutHovered
                         ? 'url(#builder-arr-cut)'
@@ -4213,34 +4213,32 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
                     <rect x={x - 64} y={y - 34} width="128" height="68" fill="transparent" pointerEvents="all" />
                   )}
 
-                  {/* A0. PONTO DE RAMIFICAÇÃO / DERIVAÇÃO (SOLDER DOT — BOLINHA CHEIA NA LINHA) */}
+                  {/* A0. PONTO DE RAMIFICAÇÃO / DERIVAÇÃO (JUNÇÃO LIMPA E DISCRETA NO FIO) */}
                   {el.type === 'pickoff' && (
                     <>
-                      {(isSelected || isConnectingSource) && (
+                      {(isSelected || isConnectingSource || hoveredElementId === el.id) && (
                         <circle
                           cx={x}
                           cy={y}
-                          r="11"
-                          fill="rgba(16, 185, 129, 0.22)"
+                          r="8"
+                          fill="rgba(16, 185, 129, 0.2)"
                           stroke="#10b981"
-                          strokeWidth="1.5"
+                          strokeWidth="1.2"
                         />
                       )}
                       <circle
                         cx={x}
                         cy={y}
-                        r="6.2"
+                        r={isSelected || isConnectingSource ? 4 : 3}
                         fill={
                           isSelected
                             ? '#f59e0b'
                             : isConnectingSource
                             ? '#10b981'
                             : isLightTheme
-                            ? '#1e3a5f'
+                            ? '#0284c7'
                             : '#38bdf8'
                         }
-                        stroke={isLightTheme ? '#ffffff' : '#0f172a'}
-                        strokeWidth="1.8"
                       />
                     </>
                   )}

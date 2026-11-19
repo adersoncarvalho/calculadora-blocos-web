@@ -150,12 +150,11 @@ export function getElementEightPorts(el: DiagramElement): PortPosition[] {
   const y = el.y ?? 100;
 
   if (el.type === 'pickoff') {
-    const r = 6;
     return [
-      { side: 'N', label: 'Norte (N)', x, y: y - r, dx: 0, dy: -1 },
-      { side: 'E', label: 'Leste (L)', x: x + r, y, dx: 1, dy: 0 },
-      { side: 'S', label: 'Sul (S)', x, y: y + r, dx: 0, dy: 1 },
-      { side: 'W', label: 'Oeste (O)', x: x - r, y, dx: -1, dy: 0 }
+      { side: 'N', label: 'Norte (N)', x, y, dx: 0, dy: -1 },
+      { side: 'E', label: 'Leste (L)', x, y, dx: 1, dy: 0 },
+      { side: 'S', label: 'Sul (S)', x, y, dx: 0, dy: 1 },
+      { side: 'W', label: 'Oeste (O)', x, y, dx: -1, dy: 0 }
     ];
   }
 
