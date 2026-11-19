@@ -2078,29 +2078,28 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
               }}
               title="Voltar à Página Principal"
             >
-              ⬅ Voltar
+              ← Voltar
             </button>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <ThemeToggle />
               <button
                 type="button"
                 className="filter-btn"
                 onClick={() => setIsSidebarCollapsed(true)}
                 title="Recolher painel esquerdo para ampliar a área de desenho"
-                style={{ padding: '5px 9px', fontSize: '0.75rem', fontWeight: 700 }}
+                style={{ padding: '5px 9px', fontSize: '0.75rem', fontWeight: 600 }}
               >
-                ◀ Recolher
+                Recolher painel
               </button>
             </div>
           </div>
 
           <div>
-            <h1 style={{ margin: 0, fontSize: '1.02rem', color: 'var(--primary)', fontWeight: 800 }}>
-              🛠️ Laboratório Livre de Diagramas
+            <h1 style={{ margin: 0, fontSize: '1.08rem', color: 'var(--primary)', fontWeight: 700, fontFamily: 'var(--font-serif), Georgia, serif' }}>
+              Construtor de Diagramas de Blocos
             </h1>
             <p style={{ margin: '2px 0 0 0', color: 'var(--text-muted)', fontSize: '0.73rem' }}>
-              Álgebra de blocos, equacionamento, superposição, TVF e Scilab
+              Álgebra de blocos, Regra de Mason, superposição, TVF e Scilab
             </p>
           </div>
 
@@ -3498,7 +3497,7 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
           </button>
         </div>
 
-        {/* Barra de Status Inferior Direita */}
+        {/* Barra de Status Técnica Inferior Direita (Estilo CAD / Simulink) */}
         <div
           style={{
             position: 'absolute',
@@ -3508,9 +3507,10 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
             pointerEvents: 'none',
             background: 'var(--card-bg)',
             border: '1px solid var(--card-border)',
-            borderRadius: '6px',
+            borderRadius: '4px',
             padding: '4px 10px',
-            fontSize: '0.72rem',
+            fontSize: '0.71rem',
+            fontFamily: 'var(--font-mono), monospace',
             color: 'var(--text-muted)',
             display: 'flex',
             gap: '12px'
@@ -4098,97 +4098,188 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
                     );
                   })()}
 
-                  {/* C. BLOCO G(s) E H(s) (COM SUPORTE A BLOCOS GENÉRICOS / SIMBÓLICOS E TEMA CLARO/ESCURO) */}
+                  {/* C. BLOCO G(s) E H(s) — VISUAL SIMULINK / CAD CIENTÍFICO (COM FRAÇÃO REAL E AJUSTE DE TEXTO) */}
                   {el.type === 'block' && (() => {
                     const isFeedback = el.dir === 'left';
-                    const hasDefinedExpr = Boolean((el.expr ?? '').trim());
+                    const rawExpr = (el.expr ?? '').trim();
+                    const hasDefinedExpr = Boolean(rawExpr);
                     const mainColor = isFeedback
                       ? isLightTheme
-                        ? '#7c3aed'
-                        : '#a855f7'
+                        ? '#b45309'
+                        : '#d97706'
                       : isLightTheme
-                      ? '#0284c7'
-                      : '#38bdf8';
+                      ? '#1e3a5f'
+                      : '#60a5fa';
+
+                    // Detecta fração simples de topo (ex: 10/(s+2) ou Km/((1+s*tau1)*(1+s*tau2))) para desenhar linha de fração estilo Simulink
+                    let fracNum: string | null = null;
+                    let fracDen: string | null = null;
+                    if (hasDefinedExpr && rawExpr.includes('/')) {
+                      let depth = 0;
+                      let splitIdx = -1;
+                      for (let ci = 0; ci < rawExpr.length; ci++) {
+                        if (rawExpr[ci] === '(') depth++;
+                        else if (rawExpr[ci] === ')') depth--;
+                        else if (rawExpr[ci] === '/' && depth === 0) {
+                          if (splitIdx === -1) splitIdx = ci;
+                          else {
+                            splitIdx = -2;
+                            break;
+                          }
+                        }
+                      }
+                      if (splitIdx > 0 && splitIdx < rawExpr.length - 1) {
+                        const stripOuter = (s: string) => {
+                          const t = s.trim();
+                          if (t.startsWith('(') && t.endsWith(')')) {
+                            let d = 0;
+                            let wraps = true;
+                            for (let k = 0; k < t.length - 1; k++) {
+                              if (t[k] === '(') d++;
+                              else if (t[k] === ')') d--;
+                              if (d === 0) {
+                                wraps = false;
+                                break;
+                              }
+                            }
+                            if (wraps) return t.slice(1, -1);
+                          }
+                          return t;
+                        };
+                        fracNum = stripOuter(rawExpr.slice(0, splitIdx));
+                        fracDen = stripOuter(rawExpr.slice(splitIdx + 1));
+                      }
+                    }
+
+                    const fitText = (txt: string, maxChars: number) =>
+                      txt.length > maxChars ? `${txt.slice(0, maxChars - 1)}…` : txt;
+                    const singleFontSize =
+                      rawExpr.length > 18 ? 8.2 : rawExpr.length > 13 ? 9.5 : 11;
+                    const fracFontSize =
+                      Math.max(fracNum?.length ?? 0, fracDen?.length ?? 0) > 16
+                        ? 7.8
+                        : Math.max(fracNum?.length ?? 0, fracDen?.length ?? 0) > 11
+                        ? 8.8
+                        : 10;
 
                     return (
                       <>
+                        <title>{`${el.name}${hasDefinedExpr ? ` = ${rawExpr}` : ''}`}</title>
                         <rect
                           x={x - 60}
                           y={y - 30}
                           width="120"
                           height="60"
-                          rx="8"
+                          rx="4"
                           fill={
                             isLightTheme
                               ? '#ffffff'
                               : isFeedback
-                              ? '#150c26'
-                              : '#0f172a'
+                              ? '#1c1917'
+                              : '#161d27'
                           }
-                          stroke={isSelected ? '#f59e0b' : isConnectingSource ? '#10b981' : mainColor}
-                          strokeWidth={isSelected || isConnectingSource ? 3 : 2}
+                          stroke={isSelected ? '#b45309' : isConnectingSource ? '#166534' : mainColor}
+                          strokeWidth={isSelected || isConnectingSource ? 2.5 : 1.7}
                         />
-                        {/* Badge Superior com Identificação Interna e Sentido */}
+                        {/* Badge Superior Discreto com Código e Sentido Técnico */}
                         <rect
-                          x={x - 42}
-                          y={y - 40}
-                          width="84"
-                          height="16"
-                          rx="4"
+                          x={x - 38}
+                          y={y - 39}
+                          width="76"
+                          height="15"
+                          rx="3"
                           fill={
                             isLightTheme
                               ? isFeedback
-                                ? '#f3e8ff'
-                                : '#e0f2fe'
+                                ? '#fef3c7'
+                                : '#f0f4f8'
                               : isFeedback
-                              ? '#2e1065'
-                              : '#082f49'
+                              ? '#292524'
+                              : '#1e293b'
                           }
                           stroke={mainColor}
-                          strokeWidth="1"
+                          strokeWidth="0.9"
                         />
                         <text
                           x={x}
-                          y={y - 29}
-                          fill={isLightTheme ? '#0f172a' : '#f1f5f9'}
-                          fontSize="9.5"
+                          y={y - 28.5}
+                          fill={isLightTheme ? '#111827' : '#f1f5f9'}
+                          fontSize="8.8"
+                          fontFamily="var(--font-mono), monospace"
                           textAnchor="middle"
-                          fontWeight="bold"
+                          fontWeight="600"
                         >
-                          {el.code || el.name} {isFeedback ? '⬅' : '➔'} {el.locked ? '🔒' : ''}
+                          {el.code || el.name} {isFeedback ? '←' : '→'} {el.locked ? '[L]' : ''}
                         </text>
 
                         {hasDefinedExpr ? (
-                          <>
-                            <text
-                              x={x}
-                              y={y - 4}
-                              fill={mainColor}
-                              fontSize="10"
-                              fontWeight="700"
-                              textAnchor="middle"
-                            >
-                              {el.name}
-                            </text>
-                            <text
-                              x={x}
-                              y={y + 14}
-                              fill={isLightTheme ? '#0f172a' : '#f8fafc'}
-                              fontSize="12"
-                              fontWeight="bold"
-                              textAnchor="middle"
-                            >
-                              {el.expr}
-                            </text>
-                          </>
+                          fracNum && fracDen ? (
+                            <>
+                              <text
+                                x={x}
+                                y={y - 6}
+                                fill={isLightTheme ? '#111827' : '#f8fafc'}
+                                fontSize={fracFontSize}
+                                fontFamily="var(--font-mono), monospace"
+                                fontWeight="600"
+                                textAnchor="middle"
+                              >
+                                {fitText(fracNum, 20)}
+                              </text>
+                              <line
+                                x1={x - 46}
+                                y1={y + 1}
+                                x2={x + 46}
+                                y2={y + 1}
+                                stroke={mainColor}
+                                strokeWidth="1.2"
+                              />
+                              <text
+                                x={x}
+                                y={y + 14}
+                                fill={isLightTheme ? '#111827' : '#f8fafc'}
+                                fontSize={fracFontSize}
+                                fontFamily="var(--font-mono), monospace"
+                                fontWeight="600"
+                                textAnchor="middle"
+                              >
+                                {fitText(fracDen, 20)}
+                              </text>
+                            </>
+                          ) : (
+                            <>
+                              <text
+                                x={x}
+                                y={y - 5}
+                                fill={mainColor}
+                                fontSize="9.2"
+                                fontWeight="700"
+                                textAnchor="middle"
+                              >
+                                {el.name}
+                              </text>
+                              <text
+                                x={x}
+                                y={y + 13}
+                                fill={isLightTheme ? '#111827' : '#f8fafc'}
+                                fontSize={singleFontSize}
+                                fontFamily="var(--font-mono), monospace"
+                                fontWeight="600"
+                                textAnchor="middle"
+                              >
+                                {fitText(rawExpr, 20)}
+                              </text>
+                            </>
+                          )
                         ) : (
                           <>
                             <text
                               x={x}
-                              y={y + 1}
-                              fill={isLightTheme ? '#0f172a' : '#f8fafc'}
-                              fontSize="13.5"
-                              fontWeight="800"
+                              y={y + 2}
+                              fill={isLightTheme ? '#111827' : '#f8fafc'}
+                              fontSize="13"
+                              fontFamily="var(--font-serif), Georgia, serif"
+                              fontWeight="700"
                               textAnchor="middle"
                             >
                               {el.name}
@@ -4593,26 +4684,27 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
         )}
       </div>
 
-      {/* Toast Flutuante */}
+      {/* Toast Flutuante (posicionado acima da barra de status Grade: 20px) */}
       {toastMessage && (
         <div
           style={{
             position: 'fixed',
-            bottom: '20px',
-            right: '20px',
+            bottom: '54px',
+            right: '16px',
             zIndex: 9999,
             background: 'var(--card-bg)',
-            border: '1px solid var(--primary)',
-            borderRadius: '10px',
-            padding: '10px 16px',
+            border: '1px solid var(--card-border)',
+            borderLeft: '3px solid var(--primary)',
+            borderRadius: '6px',
+            padding: '9px 14px',
             color: 'var(--text)',
-            fontSize: '0.82rem',
+            fontSize: '0.81rem',
             fontWeight: 600,
             display: 'flex',
             alignItems: 'center',
             gap: '10px',
-            boxShadow: '0 10px 25px rgba(0, 0, 0, 0.35)',
-            maxWidth: '460px'
+            boxShadow: '0 4px 14px rgba(15, 23, 42, 0.14)',
+            maxWidth: '420px'
           }}
         >
           <span>{toastMessage}</span>
