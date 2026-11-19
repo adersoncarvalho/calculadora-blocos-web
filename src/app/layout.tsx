@@ -1,5 +1,6 @@
 import './globals.css';
 import type { Metadata } from 'next';
+import { Analytics } from '@vercel/analytics/next';
 
 export const metadata: Metadata = {
   title: 'Calculadora e Laboratório de Redução em Diagramas de Blocos',
@@ -18,6 +19,7 @@ export default function RootLayout({
         <div className="container" id="mainContent">
           {children}
         </div>
+        <Analytics />
       </body>
     </html>
   );
