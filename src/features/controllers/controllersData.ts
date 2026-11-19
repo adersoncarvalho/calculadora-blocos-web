@@ -231,35 +231,63 @@ export const CONTROLLERS_THEORY: Record<ControllerCategoryId, ControllerTheory> 
       'Quando o sistema é lento, oscilatório ou instável e precisa cumprir especificações severas de transitório (%OS e Ts).',
       'Quando o erro estacionário já é aceitável (ou o Tipo já atende à entrada), mas os polos dominantes desejados sd não pertencem ao LGR original.'
     ],
-    professorMethodTitle: 'Roteiro Padrão — Projeto do Controlador PD via LGR (Lugar Geométrico das Raízes)',
+    professorMethodTitle: 'Procedimento do Professor — Controlador PD Real via LGR (Slide 30)',
     professorMethodSteps: [
       {
         step: 'Passo 1',
-        title: 'Determinar os Polos Dominantes Desejados (sd)',
+        title: 'Especificações → Polo Desejado (sd)',
         description:
-          'A partir dos requisitos de sobressinal (%OS) e tempo de acomodação (Ts), calcular ζ, ωn e o polo alvo sd = -σd + jωd.',
-        formulaLatex: '\\zeta = \\frac{-\\ln(\\%OS/100)}{\\sqrt{\\pi^2 + \\ln^2(\\%OS/100)}} \\;;\\; \\sigma_d = \\frac{4}{T_s} \\;;\\; s_d = -\\sigma_d + j\\sigma_d\\frac{\\sqrt{1-\\zeta^2}}{\\zeta}'
+          'A partir dos requisitos de sobressinal (Mp ou %OS), tempo de pico (tp) ou tempo de acomodação (ts), calcular ζ, ωn e o polo dominante desejado sd = -σd + jωd.',
+        formulaLatex: '\\zeta = \\frac{-\\ln(M_p)}{\\sqrt{\\pi^2 + \\ln^2(M_p)}} \\;;\\; \\sigma_d = \\frac{4}{t_s} \\;;\\; \\omega_d = \\frac{\\pi}{t_p} \\;;\\; s_d = -\\sigma_d + j\\omega_d'
       },
       {
         step: 'Passo 2',
-        title: 'Calcular a Deficiência Angular (Condição de Ângulo)',
+        title: 'Deficiência Angular θdef pela Condição de Ângulo',
         description:
-          'Avaliar a fase de G(sd). A diferença para ±180° é o ângulo φd que o zero do controlador PD precisa fornecer.',
-        formulaLatex: '\\phi_d = 180^\\circ - \\angle G(s_d) \\quad (\\text{ou } \\sum \\theta_{\\text{polos}} - \\sum \\theta_{\\text{zeros}} - 180^\\circ)'
+          'Avaliar a fase total da malha aberta original ∠L(sd) somando ângulos de zeros e subtraindo ângulos de polos. A diferença para -180° é θdef.',
+        formulaLatex: '\\theta_{\\text{def}} = -180^\\circ - \\angle L(s_d) \\quad (\\text{equivalente módulo } 360^\\circ)'
       },
       {
         step: 'Passo 3',
-        title: 'Posicionar o Zero zc do PD',
+        title: 'Tipo de Controlador pelo Sinal de θdef',
         description:
-          'Por trigonometria no ponto sd = -σd + jωd, encontrar o zero real s = -zc que contribui exatamente com o ângulo φd.',
-        formulaLatex: '\\tan(\\phi_d) = \\frac{\\omega_d}{z_c - \\sigma_d} \\implies z_c = \\sigma_d + \\frac{\\omega_d}{\\tan(\\phi_d)}'
+          'Se θdef = 0°, basta controlador P. Se θdef > 0°, é preciso adiantar fase (PD real ou avanço). Se θdef < 0°, o ponto sd pede atraso de fase.',
+        formulaLatex: '\\theta_{\\text{def}} > 0^\\circ \\implies \\text{PD Real (ou Avanço de Fase)}'
       },
       {
         step: 'Passo 4',
-        title: 'Calcular o Ganho Kd pela Condição de Módulo',
+        title: 'Fator de Filtro N, Razão r = N + 1 e Estágios m (conforme φmax)',
         description:
-          'Impor |Gc(sd)·G(sd)| = 1 para determinar Kd e obter Kp = Kd·zc.',
-        formulaLatex: 'K_d = \\frac{1}{|s_d + z_c| \\cdot |G(s_d)|} \\implies G_c(s) = K_d s + K_d z_c'
+          'Escolher o fator de filtro derivativo N (tipicamente N = 10, logo r = N + 1 = 11) e conferir o avanço máximo φmax de um estágio; se θdef > φmax, dividir em m estágios idênticos (θdef/m).',
+        formulaLatex: 'r = N + 1 \\;;\\; \\varphi_{\\max} = \\arcsin\\!\\left(\\frac{r - 1}{r + 1}\\right) \\;;\\; m = \\left\\lceil \\frac{\\theta_{\\text{def}}}{\\varphi_{\\max}} \\right\\rceil'
+      },
+      {
+        step: 'Passo 5',
+        title: 'Polinômio em zc → Posições de zc e pc',
+        description:
+          'Impor ∠G_c(sd) = θdef/m com pc = r·zc. Resolver a equação quadrática em zc por Bhaskara e adotar a MAIOR raiz positiva (evita zero lento); depois calcular pc = r·zc.',
+        formulaLatex: 'r z_c^2 - \\left[\\sigma_d(r+1) + \\omega_d(r-1)\\cot\\!\\left(\\frac{\\theta_{\\text{def}}}{m}\\right)\\right] z_c + (\\sigma_d^2 + \\omega_d^2) = 0 \\;;\\; p_c = r\\cdot z_c'
+      },
+      {
+        step: 'Passo 6',
+        title: 'Ganhos Kc, Kp e Td pela Condição de Módulo',
+        description:
+          'Aplicar a condição de módulo literal |Gc(sd)·G(sd)| = 1 sem inverter antecipadamente para obter Kc, e converter para a forma paralela Kp e Td.',
+        formulaLatex: 'K_c = \\frac{1}{|\\bar{G}_c(s_d)G(s_d)|} \\;;\\; K_p = \\frac{K_c}{r} \\;;\\; T_d = \\frac{r - 1}{r\\cdot z_c} = \\frac{N}{p_c}'
+      },
+      {
+        step: 'Passo 7',
+        title: 'Simulação, Pré-Filtro, Regra dos 10 V e Erro em Regime',
+        description:
+          'Simular a resposta ao degrau e o esforço de controle u(t). Lembrar que o zero do PD altera Mp e tp (usar pré-filtro se necessário), conferir o pico inicial u(0⁺) ≤ 10 V e avaliar o erro estacionário.',
+        formulaLatex: 'u(0^+) = K_c \\cdot r(0^+) \\le 10\\text{ V} \\;;\\; F(s) = \\frac{z_c}{s + z_c} \\;(\\text{pré-filtro opcional})'
+      },
+      {
+        step: 'Passo 8',
+        title: 'Componentes R1, R2, C1, C2 e Simulação com Saturação',
+        description:
+          'Dimensionar o circuito analógico com amp-op a partir de zc, pc e Kc (escolhendo C1 e C2 comerciais) e validar em simulação com saturação do atuador.',
+        formulaLatex: 'z_c = \\frac{1}{R_1 C_1} \\;;\\; p_c = \\frac{1}{R_2 C_2} \\;;\\; K_c = \\frac{C_1}{C_2} \\;\\left(\\text{ou } K_p = \\frac{R_2}{R_1}\\right)'
       }
     ]
   },
@@ -357,49 +385,63 @@ export const CONTROLLERS_THEORY: Record<ControllerCategoryId, ControllerTheory> 
       'Quando o transitório (polos dominantes sd) JÁ está satisfatório com ganho inicial K0, mas o erro em regime permanente está acima do especificado.',
       'Quando não é necessário mudar o Tipo do sistema (diferente do PI), bastando amplificar o ganho DC em baixas frequências.'
     ],
-    professorMethodTitle: 'Roteiro Padrão do Professor — Controlador por Atraso de Fase (Lag)',
+    professorMethodTitle: 'Procedimento do Professor — Compensador por Atraso de Fase (Lag) via LGR (Slide 20)',
     professorMethodSteps: [
       {
         step: 'Passo 0',
-        title: 'Especificação e Triagem do Dipolo',
+        title: 'Triagem: Tipo 0 ou 1, Fase Mínima e |slenta|',
         description:
-          'Calcular Kreq a partir do erro estacionário desejado e determinar o limite do dipolo usando o polo não-nulo mais lento da planta (para não criar cauda lenta).',
+          'Identificar o Tipo do sistema (0 para degrau, 1 para rampa), confirmar que é de fase mínima e identificar o módulo do polo real não-nulo mais lento da planta |slenta| (polos na origem não entram).',
         formulaLatex: 'z_{\\text{dipolo}} = \\frac{|s_{\\text{lenta}}|}{1{,}1}'
       },
       {
         step: 'Passo 1',
-        title: 'Ganho Inicial K0 pela Condição de Módulo',
+        title: 'P ou PD em sd: Ganho Inicial K0 e Constante Atual Ka',
         description:
-          'Calcular o ganho K0 que coloca os polos dominantes da planta sem compensador exatamente no ponto desejado sd = -σd + jωd.',
-        formulaLatex: '|K_0 G(s_d)| = 1 \\implies K_0 = \\frac{1}{|G(s_d)|}'
+          'Calcular o ganho K0 pela condição de módulo literal |K0·G(sd)| = 1 no ponto desejado sd = -σd + jωd, e obter a constante de erro atual Ka (Kpos para Tipo 0 ou Kvel para Tipo 1).',
+        formulaLatex: 'K_0 = \\frac{1}{|G(s_d)|} \\;;\\; K_{\\text{pos},a} = K_0 G(0) \\quad \\text{ou} \\quad K_{\\text{vel},a} = K_0 \\lim_{s\\to 0} s G(s)'
       },
       {
         step: 'Passo 2',
-        title: 'Constante Atual e Fator β',
+        title: 'Razão de Amplificação β = Kreq / Ka',
         description:
-          'Calcular a constante de erro atual (Kp,a, Kv,a ou Ka,a) usando K0 e obter a razão de amplificação necessária β = z/p.',
-        formulaLatex: '\\beta = \\frac{K_{\\text{req}}}{K_{\\text{atual}}}'
+          'A partir do erro estacionário especificado, determinar Kreq e calcular o fator mínimo β = z/p que o compensador de atraso deve multiplicar em baixa frequência.',
+        formulaLatex: '\\beta = \\frac{K_{\\text{req}}}{K_a}'
       },
       {
         step: 'Passo 3',
-        title: 'Erro Atual e Reserva de Tolerância Angular φ',
+        title: 'Tolerância Angular φ (5° ou 10°)',
         description:
-          'Se o erro atual com K0 for elevado (> 2%), reservar tolerância angular φ = 10° (ou φ = 5° para ajustes finos).',
-        formulaLatex: '\\varphi = 10^\\circ \\quad (\\text{ou } 5^\\circ)'
+          'Em plantas Tipo 0, usar φ = 5° se o erro atual eP ≤ 2%, senão φ = 10°. Em plantas Tipo 1, adotar φ = 10°.',
+        formulaLatex: '\\varphi = 5^\\circ \\;(\\text{se } e_P \\le 2\\%) \\quad \\text{senão } \\varphi = 10^\\circ \\;(\\text{Tipo 1: } 10^\\circ)'
       },
       {
         step: 'Passo 4',
-        title: 'Posição de z e p pelo Polinômio Trigonométrico',
+        title: 'Escolha de z: Menor entre zmax(φ), Dipolo e Regra da Cauda (Tipo 1)',
         description:
-          'Resolver tan(θz - θp) = tan(φ) com z = β·p no ponto sd = -σd + jωd. Comparar z_max = β·p_max com z_dipolo e escolher o MENOR valor para z; depois calcular p = z/β.',
-        formulaLatex: '\\frac{\\frac{\\omega_d}{\\sigma_d - \\beta p} - \\frac{\\omega_d}{\\sigma_d - p}}{1 + \\frac{\\omega_d^2}{(\\sigma_d - \\beta p)(\\sigma_d - p)}} = \\tan(\\varphi) \\;;\\; z = \\min(z_{\\max}, z_{\\text{dipolo}}) \\;;\\; p = \\frac{z}{\\beta}'
+          'Resolver o polinômio angular com z = β·p para achar zmax(φ) = β·pmax, comparar com |slenta|/1,1 e, em plantas Tipo 1, aplicar a regra da cauda (A = 2%) para escolher o MENOR valor de z.',
+        formulaLatex: '\\beta p^2 - \\left[\\sigma_d(\\beta+1) + \\omega_d(\\beta-1)\\cot\\varphi\\right] p + (\\sigma_d^2+\\omega_d^2) = 0 \\;;\\; z = \\min\\!\\left(z_{\\max}(\\varphi)\\,;\\, \\frac{|s_{\\text{lenta}}|}{1{,}1}\\,;\\, \\frac{A}{\\frac{1}{K_{\\text{vel},a}} - \\frac{1}{K_{\\text{vel,req}}}}\\right)'
       },
       {
         step: 'Passo 5',
-        title: 'Ajuste Final de Ganho Kc e Conferência',
+        title: 'Polo p = z/β e Ganho Kc pela Condição de Módulo Literal',
         description:
-          'Recalcular o ganho Kc pela condição de módulo incluindo o compensador e conferir se o erro final atende à especificação.',
-        formulaLatex: 'K_c = K_0 \\frac{|s_d + p|}{|s_d + z|} \\implies e_{ss,\\text{final}} \\le e_{ss,\\text{req}}'
+          'Calcular o polo p = z/β, conferir a perda angular real Δθperda = |∠(sd+z) - ∠(sd+p)| ≤ φ e recalcular Kc pela condição de módulo literal sem inverter antecipadamente.',
+        formulaLatex: 'p = \\frac{z}{\\beta} \\;;\\; K_c = \\frac{1}{|\\bar{G}_c(s_d)G(s_d)|} \\implies e_{ss,\\text{final}} \\le e_{ss,\\text{req}}'
+      },
+      {
+        step: 'Passo 6',
+        title: 'Simular P e Atraso (Verificação de Mp, ts e Cauda)',
+        description:
+          'Comparar as respostas do sistema só com P (K0) e com Atraso (Gc): em Tipo 0 com eP > 2% e z < 0,8·|slenta|, a cauda lenta tende a aumentar o tempo de acomodação ts.',
+        formulaLatex: 'G_c(s) = K_c\\frac{s + z}{s + p} \\;;\\; \\text{conferir } M_p,\\; t_s,\\; e_{ss} \\text{ e cauda}'
+      },
+      {
+        step: 'Passo 7',
+        title: 'Componentes Analógicos (C, R1, R2, R4)',
+        description:
+          'Escolher capacitor comercial C (ex.: 10 µF) e resistor R3 (ex.: 10 kΩ) para o estágio inversor de ganho, obtendo R1, R2 e R4 (avaliar implementação digital se R1 ou R2 ficarem na casa de MΩ).',
+        formulaLatex: 'R_1 = \\frac{1}{z\\cdot C} \\;;\\; R_2 = \\beta\\cdot R_1 \\;;\\; R_4 = K_c\\cdot R_3'
       }
     ]
   }
@@ -1894,14 +1936,14 @@ xgrid();`
       },
       {
         title: '2. Passos 1 a 3 — Ganho $K_0$, $K_{p,\\text{atual}}$, Fator $\\beta$ e Tolerância $\\varphi$',
-        description: 'Aplicando $K_0 = \\left.\\frac{1}{|G(s)H(s)|}\\right|_{s=-3+j3}$ com $G(s)=\\frac{1}{(s+1)(s+5)}$ e $H(s)=1$:',
+        description: 'Aplicando $K_0 = \\left.\\frac{1}{|G(s)H(s)|}\\right|_{s=-3+j3}$ com $G(s)=\\frac{1}{(s+1)(s+5)}$ e $H(s)=1$, expandindo quadrados e somas dentro das raízes:',
         latex:
-          'K_0 = \\frac{1}{\\left|\\frac{1}{(-3+j3+1)(-3+j3+5)}\\right|} = \\frac{1}{\\frac{1}{|-2+j3|\\cdot|2+j3|}} = \\frac{1}{\\frac{1}{\\sqrt{(-2)^2+3^2}\\cdot\\sqrt{2^2+3^2}}} = \\frac{1}{\\frac{1}{\\sqrt{13}\\cdot\\sqrt{13}}} = \\mathbf{13} \\;;\\; K_{p,a} = 13 \\cdot \\frac{1}{5} = 2{,}6 \\; (e_p = 27{,}8\\% > 2\\% \\implies \\varphi = 10^\\circ) \\;;\\; \\beta = \\frac{19}{2{,}6} \\approx \\mathbf{7{,}31}'
+          'K_0 = \\frac{1}{|G(s_d)|} = \\frac{1}{\\left|\\frac{1}{(-3+j3+1)(-3+j3+5)}\\right|} = \\frac{1}{\\frac{1}{|-2+j3|\\cdot|2+j3|}} = \\frac{1}{\\frac{1}{\\sqrt{(-2)^2+3^2}\\cdot\\sqrt{2^2+3^2}}} = \\frac{1}{\\frac{1}{\\sqrt{4+9}\\cdot\\sqrt{4+9}}} = \\frac{1}{\\frac{1}{\\sqrt{13}\\cdot\\sqrt{13}}} = \\frac{1}{\\frac{1}{13}} = \\mathbf{13} \\;;\\; K_{p,a} = K_0\\cdot G(0) = 13 \\cdot \\frac{1}{5} = 2{,}6 \\;\\left(e_p = \\frac{1}{1+2{,}6} = 27{,}8\\% > 2\\% \\implies \\varphi = 10^\\circ\\right) \\;;\\; \\beta = \\frac{K_{p,\\text{req}}}{K_{p,a}} = \\frac{19}{2{,}6} \\approx \\mathbf{7{,}31}'
       },
       {
         title: '3. Passo 4 — Polinômio Trigonométrico para $z$ e $p$',
-        description: 'Impondo $\\tan(\\theta_z - \\theta_p) = \\tan(10^\\circ)$ com $z = 7{,}31p$ em $s_d = -3 + j3$ e comparando $z_{\\max}$ com $z_{\\text{dipolo}}$:',
-        latex: '7{,}31p^2 - 132{,}24p + 18 = 0 \\implies p_{\\max} \\approx 0{,}137 \\implies z_{\\max} = 7{,}31 \\cdot 0{,}137 \\approx 1{,}002 \\implies z = \\min(1{,}002;\\, 0{,}909) = \\mathbf{0{,}909} \\;;\\; p = \\frac{0{,}909}{7{,}31} \\approx \\mathbf{0{,}124} \\;;\\; \\Delta\\theta_{\\text{perda}} = |\\angle(s_d+z) - \\angle(s_d+p)| = |\\angle(-2{,}091+j3) - \\angle(-2{,}876+j3)| = |124{,}88^\\circ - 133{,}79^\\circ| = \\mathbf{8{,}9^\\circ}'
+        description: 'Impondo $\\tan(\\theta_z - \\theta_p) = \\tan(10^\\circ)$ com $z = \\beta p$ ($\\sigma_d = 3,\\; \\omega_d = 3,\\; \\beta = 7{,}31,\\; \\cot 10^\\circ = 5{,}6713$): $c_2 = \\beta$, $c_1 = -[\\sigma_d(\\beta+1)+\\omega_d(\\beta-1)\\cot\\varphi]$ e $c_0 = \\sigma_d^2+\\omega_d^2$. Resolvendo por Bhaskara e comparando $z_{\\max}$ com $z_{\\text{dipolo}}$:',
+        latex: 'c_2 = 7{,}31 \\;;\\; c_1 = -[3(7{,}31+1) + 3(7{,}31-1)\\cdot 5{,}6713] = -[24{,}93 + 107{,}36] = -132{,}29 \\;;\\; c_0 = 3^2 + 3^2 = 18 \\;;\\; 7{,}31p^2 - 132{,}29p + 18 = 0 \\implies \\Delta = (-132{,}29)^2 - 4\\cdot 7{,}31\\cdot 18 = 17500{,}64 - 526{,}32 = 16974{,}32 \\;(\\sqrt{\\Delta} = 130{,}29) \\;;\\; p_{\\max} = \\frac{132{,}29 - 130{,}29}{2\\cdot 7{,}31} = \\frac{2{,}00}{14{,}62} \\approx 0{,}137 \\implies z_{\\max} = 7{,}31 \\cdot 0{,}137 \\approx 1{,}002 \\;;\\; z = \\min(1{,}002\\,;\\, 0{,}909) = \\mathbf{0{,}909} \\;;\\; p = \\frac{z}{\\beta} = \\frac{0{,}909}{7{,}31} \\approx \\mathbf{0{,}124} \\;;\\; \\Delta\\theta_{\\text{perda}} = |\\angle(s_d+z) - \\angle(s_d+p)| = |\\angle(-2{,}091+j3) - \\angle(-2{,}876+j3)| = |124{,}88^\\circ - 133{,}79^\\circ| = \\mathbf{8{,}9^\\circ}'
       },
       {
         title: '4. Passo 5 — Ajuste de Ganho $K_c$ pela Condição de Módulo (Regra dos 7 Passos) e Conferência',
@@ -1957,9 +1999,9 @@ xgrid();`
       {
         title: '1. Ganho $K_0$, $K_{\\text{vel},a}$ e Fator $\\beta$ ($s_d = -2 + j2$)',
         description:
-          'Triagem: Tipo 1, $|s_{\\text{lenta}}| = 4 \\implies 4/1{,}1 = 3{,}64$ (o polo na origem não entra). Calculando $K_0 = |s_d|\\cdot|s_d+4|$ e $K_{\\text{vel},a} = K_0\\lim_{s\\to 0} s G(s)$:',
+          'Triagem: Tipo 1, $|s_{\\text{lenta}}| = 4 \\implies 4/1{,}1 = 3{,}64$ (o polo na origem não entra). Calculando $K_0 = \\frac{1}{|G(s_d)|}$ passo a passo e $K_{\\text{vel},a} = K_0\\lim_{s\\to 0} s G(s)$:',
         latex:
-          'K_0 = \\frac{1}{|G(s_d)|} = \\frac{1}{\\left|\\frac{1}{s_d(s_d+4)}\\right|} = \\frac{1}{\\left|\\frac{1}{(-2+j2)(-2+j2+4)}\\right|} = \\frac{1}{\\frac{1}{|-2+j2|\\cdot|2+j2|}} = \\frac{1}{\\frac{1}{\\sqrt{(-2)^2+2^2}\\cdot\\sqrt{2^2+2^2}}} = \\frac{1}{\\frac{1}{2{,}828\\cdot 2{,}828}} = \\frac{1}{0{,}125} = \\mathbf{8} \\;;\\; K_{\\text{vel},a} = K_0\\lim_{s\\to 0}\\frac{1}{s+4} = \\frac{8}{4} = 2 \\;;\\; \\beta = \\frac{K_{\\text{vel,req}}}{K_{\\text{vel},a}} = \\frac{10}{2} = \\mathbf{5} \\;;\\; \\varphi = 10^\\circ'
+          'K_0 = \\frac{1}{|G(s_d)|} = \\frac{1}{\\left|\\frac{1}{s_d(s_d+4)}\\right|} = \\frac{1}{\\left|\\frac{1}{(-2+j2)(-2+j2+4)}\\right|} = \\frac{1}{\\frac{1}{|-2+j2|\\cdot|2+j2|}} = \\frac{1}{\\frac{1}{\\sqrt{(-2)^2+2^2}\\cdot\\sqrt{2^2+2^2}}} = \\frac{1}{\\frac{1}{\\sqrt{4+4}\\cdot\\sqrt{4+4}}} = \\frac{1}{\\frac{1}{\\sqrt{8}\\cdot\\sqrt{8}}} = \\frac{1}{\\frac{1}{8}} = \\mathbf{8} \\;;\\; K_{\\text{vel},a} = K_0\\lim_{s\\to 0}\\frac{1}{s+4} = \\frac{8}{4} = 2 \\;;\\; \\beta = \\frac{K_{\\text{vel,req}}}{K_{\\text{vel},a}} = \\frac{10}{2} = \\mathbf{5} \\;;\\; \\varphi = 10^\\circ'
       },
       {
         title: '2. Três Limites para $z$: Polinômio Angular, Dipolo e Regra da Cauda ($A = 2\\%$)',
@@ -2023,7 +2065,7 @@ xgrid();`
         description:
           'Aplicando $K_0 = \\frac{1}{|G(s_d)|}$ passo a passo com $|a+jb| = \\sqrt{a^2+b^2}$, $G(0) = \\frac{4}{1\\cdot 2\\cdot 8} = 0{,}25$ e $\\beta = \\frac{K_{\\text{pos,req}}}{K_{\\text{pos},a}}$:',
         latex:
-          '\\beta = \\arccos(0{,}707) = 45^\\circ \\implies \\omega_d = \\sigma_d \\;;\\; \\angle G(-2+j2) = 45^\\circ - (116{,}57^\\circ + 90^\\circ + 18{,}43^\\circ) = -180^\\circ \\implies \\mathbf{s_d = -2 + j2} \\;;\\; K_0 = \\frac{1}{|G(s_d)|} = \\frac{1}{\\left|\\frac{s_d+4}{(s_d+1)(s_d+2)(s_d+8)}\\right|} = \\frac{1}{\\left|\\frac{-2+j2+4}{(-2+j2+1)(-2+j2+2)(-2+j2+8)}\\right|} \\;;\\; K_0 = \\frac{1}{\\frac{|2+j2|}{|-1+j2|\\cdot|j2|\\cdot|6+j2|}} = \\frac{1}{\\frac{\\sqrt{2^2+2^2}}{\\sqrt{(-1)^2+2^2}\\cdot 2\\cdot\\sqrt{6^2+2^2}}} = \\frac{1}{\\frac{2{,}8284}{2{,}2361\\cdot 2\\cdot 6{,}3246}} = \\frac{1}{0{,}1000} = \\mathbf{10} \\;;\\; K_{\\text{pos},a} = K_0 G(0) = 10\\cdot 0{,}25 = 2{,}5 \\;;\\; e_P = \\frac{1}{1+2{,}5} = 28{,}6\\% > 2\\% \\implies \\varphi = 10^\\circ \\;;\\; \\beta = \\frac{19}{2{,}5} = \\mathbf{7{,}6}'
+          '\\beta = \\arccos(0{,}707) = 45^\\circ \\implies \\omega_d = \\sigma_d \\;;\\; \\angle G(-2+j2) = 45^\\circ - (116{,}57^\\circ + 90^\\circ + 18{,}43^\\circ) = -180^\\circ \\implies \\mathbf{s_d = -2 + j2} \\;;\\; K_0 = \\frac{1}{|G(s_d)|} = \\frac{1}{\\left|\\frac{s_d+4}{(s_d+1)(s_d+2)(s_d+8)}\\right|} = \\frac{1}{\\left|\\frac{-2+j2+4}{(-2+j2+1)(-2+j2+2)(-2+j2+8)}\\right|} \\;;\\; K_0 = \\frac{1}{\\frac{|2+j2|}{|-1+j2|\\cdot|j2|\\cdot|6+j2|}} = \\frac{1}{\\frac{\\sqrt{2^2+2^2}}{\\sqrt{(-1)^2+2^2}\\cdot 2\\cdot\\sqrt{6^2+2^2}}} = \\frac{1}{\\frac{\\sqrt{4+4}}{\\sqrt{1+4}\\cdot 2\\cdot\\sqrt{36+4}}} = \\frac{1}{\\frac{\\sqrt{8}}{\\sqrt{5}\\cdot 2\\cdot\\sqrt{40}}} = \\frac{1}{\\frac{2{,}8284}{2{,}2361\\cdot 2\\cdot 6{,}3246}} = \\frac{1}{0{,}1000} = \\mathbf{10} \\;;\\; K_{\\text{pos},a} = K_0 G(0) = 10\\cdot 0{,}25 = 2{,}5 \\;;\\; e_P = \\frac{1}{1+2{,}5} = 28{,}6\\% > 2\\% \\implies \\varphi = 10^\\circ \\;;\\; \\beta = \\frac{19}{2{,}5} = \\mathbf{7{,}6}'
       },
       {
         title: '2. Escolha de $z$ e $p$ (Polinômio Angular vs. Dipolo $|s_{\\text{lenta}}|/1{,}1$)',
@@ -2077,9 +2119,9 @@ xgrid();`
       {
         title: '1. Polo Desejado $s_d = -0{,}9 + j0{,}9$, Ganho $K_0$, $K_{\\text{vel},a}$ e $\\beta$',
         description:
-          'Aplicando $K_0 = |s_d|\\cdot|s_d+2|\\cdot|s_d+10|$ passo a passo e $K_{\\text{vel},a} = K_0\\lim_{s\\to 0} s G(s) = \\frac{K_0}{2\\cdot 10}$:',
+          'Aplicando $K_0 = \\frac{1}{|G(s_d)|}$ passo a passo (sem inverter antecipadamente) e $K_{\\text{vel},a} = K_0\\lim_{s\\to 0} s G(s) = \\frac{K_0}{2\\cdot 10}$:',
         latex:
-          '\\beta = \\arccos(0{,}707) = 45^\\circ \\implies \\omega_d = \\sigma_d \\;;\\; \\angle G(-0{,}9+j0{,}9) = -(135^\\circ + 39{,}3^\\circ + 5{,}6^\\circ) = -180^\\circ \\implies \\mathbf{s_d = -0{,}9 + j0{,}9} \\;;\\; K_0 = \\frac{1}{|G(s_d)|} = \\frac{1}{\\left|\\frac{1}{s_d(s_d+2)(s_d+10)}\\right|} = \\frac{1}{\\left|\\frac{1}{(-0{,}9+j0{,}9)(-0{,}9+j0{,}9+2)(-0{,}9+j0{,}9+10)}\\right|} \\;;\\; K_0 = \\frac{1}{\\frac{1}{|-0{,}9+j0{,}9|\\cdot|1{,}1+j0{,}9|\\cdot|9{,}1+j0{,}9|}} = \\frac{1}{\\frac{1}{\\sqrt{(-0{,}9)^2+0{,}9^2}\\cdot\\sqrt{1{,}1^2+0{,}9^2}\\cdot\\sqrt{9{,}1^2+0{,}9^2}}} = \\frac{1}{\\frac{1}{1{,}2728\\cdot 1{,}4213\\cdot 9{,}1444}} = \\frac{1}{0{,}06045} = \\mathbf{16{,}54} \\;;\\; K_{\\text{vel},a} = \\frac{16{,}54}{20} = 0{,}827 \\;;\\; \\beta = \\frac{K_{\\text{vel,req}}}{K_{\\text{vel},a}} = \\frac{10}{0{,}827} = \\mathbf{12{,}1} \\;;\\; \\varphi = 10^\\circ'
+          '\\beta = \\arccos(0{,}707) = 45^\\circ \\implies \\omega_d = \\sigma_d \\;;\\; \\angle G(-0{,}9+j0{,}9) = -(135^\\circ + 39{,}3^\\circ + 5{,}6^\\circ) = -180^\\circ \\implies \\mathbf{s_d = -0{,}9 + j0{,}9} \\;;\\; K_0 = \\frac{1}{|G(s_d)|} = \\frac{1}{\\left|\\frac{1}{s_d(s_d+2)(s_d+10)}\\right|} = \\frac{1}{\\left|\\frac{1}{(-0{,}9+j0{,}9)(-0{,}9+j0{,}9+2)(-0{,}9+j0{,}9+10)}\\right|} \\;;\\; K_0 = \\frac{1}{\\frac{1}{|-0{,}9+j0{,}9|\\cdot|1{,}1+j0{,}9|\\cdot|9{,}1+j0{,}9|}} = \\frac{1}{\\frac{1}{\\sqrt{(-0{,}9)^2+0{,}9^2}\\cdot\\sqrt{1{,}1^2+0{,}9^2}\\cdot\\sqrt{9{,}1^2+0{,}9^2}}} = \\frac{1}{\\frac{1}{\\sqrt{0{,}81+0{,}81}\\cdot\\sqrt{1{,}21+0{,}81}\\cdot\\sqrt{82{,}81+0{,}81}}} = \\frac{1}{\\frac{1}{\\sqrt{1{,}62}\\cdot\\sqrt{2{,}02}\\cdot\\sqrt{83{,}62}}} = \\frac{1}{\\frac{1}{1{,}2728\\cdot 1{,}4213\\cdot 9{,}1444}} = \\frac{1}{0{,}06045} = \\mathbf{16{,}54} \\;;\\; K_{\\text{vel},a} = \\frac{16{,}54}{20} = 0{,}827 \\;;\\; \\beta = \\frac{K_{\\text{vel,req}}}{K_{\\text{vel},a}} = \\frac{10}{0{,}827} = \\mathbf{12{,}1} \\;;\\; \\varphi = 10^\\circ'
       },
       {
         title: '2. Três Limites para $z$: Polinômio Angular, Dipolo e Regra da Cauda ($A = 2\\%$)',
@@ -2141,19 +2183,19 @@ xgrid();`
         latex: '\\frac{1}{1 + K_{p,\\text{req}}} = 0{,}05 \\implies 1 + K_{p,\\text{req}} = 20 \\implies K_{p,\\text{req}} = 19 \\qquad;\\qquad z_{\\text{dipolo}} = \\frac{|s_{\\text{lenta}}|}{1{,}1} = \\frac{2}{1{,}1} = 1{,}818'
       },
       {
-        title: '3. Passo 1 — Ganho Inicial $K_0$ pela Condição de Módulo em $s_d = -3{,}5 + j3{,}5$',
-        description: 'Substituindo $s = s_d$ em $|K_0 G(s_d)| = 1$ para calcular as distâncias aos polos em $-2$ e $-5$:',
-        latex: '|s_d + 2| = |-1{,}5 + j3{,}5| = \\sqrt{1{,}5^2 + 3{,}5^2} = \\sqrt{14{,}5} \\approx 3{,}808 \\quad;\\quad |s_d + 5| = |1{,}5 + j3{,}5| = \\sqrt{14{,}5} \\approx 3{,}808 \\implies K_0 = \\frac{3{,}808 \\cdot 3{,}808}{20} = \\frac{14{,}5}{20} = \\mathbf{0{,}725}'
+        title: '3. Passo 1 — Ganho Inicial $K_0$ pela Condição de Módulo em $s_d = -3{,}5 + j3{,}5$ (Regra dos 7 Passos)',
+        description: 'Aplicando $K_0 = \\left.\\frac{1}{|G(s)|}\\right|_{s=-3{,}5+j3{,}5}$ sem inverter antecipadamente:',
+        latex: 'K_0 = \\frac{1}{|G(s_d)|} = \\frac{1}{\\left|\\frac{20}{(s_d+2)(s_d+5)}\\right|} = \\frac{1}{\\left|\\frac{20}{(-3{,}5+j3{,}5+2)(-3{,}5+j3{,}5+5)}\\right|} = \\frac{1}{\\frac{20}{|-1{,}5+j3{,}5|\\cdot|1{,}5+j3{,}5|}} \\;;\\; K_0 = \\frac{1}{\\frac{20}{\\sqrt{(-1{,}5)^2+3{,}5^2}\\cdot\\sqrt{1{,}5^2+3{,}5^2}}} = \\frac{1}{\\frac{20}{\\sqrt{2{,}25+12{,}25}\\cdot\\sqrt{2{,}25+12{,}25}}} = \\frac{1}{\\frac{20}{\\sqrt{14{,}5}\\cdot\\sqrt{14{,}5}}} = \\frac{1}{\\frac{20}{14{,}5}} = \\frac{1}{1{,}3793} = \\mathbf{0{,}725}'
       },
       {
         title: '4. Passos 2 e 3 — Constante Atual ($K_{p,a}$), Fator $\\beta$ e Tolerância $\\varphi$',
         description: 'Calculando o $K_p$ com o ganho $K_0 = 0{,}725$, a razão $\\beta$ necessária e reservando $\\varphi = 10^\\circ$ (pois o erro atual é $40{,}8\\% > 2\\%$):',
-        latex: 'K_{p,a} = K_0 \\cdot K_p = 0{,}725 \\cdot 2 = 1{,}45 \\quad;\\quad \\beta = \\frac{K_{p,\\text{req}}}{K_{p,a}} = \\frac{19}{1{,}45} \\approx \\mathbf{13{,}10} \\quad;\\quad \\varphi = 10^\\circ'
+        latex: 'K_{p,a} = K_0 \\cdot K_p = 0{,}725 \\cdot 2 = 1{,}45 \\;;\\; e_{p,a} = \\frac{1}{1+1{,}45} = 40{,}8\\% > 2\\% \\implies \\varphi = 10^\\circ \\;;\\; \\beta = \\frac{K_{p,\\text{req}}}{K_{p,a}} = \\frac{19}{1{,}45} \\approx \\mathbf{13{,}10}'
       },
       {
-        title: '5. Passos 4 e 5 — Posição de $z$, $p$, Ajuste de $K_c$ e Erro Final',
-        description: 'Adotando $z = 0{,}909 < z_{\\text{dipolo}}$ (perda angular real de $7{,}9^\\circ < 10^\\circ$), determinando $p = z/\\beta$, recalculando o módulo em $s_d$ e conferindo o erro final:',
-        latex: 'p = \\frac{0{,}909}{13{,}10} = \\mathbf{0{,}0694} \\quad;\\quad K_c = K_0 \\frac{|s_d + p|}{|s_d + z|} = 0{,}725 \\cdot \\frac{|-3{,}4306 + j3{,}5|}{|-2{,}591 + j3{,}5|} = 0{,}725 \\cdot \\frac{4{,}901}{4{,}355} \\approx \\mathbf{0{,}817} \\implies K_{p,\\text{novo}} = 2 \\cdot 0{,}817 \\cdot 13{,}10 = 21{,}4 \\implies \\mathbf{e_{ss} = \\frac{1}{1+21{,}4} = 4{,}4\\% \\le 5\\%}'
+        title: '5. Passos 4 e 5 — Posição de $z$, $p$, Perda Angular e Ganho $K_c$ (Regra dos 7 Passos)',
+        description: 'Adotando $z = 0{,}909 < z_{\\text{dipolo}}$, determinando $p = z/\\beta$, conferindo $\\Delta\\theta_{\\text{perda}} < 10^\\circ$ e aplicando $K_c = \\frac{1}{|\\bar{G}_c(s_d)G(s_d)|}$ sem atalhos:',
+        latex: 'p = \\frac{z}{\\beta} = \\frac{0{,}909}{13{,}10} = \\mathbf{0{,}0694} \\;;\\; \\Delta\\theta_{\\text{perda}} = |\\angle(s_d+z) - \\angle(s_d+p)| = |\\angle(-2{,}591+j3{,}5) - \\angle(-3{,}4306+j3{,}5)| = |126{,}51^\\circ - 134{,}43^\\circ| = \\mathbf{7{,}9^\\circ} < 10^\\circ \\;;\\; K_c = \\frac{1}{|\\bar{G}_c(s_d)G(s_d)|} = \\frac{1}{\\left|\\frac{s_d+z}{s_d+p}\\cdot\\frac{20}{(s_d+2)(s_d+5)}\\right|} = \\frac{1}{\\left|\\frac{-3{,}5+j3{,}5+0{,}909}{-3{,}5+j3{,}5+0{,}0694}\\cdot\\frac{20}{(-3{,}5+j3{,}5+2)(-3{,}5+j3{,}5+5)}\\right|} \\;;\\; K_c = \\frac{1}{\\frac{20|-2{,}591+j3{,}5|}{|-3{,}4306+j3{,}5|\\cdot|-1{,}5+j3{,}5|\\cdot|1{,}5+j3{,}5|}} = \\frac{1}{\\frac{20\\sqrt{(-2{,}591)^2+3{,}5^2}}{\\sqrt{(-3{,}4306)^2+3{,}5^2}\\cdot\\sqrt{(-1{,}5)^2+3{,}5^2}\\cdot\\sqrt{1{,}5^2+3{,}5^2}}} = \\frac{1}{\\frac{20\\sqrt{6{,}713+12{,}25}}{\\sqrt{11{,}769+12{,}25}\\cdot\\sqrt{2{,}25+12{,}25}\\cdot\\sqrt{2{,}25+12{,}25}}} \\;;\\; K_c = \\frac{1}{\\frac{20\\sqrt{18{,}963}}{\\sqrt{24{,}019}\\cdot\\sqrt{14{,}5}\\cdot\\sqrt{14{,}5}}} = \\frac{1}{\\frac{20\\cdot 4{,}355}{4{,}901\\cdot 14{,}5}} = \\frac{1}{\\frac{87{,}094}{71{,}063}} = \\frac{1}{1{,}2256} \\approx \\mathbf{0{,}816} \\;(\\approx 0{,}817) \\;;\\; K_{p,\\text{novo}} = K_p\\cdot K_c\\cdot\\frac{z}{p} = 2\\cdot 0{,}817\\cdot 13{,}10 = 21{,}4 \\implies \\mathbf{e_{ss} = \\frac{1}{1+21{,}4} = 4{,}4\\% \\le 5\\%}'
       }
     ],
     scilabCode: `// Exercício 1.1 - Compensador Lag Tipo 0
@@ -2206,14 +2248,14 @@ xgrid();`
         latex: '0{,}25 = \\frac{5}{1 + K_{p,\\text{req}}} \\implies 1 + K_{p,\\text{req}} = \\frac{5}{0{,}25} = 20 \\implies K_{p,\\text{req}} = \\mathbf{19} \\quad;\\quad z_{\\text{dipolo}} = \\frac{1}{1{,}1} \\approx \\mathbf{0{,}909}'
       },
       {
-        title: '3. Passo 1 — Ganho Inicial $K_0$ pela Condição de Módulo em $s_d = -2 + j2$',
-        description: 'Calculando o módulo de cada fator $(s_d + a)$ para isolar $K_0$ em $|K_0 G(s_d)| = 1$:',
-        latex: 'K_0 = \\frac{|s_d+1||s_d+3||s_d+10|}{15|s_d+4|} = \\frac{|-1+j2|\\cdot|1+j2|\\cdot|8+j2|}{15|2+j2|} = \\frac{\\sqrt{5}\\cdot\\sqrt{5}\\cdot\\sqrt{68}}{15\\sqrt{8}} = \\frac{5 \\cdot 8{,}246}{15 \\cdot 2{,}828} \\approx \\mathbf{0{,}972}'
+        title: '3. Passo 1 — Ganho Inicial $K_0$ pela Condição de Módulo em $s_d = -2 + j2$ (Regra dos 7 Passos)',
+        description: 'Aplicando $K_0 = \\left.\\frac{1}{|G(s)|}\\right|_{s=-2+j2}$ sem inverter antecipadamente:',
+        latex: 'K_0 = \\frac{1}{|G(s_d)|} = \\frac{1}{\\left|\\frac{15(s_d+4)}{(s_d+1)(s_d+3)(s_d+10)}\\right|} = \\frac{1}{\\left|\\frac{15(-2+j2+4)}{(-2+j2+1)(-2+j2+3)(-2+j2+10)}\\right|} = \\frac{1}{\\frac{15|2+j2|}{|-1+j2|\\cdot|1+j2|\\cdot|8+j2|}} \\;;\\; K_0 = \\frac{1}{\\frac{15\\sqrt{2^2+2^2}}{\\sqrt{(-1)^2+2^2}\\cdot\\sqrt{1^2+2^2}\\cdot\\sqrt{8^2+2^2}}} = \\frac{1}{\\frac{15\\sqrt{4+4}}{\\sqrt{1+4}\\cdot\\sqrt{1+4}\\cdot\\sqrt{64+4}}} = \\frac{1}{\\frac{15\\sqrt{8}}{\\sqrt{5}\\cdot\\sqrt{5}\\cdot\\sqrt{68}}} = \\frac{1}{\\frac{15\\cdot 2{,}8284}{5\\cdot 8{,}2462}} = \\frac{1}{\\frac{42{,}426}{41{,}231}} = \\frac{1}{1{,}0290} \\approx \\mathbf{0{,}972}'
       },
       {
-        title: '4. Passos 2 a 5 — Fator $\\beta$, $z$, $p$, Ajuste de $K_c$ e Conferência',
-        description: 'Calculando $K_{p,a} = K_0 \\cdot K_p = 0{,}972 \\cdot 2 = 1{,}944$, $\\beta = 19 / 1{,}944 \\approx 9{,}77$, adotando $z = 0{,}909$ e $p \\approx 0{,}101$ (ou $0{,}093$), e ajustando $K_c$:',
-        latex: 'K_c = K_0 \\frac{|s_d + p|}{|s_d + z|} = 0{,}972 \\cdot \\frac{|-1{,}899 + j2|}{|-1{,}091 + j2|} = 0{,}972 \\cdot \\frac{2{,}758}{2{,}278} \\approx \\mathbf{1{,}18} \\implies G_c(s) = 1{,}18\\frac{s+0{,}909}{s+0{,}101} \\implies \\mathbf{e_{ss} = \\frac{5}{1 + 2 \\cdot 1{,}18 \\cdot \\frac{0{,}909}{0{,}101}} = 0{,}22 \\le 0{,}25}'
+        title: '4. Passos 2 a 5 — Fator $\\beta$, $z$, $p$, Ganho $K_c$ (Regra dos 7 Passos) e Conferência',
+        description: 'Calculando $K_{p,a} = K_0 \\cdot K_p = 0{,}972 \\cdot 2 = 1{,}944$, $\\beta = 19 / 1{,}944 \\approx 9{,}77$, adotando $z = 0{,}909$ e $p = 0{,}101$ ($z/p = 9{,}0$), e aplicando $K_c = \\frac{1}{|\\bar{G}_c(s_d)G(s_d)|}$ sem atalhos:',
+        latex: 'K_{p,a} = K_0\\cdot K_p = 0{,}972\\cdot 2 = 1{,}944 \\;;\\; \\beta = \\frac{K_{p,\\text{req}}}{K_{p,a}} = \\frac{19}{1{,}944} \\approx 9{,}77 \\;;\\; \\Delta\\theta_{\\text{perda}} = |\\angle(-1{,}091+j2) - \\angle(-1{,}899+j2)| = |118{,}61^\\circ - 133{,}52^\\circ| = \\mathbf{14{,}9^\\circ} \\;;\\; K_c = \\frac{1}{|\\bar{G}_c(s_d)G(s_d)|} = \\frac{1}{\\left|\\frac{s_d+z}{s_d+p}\\cdot\\frac{15(s_d+4)}{(s_d+1)(s_d+3)(s_d+10)}\\right|} = \\frac{1}{\\left|\\frac{-2+j2+0{,}909}{-2+j2+0{,}101}\\cdot\\frac{15(-2+j2+4)}{(-2+j2+1)(-2+j2+3)(-2+j2+10)}\\right|} \\;;\\; K_c = \\frac{1}{\\frac{15|-1{,}091+j2|\\cdot|2+j2|}{|-1{,}899+j2|\\cdot|-1+j2|\\cdot|1+j2|\\cdot|8+j2|}} = \\frac{1}{\\frac{15\\sqrt{(-1{,}091)^2+2^2}\\cdot\\sqrt{2^2+2^2}}{\\sqrt{(-1{,}899)^2+2^2}\\cdot\\sqrt{(-1)^2+2^2}\\cdot\\sqrt{1^2+2^2}\\cdot\\sqrt{8^2+2^2}}} \\;;\\; K_c = \\frac{1}{\\frac{15\\sqrt{1{,}190+4}\\cdot\\sqrt{4+4}}{\\sqrt{3{,}606+4}\\cdot\\sqrt{1+4}\\cdot\\sqrt{1+4}\\cdot\\sqrt{64+4}}} = \\frac{1}{\\frac{15\\sqrt{5{,}190}\\cdot\\sqrt{8}}{\\sqrt{7{,}606}\\cdot\\sqrt{5}\\cdot\\sqrt{5}\\cdot\\sqrt{68}}} = \\frac{1}{\\frac{15\\cdot 2{,}2782\\cdot 2{,}8284}{2{,}7579\\cdot 5\\cdot 8{,}2462}} = \\frac{1}{\\frac{96{,}657}{113{,}713}} = \\frac{1}{0{,}8500} \\approx \\mathbf{1{,}18} \\;;\\; G_c(s) = 1{,}18\\frac{s+0{,}909}{s+0{,}101} \\;;\\; K_{p,\\text{novo}} = K_p\\cdot K_c\\cdot\\frac{z}{p} = 2\\cdot 1{,}18\\cdot\\frac{0{,}909}{0{,}101} = 21{,}2 \\implies \\mathbf{e_{ss} = \\frac{5}{1 + 21{,}2} = 0{,}22 \\le 0{,}25}'
       }
     ],
     scilabCode: `// Exercício 1.2 - Lag 3ª Ordem
