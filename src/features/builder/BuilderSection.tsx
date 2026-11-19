@@ -211,7 +211,8 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
     validation: true,
     equations: true,
     graphical: true,
-    steadyState: true
+    steadyState: true,
+    control: true
   });
 
   // Redução de Mason e Visualização Dividida (Painel 1: Circuito | Painel 2: Cálculos)
@@ -2931,6 +2932,14 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
                     onChange={e => setReportSections(p => ({ ...p, steadyState: e.target.checked }))}
                   />
                   <span>Regime (TVF)</span>
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer', margin: 0, gridColumn: 'span 2' }}>
+                  <input
+                    type="checkbox"
+                    checked={reportSections.control}
+                    onChange={e => setReportSections(p => ({ ...p, control: e.target.checked }))}
+                  />
+                  <span>Controle (Polos, Estabilidade &amp; LGR)</span>
                 </label>
               </div>
               <div style={{ fontSize: '0.67rem', color: 'var(--text-muted)' }}>

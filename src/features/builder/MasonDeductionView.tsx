@@ -17,8 +17,11 @@ import {
   polyIsOne,
   polyIsZero,
   polyMul,
+  polyToCompact,
   polyToLatex
 } from '@/core/algebra/polynomial';
+import { analyzeTransferFunction } from '@/core/analysis/stability';
+import { SPlaneChart } from '@/components/SPlaneChart';
 import { MathView } from '@/components/MathView';
 import {
   analyzeCompleteBlockDiagram,
@@ -38,6 +41,7 @@ export interface ReportSectionsConfig {
   equations: boolean;
   graphical: boolean;
   steadyState: boolean;
+  control: boolean;
 }
 
 interface MasonDeductionViewProps {
@@ -93,7 +97,7 @@ export const MasonDeductionView: React.FC<MasonDeductionViewProps> = ({
   inputElement,
   outputElement,
   splitMode = 'split',
-  reportSections = { validation: true, equations: true, graphical: true, steadyState: true },
+  reportSections = { validation: true, equations: true, graphical: true, steadyState: true, control: true },
   onChangeSplitMode,
   onClose
 }) => {
@@ -1117,8 +1121,9 @@ export const MasonDeductionView: React.FC<MasonDeductionViewProps> = ({
         )}
 
         {/* =================================================================
-            ETAPA 1 — IDENTIFICAÇÃO DO SISTEMA
+            ETAPA 1 — IDENTIFICAÇÃO DO SISTEMA (EQUAÇÕES & MASON)
             ================================================================= */}
+        {reportSections.equations && (<>
         <section
           style={{
             background: 'var(--card-bg)',
@@ -1770,9 +1775,12 @@ export const MasonDeductionView: React.FC<MasonDeductionViewProps> = ({
           )}
         </section>
 
+        </>)}
+
         {/* =================================================================
-            ETAPA 5 — DESENVOLVIMENTO ALGÉBRICO
+            ETAPA 5 — DESENVOLVIMENTO ALGÉBRICO E REDUÇÃO GRÁFICA
             ================================================================= */}
+        {reportSections.graphical && (
         <section
           style={{
             background: 'var(--card-bg)',
@@ -2098,9 +2106,12 @@ export const MasonDeductionView: React.FC<MasonDeductionViewProps> = ({
           )}
         </section>
 
+        )}
+
         {/* =================================================================
-            ETAPA 6 — FUNÇÕES DE TRANSFERÊNCIA INDIVIDUAIS
+            ETAPA 6 — FUNÇÕES DE TRANSFERÊNCIA INDIVIDUAIS (EQUAÇÕES & MASON)
             ================================================================= */}
+        {reportSections.equations && (<>
         <section
           style={{
             background: 'var(--card-bg)',
@@ -2529,9 +2540,12 @@ export const MasonDeductionView: React.FC<MasonDeductionViewProps> = ({
           )}
         </section>
 
+        </>)}
+
         {/* =================================================================
             ETAPA 9 — REGIME PERMANENTE (TEOREMA DO VALOR FINAL)
             ================================================================= */}
+        {reportSections.steadyState && (<>
         <section
           style={{
             background: 'var(--card-bg)',
@@ -2762,6 +2776,85 @@ export const MasonDeductionView: React.FC<MasonDeductionViewProps> = ({
             isInitialOpen={true}
           />
         )}
+        </>)}
+
+        {/* NOVA SEÇÃO — ANÁLISE DE CONTROLE (ESTABILIDADE, POLOS, ZEROS E PLANO-S / LGR) */}
+        {reportSections.control && fullSys.outputByInputPairs.length > 0 && (() => {
+          const primaryTf = fullSys.outputByInputPairs[0].transferFunction;
+          const stab = analyzeTransferFunction(primaryTf);
+          const numStr = polyToCompact(primaryTf.num);
+          const denStr = polyToCompact(primaryTf.den);
+          const tfExpr = `(${numStr})/(${denStr})`;
+          const fmtPole = (p: { re: number; im: number }) =>
+            Math.abs(p.im) < 1e-4
+              ? p.re.toFixed(3).replace(/\.?0+$/, '')
+              : `${p.re.toFixed(3).replace(/\.?0+$/, '')} ${p.im >= 0 ? '+' : '−'} j${Math.abs(p.im).toFixed(3).replace(/\.?0+$/, '')}`;
+          return (
+            <section
+              style={{
+                background: 'var(--card-bg)',
+                border: '1px solid var(--card-border)',
+                borderTop: '3px solid var(--primary)',
+                borderRadius: '6px',
+                padding: '1rem 1.15rem',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.85rem'
+              }}
+            >
+              <div style={{ fontWeight: 700, fontSize: '0.92rem', color: 'var(--primary)' }}>
+                Análise de Controle Clássico — Polos, Zeros, Estabilidade &amp; Plano-s
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(175px, 1fr))', gap: '8px' }}>
+                <div style={{ background: 'var(--code-bg)', border: '1px solid var(--card-border)', borderRadius: '4px', padding: '8px 10px' }}>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', fontWeight: 700 }}>ESTABILIDADE</div>
+                  <div style={{ fontSize: '0.82rem', fontWeight: 700, color: stab.isStable ? 'var(--success)' : 'var(--danger)', marginTop: '3px' }}>
+                    {stab.stabilityText}
+                  </div>
+                </div>
+                <div style={{ background: 'var(--code-bg)', border: '1px solid var(--card-border)', borderRadius: '4px', padding: '8px 10px' }}>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', fontWeight: 700 }}>ORDEM / TIPO / GANHO DC</div>
+                  <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text)', marginTop: '3px' }}>
+                    Ordem {stab.order} · Tipo {stab.systemType} · DC: {stab.dcGain !== null ? stab.dcGain : stab.isUnivariate === false ? 'Simbólico' : '∞'}
+                  </div>
+                </div>
+                <div style={{ background: 'var(--code-bg)', border: '1px solid var(--card-border)', borderRadius: '4px', padding: '8px 10px' }}>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', fontWeight: 700 }}>POLOS DE MALHA FECHADA</div>
+                  <div style={{ fontSize: '0.8rem', fontFamily: 'var(--font-mono), monospace', color: 'var(--text)', marginTop: '3px' }}>
+                    {stab.poles.length > 0 ? stab.poles.map(fmtPole).join(' ; ') : 'Simbólico / Nenhum'}
+                  </div>
+                </div>
+                {stab.secondOrderParams && (
+                  <div style={{ background: 'var(--code-bg)', border: '1px solid var(--card-border)', borderRadius: '4px', padding: '8px 10px' }}>
+                    <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', fontWeight: 700 }}>DINÂMICA DE 2ª ORDEM</div>
+                    <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--primary)', marginTop: '3px' }}>
+                      {stab.secondOrderParams.regime} (ζ = {stab.secondOrderParams.zeta}, ωn = {stab.secondOrderParams.wn})
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {stab.isUnivariate !== false && stab.order > 0 && (
+                <SPlaneChart
+                  title="Plano s — Polos e Zeros de T(s) e Lugar das Raízes"
+                  plantExpr={tfExpr}
+                  controllerExpr="1"
+                />
+              )}
+            </section>
+          );
+        })()}
+
+        {!reportSections.validation &&
+          !reportSections.equations &&
+          !reportSections.graphical &&
+          !reportSections.steadyState &&
+          !reportSections.control && (
+            <div style={{ padding: '14px', background: 'var(--card-bg)', border: '1px solid var(--card-border)', borderRadius: '6px', fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+              Nenhuma seção selecionada para o memorial. Marque as caixas desejadas na gaveta esquerda — as abas Resumo, Simulação RK4 e Scilab continuam disponíveis.
+            </div>
+          )}
         </>)}
 
         {/* ABA 3: SIMULAÇÃO RK4 */}
