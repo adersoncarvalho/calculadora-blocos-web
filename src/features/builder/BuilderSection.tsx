@@ -1000,6 +1000,7 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
 
   // Carregar Cenários / Modelos e Estudos de Caso da Disciplina (Controle Clássico)
   const handleLoadTemplate = (tpl: string) => {
+    seqCountersRef.current = { G: 0, H: 0, R: 0, C: 0, D: 0, W: 0, N: 0, S: 0 };
     setSelectedTemplate(tpl);
     setAnalysisResult(null);
     setSelectedId(null);
@@ -1630,6 +1631,43 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
   const applyQuickEdit = () => {
     if (!quickEdit) return;
     const cleanExpr = quickEdit.expr.trim();
+    const targetEl = graph.elements.find(el => el.id === quickEdit.id);
+    if (!targetEl) return;
+
+    let parsedRat = undefined;
+    let nextNum = '';
+    let nextDen = '';
+
+    if (targetEl.type === 'block' && cleanExpr) {
+      try {
+        parsedRat = parseRatExpr(cleanExpr);
+        // Separa numerador/denominador simples para manter a Seção B 100% sincronizada
+        let depth = 0;
+        let splitIdx = -1;
+        for (let ci = 0; ci < cleanExpr.length; ci++) {
+          if (cleanExpr[ci] === '(') depth++;
+          else if (cleanExpr[ci] === ')') depth--;
+          else if (cleanExpr[ci] === '/' && depth === 0) {
+            if (splitIdx === -1) splitIdx = ci;
+            else {
+              splitIdx = -2;
+              break;
+            }
+          }
+        }
+        if (splitIdx > 0 && splitIdx < cleanExpr.length - 1) {
+          nextNum = cleanExpr.slice(0, splitIdx).trim();
+          nextDen = cleanExpr.slice(splitIdx + 1).trim();
+        } else {
+          nextNum = cleanExpr;
+          nextDen = '1';
+        }
+      } catch (err) {
+        showToast(err instanceof Error ? err.message : 'Expressão inválida. Verifique parênteses e operadores.');
+        return;
+      }
+    }
+
     const updated = {
       ...graph,
       elements: graph.elements.map(el => {
@@ -1638,14 +1676,20 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
           ...el,
           name: quickEdit.name.trim() || el.name,
           expr: cleanExpr,
-          num: '',
-          den: '',
+          num: nextNum,
+          den: nextDen,
+          rat: parsedRat,
           dir: el.type === 'block' ? quickEdit.dir : el.dir
         };
       })
     };
     setGraph(updated);
     pushHistory(updated);
+    setPropName(quickEdit.name.trim() || targetEl.name);
+    setPropExpr(cleanExpr);
+    setPropNum(nextNum);
+    setPropDen(nextDen);
+    if (targetEl.type === 'block') setPropDir(quickEdit.dir);
     setQuickEdit(null);
     showToast('Propriedades do elemento atualizadas.');
   };
@@ -4152,14 +4196,15 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
                         strokeWidth="1.2"
                       />
                       <text
-                        x={x}
-                        y={y - 27}
+                        x={x + 22}
+                        y={y - 21}
                         fill={isLightTheme ? '#047857' : '#10b981'}
-                        fontSize="10.5"
-                        textAnchor="middle"
+                        fontSize="10"
+                        textAnchor="start"
                         fontWeight="bold"
+                        pointerEvents="none"
                       >
-                        {el.name} {el.locked ? '🔒' : ''}
+                        {el.name} {el.locked ? '[L]' : ''}
                       </text>
                       <text
                         x={x}
