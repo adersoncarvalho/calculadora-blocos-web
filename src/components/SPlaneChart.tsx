@@ -12,6 +12,7 @@ interface SPlaneChartProps {
   plantExpr: string;
   controllerExpr: string;
   zetaTarget?: number;
+  desiredPole?: { re: number; im: number } | null;
 }
 
 interface PlottedPoint {
@@ -53,11 +54,13 @@ export const SPlaneChart: React.FC<SPlaneChartProps> = ({
   title = 'Plano s — Polos, Zeros e LGR (Lugar Geométrico das Raízes)',
   plantExpr,
   controllerExpr,
-  zetaTarget
+  zetaTarget,
+  desiredPole
 }) => {
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
   const [toolMode, setToolMode] = useState<'none' | 'zoom' | 'pan'>('none');
   const [gainMult, setGainMult] = useState<number>(1);
+  const [showUncompLocus, setShowUncompLocus] = useState<boolean>(true);
   const [viewBoxBounds, setViewBoxBounds] = useState<{ minRe: number; maxRe: number; minIm: number; maxIm: number } | null>(null);
   const [panDrag, setPanDrag] = useState<{
     startX: number;
@@ -108,6 +111,27 @@ export const SPlaneChart: React.FC<SPlaneChartProps> = ({
         }
       }
 
+      // Amostra o LGR da planta original G(s) (Antes da compensação) quando Gc(s) tem dinâmica
+      const uncompLocusPoints: ComplexNumber[] = [];
+      const hasCompDynamics = numL.length !== numG.length || denL.length !== denG.length;
+      if (hasCompDynamics) {
+        const maxDegG = Math.max(denG.length, numG.length);
+        for (const k of kValues) {
+          const rawCharG: number[] = new Array(maxDegG).fill(0);
+          for (let i = 0; i < denG.length; i++) rawCharG[i] += denG[i];
+          for (let i = 0; i < numG.length; i++) rawCharG[i] += k * numG[i];
+          const charPolyG = trimUni(rawCharG);
+          if (charPolyG.length > 1) {
+            const rootsG = computeRootsPoly(charPolyG);
+            for (const r of rootsG) {
+              if (Number.isFinite(r.re) && Number.isFinite(r.im)) {
+                uncompLocusPoints.push(r);
+              }
+            }
+          }
+        }
+      }
+
       const points: PlottedPoint[] = [
         ...olPoles.map((p, i) => ({ kind: 'ol-pole' as const, re: p.re, im: p.im, label: `Polo MA #${i + 1}` })),
         ...olZeros.map((z, i) => ({ kind: 'ol-zero' as const, re: z.re, im: z.im, label: `Zero MA #${i + 1}` })),
@@ -135,7 +159,7 @@ export const SPlaneChart: React.FC<SPlaneChartProps> = ({
           ? numGc[numGc.length - 1] / denGc[denGc.length - 1]
           : 1;
 
-      return { olPoles, olZeros, denL, numL, baseGain, locusPoints, defaultBounds: { minRe, maxRe, minIm: -maxIm, maxIm } };
+      return { olPoles, olZeros, denL, numL, baseGain, locusPoints, uncompLocusPoints, hasCompDynamics, defaultBounds: { minRe, maxRe, minIm: -maxIm, maxIm } };
     } catch {
       return null;
     }
@@ -357,10 +381,29 @@ export const SPlaneChart: React.FC<SPlaneChartProps> = ({
               ↺ Ajustar ao Original{viewBoxBounds ? ` (${zoomFactor.toFixed(1)}×)` : ''}
             </button>
           </div>
-          <div style={{ display: 'flex', gap: '10px', fontSize: '0.72rem', color: 'var(--text-muted)', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: '10px', fontSize: '0.72rem', color: 'var(--text-muted)', flexWrap: 'wrap', alignItems: 'center' }}>
+            {computed.hasCompDynamics && (
+              <button
+                type="button"
+                onClick={() => setShowUncompLocus(p => !p)}
+                style={{
+                  padding: '2px 7px',
+                  borderRadius: '4px',
+                  fontSize: '0.68rem',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  background: showUncompLocus ? 'rgba(249, 115, 22, 0.16)' : 'var(--code-bg)',
+                  color: showUncompLocus ? '#fb923c' : 'var(--text-muted)',
+                  border: `1px solid ${showUncompLocus ? '#fb923c' : 'var(--card-border)'}`
+                }}
+              >
+                {showUncompLocus ? '● LGR Original' : '○ LGR Original'}
+              </button>
+            )}
             <span style={{ color: '#ef4444', fontWeight: 700 }}>× Polo MA</span>
             <span style={{ color: '#3b82f6', fontWeight: 700 }}>○ Zero MA</span>
             <span style={{ color: '#10b981', fontWeight: 700 }}>● Polo MF</span>
+            {desiredPole && <span style={{ color: '#facc15', fontWeight: 700 }}>★ sd</span>}
           </div>
         </div>
       </div>
@@ -462,7 +505,21 @@ export const SPlaneChart: React.FC<SPlaneChartProps> = ({
             })()
           )}
 
-          {/* Pontos do LGR */}
+          {/* Pontos do LGR Original (Antes da compensação) */}
+          {showUncompLocus && computed.uncompLocusPoints.map((pt, idx) => {
+            if (pt.re < activeBounds.minRe || pt.re > activeBounds.maxRe || pt.im < activeBounds.minIm || pt.im > activeBounds.maxIm) return null;
+            return (
+              <circle
+                key={`lgr-orig-${idx}`}
+                cx={toX(pt.re)}
+                cy={toY(pt.im)}
+                r={1.1}
+                fill="rgba(251, 146, 60, 0.38)"
+              />
+            );
+          })}
+
+          {/* Pontos do LGR Compensado */}
           {computed.locusPoints.map((pt, idx) => {
             if (pt.re < activeBounds.minRe || pt.re > activeBounds.maxRe || pt.im < activeBounds.minIm || pt.im > activeBounds.maxIm) return null;
             return (
@@ -470,9 +527,41 @@ export const SPlaneChart: React.FC<SPlaneChartProps> = ({
                 key={`lgr-${idx}`}
                 cx={toX(pt.re)}
                 cy={toY(pt.im)}
-                r={1.3}
-                fill="rgba(56, 189, 248, 0.45)"
+                r={1.35}
+                fill="rgba(56, 189, 248, 0.55)"
               />
+            );
+          })}
+
+          {/* Polo desejado sd (opcional) */}
+          {desiredPole && [desiredPole, { re: desiredPole.re, im: -desiredPole.im }].map((sdPt, idx) => {
+            if (idx === 1 && Math.abs(sdPt.im) < 1e-4) return null;
+            if (sdPt.re < activeBounds.minRe || sdPt.re > activeBounds.maxRe || sdPt.im < activeBounds.minIm || sdPt.im > activeBounds.maxIm) return null;
+            const cx = toX(sdPt.re);
+            const cy = toY(sdPt.im);
+            return (
+              <g key={`sd-${idx}`}>
+                <polygon
+                  points={`${cx},${cy - 6} ${cx + 5},${cy} ${cx},${cy + 6} ${cx - 5},${cy}`}
+                  fill="#facc15"
+                  stroke="#0f172a"
+                  strokeWidth="1.2"
+                />
+                {idx === 0 && (
+                  <text
+                    x={cx + 8}
+                    y={cy - 6}
+                    fontSize="9.5"
+                    fontWeight="800"
+                    fill="#facc15"
+                    stroke="#0f172a"
+                    strokeWidth="2.5"
+                    style={{ paintOrder: 'stroke' }}
+                  >
+                    sd ({fmtComplex(sdPt.re, sdPt.im)})
+                  </text>
+                )}
+              </g>
             );
           })}
 

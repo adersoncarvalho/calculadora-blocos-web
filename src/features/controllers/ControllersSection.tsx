@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { MathView } from '@/components/MathView';
 import { GlossaryTerm } from '@/components/GlossaryTooltipCard';
 import { InteractiveTimeChart, ChartSeries } from '@/components/InteractiveTimeChart';
@@ -16,6 +16,8 @@ import { ControllerBlockDiagram } from './ControllerBlockDiagram';
 import { ListaP2View } from './ListaP2View';
 import { FundamentosView } from './FundamentosView';
 import { LugarRaizesView } from './LugarRaizesView';
+import { PlantDesignerView } from './PlantDesignerView';
+import { printElementAsPdf } from '@/utils/printMemorial';
 
 interface ControllersSectionProps {
   onBack: () => void;
@@ -84,17 +86,44 @@ function renderStackedMath(latex: string): React.ReactNode {
 }
 
 export const ControllersSection: React.FC<ControllersSectionProps> = ({ onBack, onNavigate }) => {
-  const [activeTab, setActiveTab] = useState<'controladores' | 'listas' | 'fundamentos' | 'lgr'>('controladores');
+  const [activeTab, setActiveTab] = useState<'controladores' | 'listas' | 'fundamentos' | 'lgr' | 'designer'>('controladores');
   const [selectedCategory, setSelectedCategory] = useState<ControllerCategoryId>('P');
-  const [showDecisionGuide, setShowDecisionGuide] = useState<boolean>(true);
-  const [showTheory, setShowTheory] = useState<boolean>(true);
-  const [showMethod, setShowMethod] = useState<boolean>(true);
+  const [showDecisionGuide, setShowDecisionGuide] = useState<boolean>(false);
+  const [showTheory, setShowTheory] = useState<boolean>(false);
+  const [showMethod, setShowMethod] = useState<boolean>(false);
+  const [exerciseSubTab, setExerciseSubTab] = useState<'memorial' | 'graficos' | 'scilab'>('memorial');
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [examMode, setExamMode] = useState<boolean>(false);
+  const [revealedSteps, setRevealedSteps] = useState<number>(0);
+  const [usePrefilter, setUsePrefilter] = useState<boolean>(false);
   const [copiedScilab, setCopiedScilab] = useState<boolean>(false);
+  const memorialRef = useRef<HTMLDivElement | null>(null);
 
   const exercisesForCategory = useMemo(
     () => CONTROLLER_EXERCISES.filter(e => e.controllerId === selectedCategory),
     [selectedCategory]
   );
+
+  const searchResults = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return [];
+    return CONTROLLER_EXERCISES.filter(ex => {
+      const hay = [
+        ex.title,
+        ex.badge,
+        ex.source,
+        ex.controllerId,
+        ex.statementLatex,
+        ex.whyThisController,
+        ex.diagnostics.systemType,
+        ex.diagnostics.systemOrder,
+        ...ex.detailedSteps.map(s => `${s.title} ${s.description}`)
+      ]
+        .join(' ')
+        .toLowerCase();
+      return hay.includes(q);
+    });
+  }, [searchQuery]);
 
   const [selectedExerciseId, setSelectedExerciseId] = useState<string>(
     CONTROLLER_EXERCISES[0].id
@@ -110,6 +139,8 @@ export const ControllersSection: React.FC<ControllersSectionProps> = ({ onBack, 
       setActiveTab('fundamentos');
     } else if (tabParam === 'lgr') {
       setActiveTab('lgr');
+    } else if (tabParam === 'designer') {
+      setActiveTab('designer');
     }
     const ctrlParam = params.get('ctrl') as ControllerCategoryId | null;
     const exParam = params.get('ex');
@@ -146,6 +177,8 @@ export const ControllersSection: React.FC<ControllersSectionProps> = ({ onBack, 
 
   const handleSelectCategory = (cat: ControllerCategoryId) => {
     setSelectedCategory(cat);
+    setUsePrefilter(false);
+    setRevealedSteps(0);
     const firstEx = CONTROLLER_EXERCISES.find(e => e.controllerId === cat);
     if (firstEx) {
       setSelectedExerciseId(firstEx.id);
@@ -153,9 +186,13 @@ export const ControllersSection: React.FC<ControllersSectionProps> = ({ onBack, 
     }
   };
 
-  const handleSelectExercise = (exId: string) => {
+  const handleSelectExercise = (exId: string, catOverride?: ControllerCategoryId) => {
+    const targetCat = catOverride ?? selectedCategory;
+    if (catOverride) setSelectedCategory(catOverride);
     setSelectedExerciseId(exId);
-    updateUrlParams(selectedCategory, exId);
+    setUsePrefilter(false);
+    setRevealedSteps(0);
+    updateUrlParams(targetCat, exId);
   };
 
   const theory = CONTROLLERS_THEORY[selectedCategory];
@@ -202,11 +239,35 @@ export const ControllersSection: React.FC<ControllersSectionProps> = ({ onBack, 
       );
     }
 
-    const { t, r, yUncomp, yComp, eUncomp, eComp, essUncomp, essComp, overshootUncomp, overshootComp } =
-      simulation;
+    const {
+      t,
+      r,
+      yUncomp,
+      yComp,
+      eUncomp,
+      eComp,
+      uComp,
+      uPeak,
+      prefilterZc,
+      yCompPrefilter,
+      eCompPrefilter,
+      uCompPrefilter,
+      overshootPrefilter,
+      uPeakPrefilter,
+      essUncomp,
+      essComp,
+      overshootUncomp,
+      overshootComp
+    } = simulation;
+
+    const activeYComp = usePrefilter && yCompPrefilter ? yCompPrefilter : yComp;
+    const activeEComp = usePrefilter && eCompPrefilter ? eCompPrefilter : eComp;
+    const activeUComp = usePrefilter && uCompPrefilter ? uCompPrefilter : uComp;
+    const activeOvershoot = usePrefilter && overshootPrefilter !== null ? overshootPrefilter : overshootComp;
+    const activeUPeak = usePrefilter && uPeakPrefilter !== null ? uPeakPrefilter : uPeak;
 
     const isUncompUnstable = yUncomp.some(v => Math.abs(v) >= 1e5);
-    const isCompUnstable = yComp.some(v => Math.abs(v) >= 1e5);
+    const isCompUnstable = activeYComp.some(v => Math.abs(v) >= 1e5);
 
     const xMax = t[t.length - 1];
 
@@ -226,8 +287,8 @@ export const ControllersSection: React.FC<ControllersSectionProps> = ({ onBack, 
     if (!isCompUnstable) {
       outputSeries.push({
         id: 'comp',
-        label: 'Com Controlador',
-        values: yComp,
+        label: usePrefilter && yCompPrefilter ? 'Com Controlador + Pré-Filtro' : 'Com Controlador',
+        values: activeYComp,
         color: '#0284c7',
         strokeWidth: 2.5,
         showLandmarks: true,
@@ -249,8 +310,8 @@ export const ControllersSection: React.FC<ControllersSectionProps> = ({ onBack, 
     if (!isCompUnstable) {
       errorSeries.push({
         id: 'e-comp',
-        label: 'Erro Com Controlador',
-        values: eComp,
+        label: usePrefilter && eCompPrefilter ? 'Erro Com Pré-Filtro' : 'Erro Com Controlador',
+        values: activeEComp,
         color: '#059669',
         strokeWidth: 2.5,
         showLandmarks: true,
@@ -260,6 +321,47 @@ export const ControllersSection: React.FC<ControllersSectionProps> = ({ onBack, 
 
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
+        {/* Barra do Pré-Filtro (quando disponível em PD Real / Avanço) */}
+        {prefilterZc !== null && (
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              gap: '8px',
+              padding: '8px 12px',
+              borderRadius: '6px',
+              background: 'var(--card-bg)',
+              border: '1px solid var(--card-border)'
+            }}
+          >
+            <div style={{ fontSize: '0.8rem', color: 'var(--text)' }}>
+              <strong>🔧 Pré-Filtro de Referência:</strong>{' '}
+              <MathView math={`F(s) = \\frac{${prefilterZc}}{s + ${prefilterZc}}`} inline />{' '}
+              <span style={{ color: 'var(--text-muted)' }}>
+                (cancela o zero do controlador em $Y(s)/R(s)$, reduzindo sobressinal e pico $u(0^+)$)
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setUsePrefilter(p => !p)}
+              style={{
+                padding: '6px 12px',
+                borderRadius: '6px',
+                fontSize: '0.77rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+                background: usePrefilter ? 'var(--primary)' : 'var(--code-bg)',
+                color: usePrefilter ? '#fff' : 'var(--text)',
+                border: `1px solid ${usePrefilter ? 'var(--primary)' : 'var(--card-border)'}`
+              }}
+            >
+              {usePrefilter ? '✓ Pré-Filtro Ativo' : '○ Ativar Pré-Filtro'}
+            </button>
+          </div>
+        )}
+
         {/* Alertas de estabilidade caso existam */}
         {isUncompUnstable && (
           <div
@@ -317,7 +419,7 @@ export const ControllersSection: React.FC<ControllersSectionProps> = ({ onBack, 
             </div>
           </div>
 
-          {overshootComp !== null && (
+          {activeOvershoot !== null && (
             <div
               style={{
                 background: 'var(--card-bg)',
@@ -327,15 +429,43 @@ export const ControllersSection: React.FC<ControllersSectionProps> = ({ onBack, 
               }}
             >
               <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 700 }}>
-                SOBRESSINAL (%OS) COM CONTROLADOR
+                SOBRESSINAL (%OS) {usePrefilter && yCompPrefilter ? 'C/ PRÉ-FILTRO' : 'COM CONTROLADOR'}
               </div>
               <div style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--primary)', marginTop: '2px' }}>
-                {overshootComp}%{' '}
+                {activeOvershoot}%{' '}
                 {overshootUncomp !== null && !isUncompUnstable && (
                   <span style={{ fontSize: '0.72rem', fontWeight: 500, color: 'var(--text-muted)' }}>
                     (sem: {overshootUncomp}%)
                   </span>
                 )}
+              </div>
+            </div>
+          )}
+
+          {activeUPeak !== null && !isCompUnstable && (
+            <div
+              style={{
+                background: 'var(--card-bg)',
+                border: `1px solid ${activeUPeak <= 10 ? 'var(--success)' : 'var(--danger)'}`,
+                borderRadius: '6px',
+                padding: '0.65rem 0.85rem'
+              }}
+            >
+              <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 700 }}>
+                PICO |u(t)| (REGRA DOS 10 V)
+              </div>
+              <div
+                style={{
+                  fontSize: '1.05rem',
+                  fontWeight: 800,
+                  color: activeUPeak <= 10 ? 'var(--success)' : 'var(--danger)',
+                  marginTop: '2px'
+                }}
+              >
+                {activeUPeak} V{' '}
+                <span style={{ fontSize: '0.72rem', fontWeight: 600 }}>
+                  {activeUPeak <= 10 ? '✓ OK' : '⚠️ Saturação!'}
+                </span>
               </div>
             </div>
           )}
@@ -362,9 +492,33 @@ export const ControllersSection: React.FC<ControllersSectionProps> = ({ onBack, 
             inputType={activeExercise.inputType}
           />
         </div>
+
+        {/* Esforço de Controle u(t) com Regra dos ±10 V */}
+        {activeUComp && !isCompUnstable && (
+          <InteractiveTimeChart
+            title="Esforço de Controle u(t) — Verificação da Regra dos ±10 V"
+            xValues={t}
+            series={[
+              {
+                id: 'u-comp',
+                label: usePrefilter && uCompPrefilter ? 'u(t) Com Pré-Filtro' : 'u(t) Com Controlador',
+                values: activeUComp,
+                color: '#a855f7',
+                strokeWidth: 2.3
+              }
+            ]}
+            inputType={activeExercise.inputType}
+            height={210}
+            referenceLines={[
+              { y: 10, label: '+10 V (Limite)', color: '#ef4444' },
+              { y: -10, label: '−10 V', color: '#ef4444' }
+            ]}
+          />
+        )}
+
         {!activeExercise.feedbackExpr && (
           <SPlaneChart
-            title="Plano s — Polos, Zeros e Lugar das Raízes (Malha Compensada)"
+            title="Plano s — Polos, Zeros e Lugar das Raízes (Original vs. Compensado)"
             plantExpr={activeExercise.plantExpr}
             controllerExpr={activeExercise.controllerExpr}
           />
@@ -520,6 +674,30 @@ export const ControllersSection: React.FC<ControllersSectionProps> = ({ onBack, 
         >
           📝 Listas de Exercícios (Lista P2 Controle 1 — 23 Questões)
         </button>
+        <button
+          type="button"
+          onClick={() => {
+            setActiveTab('designer');
+            if (typeof window !== 'undefined') {
+              const params = new URLSearchParams(window.location.search);
+              params.set('view', 'controllers');
+              params.set('tab', 'designer');
+              window.history.replaceState(null, '', `/?${params.toString()}`);
+            }
+          }}
+          style={{
+            padding: '10px 18px',
+            borderRadius: '8px',
+            fontSize: '0.88rem',
+            fontWeight: 700,
+            cursor: 'pointer',
+            background: activeTab === 'designer' ? '#059669' : 'var(--card-bg)',
+            color: activeTab === 'designer' ? '#fff' : 'var(--text)',
+            border: `1.5px solid ${activeTab === 'designer' ? '#059669' : 'var(--card-border)'}`
+          }}
+        >
+          🧮 Projetar Planta Nova
+        </button>
       </div>
 
       {activeTab === 'listas' ? (
@@ -528,8 +706,155 @@ export const ControllersSection: React.FC<ControllersSectionProps> = ({ onBack, 
         <FundamentosView />
       ) : activeTab === 'lgr' ? (
         <LugarRaizesView />
+      ) : activeTab === 'designer' ? (
+        <PlantDesignerView />
       ) : (
         <>
+      {/* BARRA COMPACTA DE BUSCA RÁPIDA + ATALHOS DE CONSULTA */}
+      <div
+        style={{
+          background: 'var(--card-bg)',
+          border: '1px solid var(--card-border)',
+          borderRadius: '10px',
+          padding: '12px 16px',
+          marginBottom: '16px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '10px'
+        }}
+      >
+        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ flex: '1 1 280px', position: 'relative' }}>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              placeholder="🔍 Buscar em todos os controladores (ex.: cauda, bissetriz, Tipo 1, rampa, 3ª ordem, Slide 21)..."
+              style={{
+                width: '100%',
+                padding: '8px 34px 8px 12px',
+                borderRadius: '6px',
+                background: 'var(--code-bg)',
+                border: '1px solid var(--card-border)',
+                color: 'var(--text)',
+                fontSize: '0.83rem'
+              }}
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                style={{
+                  position: 'absolute',
+                  right: '8px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'none',
+                  border: 'none',
+                  color: 'var(--text-muted)',
+                  cursor: 'pointer',
+                  fontSize: '0.85rem',
+                  fontWeight: 700
+                }}
+              >
+                ✕
+              </button>
+            )}
+          </div>
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              onClick={() => setShowDecisionGuide(p => !p)}
+              style={{
+                padding: '7px 12px',
+                borderRadius: '6px',
+                fontSize: '0.78rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+                background: showDecisionGuide ? 'var(--primary)' : 'var(--code-bg)',
+                color: showDecisionGuide ? '#fff' : 'var(--text)',
+                border: `1px solid ${showDecisionGuide ? 'var(--primary)' : 'var(--card-border)'}`
+              }}
+            >
+              🧭 Guia de Decisão {showDecisionGuide ? '▲' : '▼'}
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowTheory(p => !p)}
+              style={{
+                padding: '7px 12px',
+                borderRadius: '6px',
+                fontSize: '0.78rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+                background: showTheory ? theory.badgeColor : 'var(--code-bg)',
+                color: showTheory ? '#fff' : 'var(--text)',
+                border: `1px solid ${showTheory ? theory.badgeColor : 'var(--card-border)'}`
+              }}
+            >
+              📖 Teoria ({theory.shortName}) {showTheory ? '▲' : '▼'}
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowMethod(p => !p)}
+              style={{
+                padding: '7px 12px',
+                borderRadius: '6px',
+                fontSize: '0.78rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+                background: showMethod ? 'var(--primary)' : 'var(--code-bg)',
+                color: showMethod ? '#fff' : 'var(--text)',
+                border: `1px solid ${showMethod ? 'var(--primary)' : 'var(--card-border)'}`
+              }}
+            >
+              📋 Procedimento ({theory.professorMethodSteps.length} passos) {showMethod ? '▲' : '▼'}
+            </button>
+          </div>
+        </div>
+
+        {/* Resultados da Busca Rápida */}
+        {searchQuery.trim() !== '' && (
+          <div style={{ borderTop: '1px solid var(--card-border)', paddingTop: '10px' }}>
+            <div style={{ fontSize: '0.74rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '6px' }}>
+              {searchResults.length > 0
+                ? `${searchResults.length} exercício(s) encontrado(s) — clique para abrir:`
+                : 'Nenhum exercício encontrado para esta busca.'}
+            </div>
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+              {searchResults.map(ex => {
+                const badgeColor = CONTROLLERS_THEORY[ex.controllerId].badgeColor;
+                return (
+                  <button
+                    key={`sr-${ex.id}`}
+                    type="button"
+                    onClick={() => {
+                      handleSelectExercise(ex.id, ex.controllerId);
+                      setSearchQuery('');
+                      setExerciseSubTab('memorial');
+                    }}
+                    style={{
+                      padding: '6px 11px',
+                      borderRadius: '6px',
+                      fontSize: '0.76rem',
+                      fontWeight: 600,
+                      background: 'var(--code-bg)',
+                      color: 'var(--text)',
+                      border: `1px solid ${badgeColor}`,
+                      cursor: 'pointer',
+                      textAlign: 'left'
+                    }}
+                  >
+                    <span style={{ color: badgeColor, fontWeight: 800, marginRight: '6px' }}>[{ex.controllerId}]</span>
+                    {ex.title.split('—')[0].trim()}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
+
       {/* GUIA TEÓRICO GERAL: COMO ESCOLHER O CONTROLADOR IDEAL */}
       <section
         style={{
@@ -1044,271 +1369,441 @@ export const ControllersSection: React.FC<ControllersSectionProps> = ({ onBack, 
               Escolha o Exercício de {theory.fullName}
             </h2>
 
-            {/* Botões de seleção dos exercícios */}
-            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-              {exercisesForCategory.map(ex => {
-                const isAct = ex.id === activeExercise.id;
-                return (
-                  <button
-                    key={ex.id}
-                    type="button"
-                    onClick={() => handleSelectExercise(ex.id)}
-                    style={{
-                      padding: '8px 13px',
-                      borderRadius: '6px',
-                      fontSize: '0.79rem',
-                      fontWeight: isAct ? 700 : 500,
-                      background: isAct ? theory.badgeColor : 'var(--code-bg)',
-                      color: isAct ? '#fff' : 'var(--text)',
-                      border: `1px solid ${isAct ? theory.badgeColor : 'var(--card-border)'}`,
-                      cursor: 'pointer',
-                      textAlign: 'left'
-                    }}
-                  >
-                    <div style={{ fontSize: '0.68rem', opacity: isAct ? 0.9 : 0.7 }}>{ex.badge}</div>
-                    <div>{ex.title.split('—')[0].trim()}</div>
-                  </button>
+            {/* Botões de seleção dos exercícios agrupados (Slides vs. Lista Adicional) */}
+            {(() => {
+              const slideExs = exercisesForCategory.filter(e => !e.badge.toLowerCase().includes('adicional'));
+              const extraExs = exercisesForCategory.filter(e => e.badge.toLowerCase().includes('adicional'));
+              const renderGroup = (label: string, list: ControllerExercise[]) =>
+                list.length > 0 && (
+                  <div style={{ marginBottom: '8px' }}>
+                    <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '5px' }}>
+                      {label} ({list.length})
+                    </div>
+                    <div style={{ display: 'flex', gap: '7px', flexWrap: 'wrap' }}>
+                      {list.map(ex => {
+                        const isAct = ex.id === activeExercise.id;
+                        return (
+                          <button
+                            key={ex.id}
+                            type="button"
+                            onClick={() => handleSelectExercise(ex.id)}
+                            style={{
+                              padding: '6px 11px',
+                              borderRadius: '6px',
+                              fontSize: '0.77rem',
+                              fontWeight: isAct ? 700 : 500,
+                              background: isAct ? theory.badgeColor : 'var(--code-bg)',
+                              color: isAct ? '#fff' : 'var(--text)',
+                              border: `1px solid ${isAct ? theory.badgeColor : 'var(--card-border)'}`,
+                              cursor: 'pointer',
+                              textAlign: 'left'
+                            }}
+                          >
+                            <div style={{ fontSize: '0.66rem', opacity: isAct ? 0.9 : 0.7 }}>{ex.badge}</div>
+                            <div>{ex.title.split('—')[0].trim()}</div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
                 );
-              })}
-            </div>
+              return (
+                <>
+                  {renderGroup('Slides do Professor & Propostos', slideExs)}
+                  {renderGroup('Lista Adicional', extraExs)}
+                </>
+              );
+            })()}
           </div>
 
-          {/* Detalhes Completos do Exercício Selecionado */}
+          {/* Barra de Sub-abas do Exercício (Memorial | Gráficos & LGR | Scilab) + Ações */}
           <div
             style={{
               borderTop: '1px solid var(--card-border)',
-              paddingTop: '16px',
+              paddingTop: '14px',
               display: 'flex',
-              flexDirection: 'column',
-              gap: '16px'
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              gap: '10px'
             }}
           >
-            {/* Cabeçalho e Enunciado */}
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+              {(
+                [
+                  ['memorial', '📝 Memorial de Cálculo'],
+                  ['graficos', '📈 Gráficos & LGR'],
+                  ['scilab', '💻 Código Scilab']
+                ] as const
+              ).map(([key, label]) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => setExerciseSubTab(key)}
+                  style={{
+                    padding: '8px 14px',
+                    borderRadius: '6px',
+                    fontSize: '0.82rem',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    background: exerciseSubTab === key ? theory.badgeColor : 'var(--code-bg)',
+                    color: exerciseSubTab === key ? '#fff' : 'var(--text)',
+                    border: `1px solid ${exerciseSubTab === key ? theory.badgeColor : 'var(--card-border)'}`
+                  }}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            {exerciseSubTab === 'memorial' && (
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setExamMode(prev => {
+                      const next = !prev;
+                      setRevealedSteps(0);
+                      return next;
+                    });
+                  }}
+                  style={{
+                    padding: '7px 12px',
+                    borderRadius: '6px',
+                    fontSize: '0.78rem',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    background: examMode ? '#d97706' : 'var(--code-bg)',
+                    color: examMode ? '#fff' : 'var(--text)',
+                    border: `1px solid ${examMode ? '#d97706' : 'var(--card-border)'}`
+                  }}
+                >
+                  {examMode ? '🎯 Modo Treino Ativo (Oculto)' : '🎯 Modo Treino de Prova'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => printElementAsPdf(memorialRef.current, activeExercise.title)}
+                  style={{
+                    padding: '7px 12px',
+                    borderRadius: '6px',
+                    fontSize: '0.78rem',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    background: 'var(--code-bg)',
+                    color: 'var(--primary)',
+                    border: '1px solid var(--primary)'
+                  }}
+                >
+                  🖨️ Salvar PDF
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Detalhes Completos do Exercício Selecionado */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            {/* Cabeçalho sempre visível */}
             <div>
               <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', fontWeight: 600 }}>
                 {activeExercise.source} • Entrada: <MathView math={activeExercise.inputParams.labelLatex} inline />
               </div>
-              <h3 style={{ margin: '4px 0 10px 0', fontSize: '1.15rem', color: 'var(--primary)' }}>
+              <h3 style={{ margin: '4px 0 0 0', fontSize: '1.15rem', color: 'var(--primary)' }}>
                 {activeExercise.title}
               </h3>
+            </div>
+
+            {exerciseSubTab === 'memorial' && (
+              <div ref={memorialRef} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                {/* Enunciado */}
+                <div
+                  style={{
+                    background: 'var(--code-bg)',
+                    border: '1px solid var(--card-border)',
+                    borderRadius: '6px',
+                    padding: '12px 16px',
+                    overflowX: 'auto'
+                  }}
+                >
+                  <MathView math={activeExercise.statementLatex} />
+                </div>
+
+                {/* Diagrama de Blocos Referente ao Enunciado */}
+                <ControllerBlockDiagram
+                  title={
+                    activeExercise.controllerId === 'P'
+                      ? 'Diagrama de Blocos do Enunciado (Planta com Controlador K a Projetar)'
+                      : 'Diagrama de Blocos do Enunciado (Planta com Controlador Gc(s) a Projetar)'
+                  }
+                  showControllerBlock={true}
+                  controllerLabel={activeExercise.initialControllerLabel ?? 'Controlador'}
+                  controllerLatex={
+                    activeExercise.initialControllerLatex ?? (activeExercise.controllerId === 'P' ? 'K' : 'G_c(s)')
+                  }
+                  plantLatex={activeExercise.plantLatex}
+                  plantExpr={activeExercise.plantExpr}
+                  feedbackLatex={activeExercise.feedbackLatex}
+                />
+
+                {/* Por que este controlador foi escolhido? */}
+                <div
+                  style={{
+                    background: 'var(--code-bg)',
+                    borderLeft: `4px solid ${theory.badgeColor}`,
+                    borderRadius: '6px',
+                    padding: '12px 16px'
+                  }}
+                >
+                  <div style={{ fontSize: '0.82rem', fontWeight: 800, color: theory.badgeColor, marginBottom: '4px' }}>
+                    🧠 Por que escolhemos este controlador para este problema?
+                  </div>
+                  <div style={{ fontSize: '0.84rem', color: 'var(--text)', lineHeight: 1.55 }}>
+                    {renderRichMathText(activeExercise.whyThisController)}
+                  </div>
+                </div>
+
+                {/* Cards de Diagnóstico Rápido */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px' }}>
+                  <div style={{ background: 'var(--code-bg)', border: '1px solid var(--card-border)', borderRadius: '6px', padding: '10px 12px' }}>
+                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 700 }}>TIPO DO SISTEMA</div>
+                    <div style={{ fontWeight: 700, fontSize: '0.88rem', color: 'var(--text)', marginTop: '3px' }}>
+                      {activeExercise.diagnostics.systemType}
+                    </div>
+                  </div>
+                  <div style={{ background: 'var(--code-bg)', border: '1px solid var(--card-border)', borderRadius: '6px', padding: '10px 12px' }}>
+                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 700 }}>ORDEM DA PLANTA</div>
+                    <div style={{ fontWeight: 700, fontSize: '0.88rem', color: 'var(--text)', marginTop: '3px' }}>
+                      {activeExercise.diagnostics.systemOrder}
+                    </div>
+                  </div>
+                  <div style={{ background: 'var(--code-bg)', border: '1px solid var(--card-border)', borderRadius: '6px', padding: '10px 12px' }}>
+                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 700 }}>ERRO SEM CONTROLADOR</div>
+                    <div style={{ marginTop: '3px', color: 'var(--danger)' }}>
+                      <MathView math={activeExercise.diagnostics.initialErrorLatex} inline />
+                    </div>
+                  </div>
+                  <div style={{ background: 'var(--code-bg)', border: '1px solid var(--card-border)', borderRadius: '6px', padding: '10px 12px' }}>
+                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 700 }}>ERRO COM CONTROLADOR</div>
+                    <div style={{ marginTop: '3px', color: 'var(--success)' }}>
+                      <MathView math={activeExercise.diagnostics.finalErrorLatex} inline />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Diagrama de Blocos Final com Controlador Projetado */}
+                {(!examMode || revealedSteps >= activeExercise.detailedSteps.length) && (
+                  <ControllerBlockDiagram
+                    title="Diagrama de Blocos Final (Com o Controlador Projetado)"
+                    showControllerBlock={true}
+                    controllerLabel={activeExercise.controllerBlockLabel}
+                    controllerLatex={activeExercise.controllerLatex}
+                    plantLatex={activeExercise.plantLatex}
+                    plantExpr={activeExercise.plantExpr}
+                    controllerExpr={activeExercise.controllerExpr}
+                    feedbackLatex={activeExercise.feedbackLatex}
+                  />
+                )}
+
+                {/* Resolução Passo a Passo Detalhada */}
+                <div
+                  style={{
+                    background: 'var(--code-bg)',
+                    border: '1px solid var(--card-border)',
+                    borderRadius: '8px',
+                    padding: '14px 16px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '10px'
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                    <div style={{ fontSize: '0.82rem', fontWeight: 800, color: 'var(--primary)', textTransform: 'uppercase' }}>
+                      Resolução Analítica Detalhada (Passo a Passo)
+                    </div>
+                    {examMode && (
+                      <div style={{ display: 'flex', gap: '6px' }}>
+                        <button
+                          type="button"
+                          onClick={() => setRevealedSteps(p => Math.min(activeExercise.detailedSteps.length, p + 1))}
+                          disabled={revealedSteps >= activeExercise.detailedSteps.length}
+                          style={{
+                            padding: '5px 10px',
+                            borderRadius: '5px',
+                            fontSize: '0.75rem',
+                            fontWeight: 700,
+                            background: 'var(--primary)',
+                            color: '#fff',
+                            border: 'none',
+                            cursor: revealedSteps >= activeExercise.detailedSteps.length ? 'not-allowed' : 'pointer',
+                            opacity: revealedSteps >= activeExercise.detailedSteps.length ? 0.5 : 1
+                          }}
+                        >
+                          👁️ Revelar Próximo Passo ({revealedSteps}/{activeExercise.detailedSteps.length})
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setRevealedSteps(activeExercise.detailedSteps.length)}
+                          style={{
+                            padding: '5px 10px',
+                            borderRadius: '5px',
+                            fontSize: '0.75rem',
+                            fontWeight: 700,
+                            background: 'var(--card-bg)',
+                            color: 'var(--text)',
+                            border: '1px solid var(--card-border)',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          Revelar Tudo
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {activeExercise.detailedSteps.map((st, idx) => {
+                    const isHidden = examMode && idx >= revealedSteps;
+                    return (
+                      <div
+                        key={`ex-step-${idx}`}
+                        style={{
+                          background: 'var(--card-bg)',
+                          border: '1px solid var(--card-border)',
+                          borderRadius: '6px',
+                          padding: '10px 14px',
+                          height: 'auto',
+                          minHeight: 'fit-content'
+                        }}
+                      >
+                        <div style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--text)', marginBottom: isHidden ? '0' : '3px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
+                          <span>{renderRichMathText(st.title)}</span>
+                          {isHidden && (
+                            <button
+                              type="button"
+                              onClick={() => setRevealedSteps(idx + 1)}
+                              style={{
+                                padding: '3px 9px',
+                                borderRadius: '4px',
+                                fontSize: '0.72rem',
+                                fontWeight: 700,
+                                background: 'var(--code-bg)',
+                                color: 'var(--primary)',
+                                border: '1px solid var(--card-border)',
+                                cursor: 'pointer',
+                                flexShrink: 0
+                              }}
+                            >
+                              Revelar
+                            </button>
+                          )}
+                        </div>
+                        {!isHidden && (
+                          <>
+                            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '6px', lineHeight: 1.45 }}>
+                              {renderRichMathText(st.description)}
+                            </div>
+                            <div style={{ padding: '4px 0', height: 'auto' }}>
+                              {renderStackedMath(st.latex)}
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {exerciseSubTab === 'graficos' && (
               <div
                 style={{
                   background: 'var(--code-bg)',
                   border: '1px solid var(--card-border)',
-                  borderRadius: '6px',
-                  padding: '12px 16px',
-                  overflowX: 'auto',
-                  marginBottom: '12px'
+                  borderRadius: '8px',
+                  padding: '14px 16px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '10px'
                 }}
               >
-                <MathView math={activeExercise.statementLatex} />
-              </div>
-
-              {/* Diagrama de Blocos Referente ao Enunciado (Planta + Controlador K ou Gc(s) a Projetar) */}
-              <ControllerBlockDiagram
-                title={
-                  activeExercise.controllerId === 'P'
-                    ? 'Diagrama de Blocos do Enunciado (Planta com Controlador K a Projetar)'
-                    : 'Diagrama de Blocos do Enunciado (Planta com Controlador Gc(s) a Projetar)'
-                }
-                showControllerBlock={true}
-                controllerLabel={activeExercise.initialControllerLabel ?? 'Controlador'}
-                controllerLatex={
-                  activeExercise.initialControllerLatex ?? (activeExercise.controllerId === 'P' ? 'K' : 'G_c(s)')
-                }
-                plantLatex={activeExercise.plantLatex}
-                plantExpr={activeExercise.plantExpr}
-                feedbackLatex={activeExercise.feedbackLatex}
-              />
-            </div>
-
-            {/* Por que este controlador foi escolhido? */}
-            <div
-              style={{
-                background: 'var(--code-bg)',
-                borderLeft: `4px solid ${theory.badgeColor}`,
-                borderRadius: '6px',
-                padding: '12px 16px'
-              }}
-            >
-              <div style={{ fontSize: '0.82rem', fontWeight: 800, color: theory.badgeColor, marginBottom: '4px' }}>
-                🧠 Por que escolhemos este controlador para este problema?
-              </div>
-              <div style={{ fontSize: '0.84rem', color: 'var(--text)', lineHeight: 1.55 }}>
-                {renderRichMathText(activeExercise.whyThisController)}
-              </div>
-            </div>
-
-            {/* Cards de Diagnóstico Rápido */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px' }}>
-              <div style={{ background: 'var(--code-bg)', border: '1px solid var(--card-border)', borderRadius: '6px', padding: '10px 12px' }}>
-                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 700 }}>TIPO DO SISTEMA</div>
-                <div style={{ fontWeight: 700, fontSize: '0.88rem', color: 'var(--text)', marginTop: '3px' }}>
-                  {activeExercise.diagnostics.systemType}
+                <div style={{ fontSize: '0.82rem', fontWeight: 800, color: 'var(--primary)', textTransform: 'uppercase' }}>
+                  Simulação Temporal, Esforço u(t) (10 V) e Lugar das Raízes (LGR)
                 </div>
+                {renderSimulationCharts()}
               </div>
-              <div style={{ background: 'var(--code-bg)', border: '1px solid var(--card-border)', borderRadius: '6px', padding: '10px 12px' }}>
-                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 700 }}>ORDEM DA PLANTA</div>
-                <div style={{ fontWeight: 700, fontSize: '0.88rem', color: 'var(--text)', marginTop: '3px' }}>
-                  {activeExercise.diagnostics.systemOrder}
-                </div>
-              </div>
-              <div style={{ background: 'var(--code-bg)', border: '1px solid var(--card-border)', borderRadius: '6px', padding: '10px 12px' }}>
-                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 700 }}>ERRO SEM CONTROLADOR</div>
-                <div style={{ marginTop: '3px', color: 'var(--danger)' }}>
-                  <MathView math={activeExercise.diagnostics.initialErrorLatex} inline />
-                </div>
-              </div>
-              <div style={{ background: 'var(--code-bg)', border: '1px solid var(--card-border)', borderRadius: '6px', padding: '10px 12px' }}>
-                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 700 }}>ERRO COM CONTROLADOR</div>
-                <div style={{ marginTop: '3px', color: 'var(--success)' }}>
-                  <MathView math={activeExercise.diagnostics.finalErrorLatex} inline />
-                </div>
-              </div>
-            </div>
+            )}
 
-            {/* Diagrama de Blocos Final com Controlador Projetado */}
-            <ControllerBlockDiagram
-              title="Diagrama de Blocos Final (Com o Controlador Projetado)"
-              showControllerBlock={true}
-              controllerLabel={activeExercise.controllerBlockLabel}
-              controllerLatex={activeExercise.controllerLatex}
-              plantLatex={activeExercise.plantLatex}
-              plantExpr={activeExercise.plantExpr}
-              controllerExpr={activeExercise.controllerExpr}
-              feedbackLatex={activeExercise.feedbackLatex}
-            />
-
-            {/* Resolução Passo a Passo Detalhada */}
-            <div
-              style={{
-                background: 'var(--code-bg)',
-                border: '1px solid var(--card-border)',
-                borderRadius: '8px',
-                padding: '14px 16px',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '10px'
-              }}
-            >
-              <div style={{ fontSize: '0.82rem', fontWeight: 800, color: 'var(--primary)', textTransform: 'uppercase' }}>
-                Resolução Analítica Detalhada (Passo a Passo)
-              </div>
-              {activeExercise.detailedSteps.map((st, idx) => (
-                <div
-                  key={`ex-step-${idx}`}
-                  style={{
-                    background: 'var(--card-bg)',
-                    border: '1px solid var(--card-border)',
-                    borderRadius: '6px',
-                    padding: '10px 14px',
-                    height: 'auto',
-                    minHeight: 'fit-content'
-                  }}
-                >
-                  <div style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--text)', marginBottom: '3px' }}>
-                    {renderRichMathText(st.title)}
-                  </div>
-                  <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '6px', lineHeight: 1.45 }}>
-                    {renderRichMathText(st.description)}
-                  </div>
-                  <div style={{ padding: '4px 0', height: 'auto' }}>
-                    {renderStackedMath(st.latex)}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Simulação Temporal Interativa */}
-            <div
-              style={{
-                background: 'var(--code-bg)',
-                border: '1px solid var(--card-border)',
-                borderRadius: '8px',
-                padding: '14px 16px',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '10px'
-              }}
-            >
-              <div style={{ fontSize: '0.82rem', fontWeight: 800, color: 'var(--primary)', textTransform: 'uppercase' }}>
-                Simulação Temporal no Navegador (Sem Controlador vs. Com Controlador)
-              </div>
-              {renderSimulationCharts()}
-            </div>
-
-            {/* Script Scilab */}
-            <div
-              style={{
-                background: 'var(--code-bg)',
-                border: '1px solid var(--card-border)',
-                borderRadius: '8px',
-                overflow: 'hidden'
-              }}
-            >
+            {exerciseSubTab === 'scilab' && (
               <div
                 style={{
-                  padding: '8px 14px',
-                  borderBottom: '1px solid var(--card-border)',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  flexWrap: 'wrap',
-                  gap: '8px'
+                  background: 'var(--code-bg)',
+                  border: '1px solid var(--card-border)',
+                  borderRadius: '8px',
+                  overflow: 'hidden'
                 }}
               >
-                <span style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text)' }}>
-                  💻 Script Scilab (.sce) — {activeExercise.id}.sce
-                </span>
-                <div style={{ display: 'flex', gap: '6px' }}>
-                  <button
-                    type="button"
-                    onClick={copyScilab}
-                    style={{
-                      padding: '4px 10px',
-                      borderRadius: '4px',
-                      fontSize: '0.74rem',
-                      fontWeight: 700,
-                      background: 'var(--card-bg)',
-                      border: '1px solid var(--card-border)',
-                      color: copiedScilab ? 'var(--success)' : 'var(--primary)',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    {copiedScilab ? '✓ Copiado!' : 'Copiar Scilab'}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={downloadScilab}
-                    style={{
-                      padding: '4px 10px',
-                      borderRadius: '4px',
-                      fontSize: '0.74rem',
-                      fontWeight: 700,
-                      background: 'var(--primary)',
-                      color: '#fff',
-                      border: 'none',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    ↓ Baixar .sce
-                  </button>
+                <div
+                  style={{
+                    padding: '8px 14px',
+                    borderBottom: '1px solid var(--card-border)',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    flexWrap: 'wrap',
+                    gap: '8px'
+                  }}
+                >
+                  <span style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text)' }}>
+                    💻 Script Scilab (.sce) — {activeExercise.id}.sce
+                  </span>
+                  <div style={{ display: 'flex', gap: '6px' }}>
+                    <button
+                      type="button"
+                      onClick={copyScilab}
+                      style={{
+                        padding: '4px 10px',
+                        borderRadius: '4px',
+                        fontSize: '0.74rem',
+                        fontWeight: 700,
+                        background: 'var(--card-bg)',
+                        border: '1px solid var(--card-border)',
+                        color: copiedScilab ? 'var(--success)' : 'var(--primary)',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      {copiedScilab ? '✓ Copiado!' : 'Copiar Scilab'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={downloadScilab}
+                      style={{
+                        padding: '4px 10px',
+                        borderRadius: '4px',
+                        fontSize: '0.74rem',
+                        fontWeight: 700,
+                        background: 'var(--primary)',
+                        color: '#fff',
+                        border: 'none',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      ↓ Baixar .sce
+                    </button>
+                  </div>
                 </div>
+                <pre
+                  style={{
+                    margin: 0,
+                    padding: '12px 14px',
+                    fontSize: '0.77rem',
+                    lineHeight: 1.5,
+                    fontFamily: '"JetBrains Mono", Consolas, monospace',
+                    color: 'var(--text)',
+                    overflowX: 'auto'
+                  }}
+                >
+                  <code>{activeExercise.scilabCode}</code>
+                </pre>
               </div>
-              <pre
-                style={{
-                  margin: 0,
-                  padding: '12px 14px',
-                  fontSize: '0.77rem',
-                  lineHeight: 1.5,
-                  fontFamily: '"JetBrains Mono", Consolas, monospace',
-                  color: 'var(--text)',
-                  overflowX: 'auto'
-                }}
-              >
-                <code>{activeExercise.scilabCode}</code>
-              </pre>
-            </div>
+            )}
           </div>
         </section>
       </div>

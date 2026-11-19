@@ -13,12 +13,20 @@ export interface ChartSeries {
   landmarkMode?: 'output' | 'error';
 }
 
+export interface ReferenceLine {
+  y: number;
+  label: string;
+  color: string;
+  dashed?: boolean;
+}
+
 interface InteractiveTimeChartProps {
   title: React.ReactNode;
   xValues: number[];
   series: ChartSeries[];
   inputType?: 'step' | 'ramp' | 'parabola' | 'combined';
   height?: number;
+  referenceLines?: ReferenceLine[];
 }
 
 interface LandmarkPoint {
@@ -36,7 +44,8 @@ export const InteractiveTimeChart: React.FC<InteractiveTimeChartProps> = ({
   xValues,
   series,
   inputType = 'step',
-  height = 240
+  height = 240,
+  referenceLines
 }) => {
   const [hoverIdx, setHoverIdx] = useState<number | null>(null);
   const [showLandmarks, setShowLandmarks] = useState<boolean>(true);
@@ -533,6 +542,34 @@ export const InteractiveTimeChart: React.FC<InteractiveTimeChartProps> = ({
             />
           </g>
         )}
+
+        {/* Linhas de referência opcionais (ex.: Regra dos ±10 V) */}
+        {referenceLines && referenceLines.map((rl, idx) => {
+          const py = toPxY(rl.y);
+          return (
+            <g key={`refline-${idx}`}>
+              <line
+                x1={padL}
+                y1={py}
+                x2={w - padR}
+                y2={py}
+                stroke={rl.color}
+                strokeWidth="1.4"
+                strokeDasharray={rl.dashed === false ? undefined : '5,4'}
+              />
+              <text
+                x={w - padR - 4}
+                y={py - 4}
+                fontSize="9"
+                fontWeight="700"
+                fill={rl.color}
+                textAnchor="end"
+              >
+                {rl.label}
+              </text>
+            </g>
+          );
+        })}
 
         {/* Curvas das Séries */}
         {series.map(s => {

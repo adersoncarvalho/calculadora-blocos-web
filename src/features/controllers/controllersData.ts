@@ -458,6 +458,14 @@ export interface ControllerSimulationResult {
   yComp: number[];
   eUncomp: number[];
   eComp: number[];
+  uComp: number[] | null;
+  uPeak: number | null;
+  prefilterZc: number | null;
+  yCompPrefilter: number[] | null;
+  eCompPrefilter: number[] | null;
+  uCompPrefilter: number[] | null;
+  overshootPrefilter: number | null;
+  uPeakPrefilter: number | null;
   essUncomp: number;
   essComp: number;
   overshootUncomp: number | null;
@@ -475,6 +483,46 @@ export function buildClosedLoopTf(G: RatFunc, Gc: RatFunc, H?: RatFunc): RatFunc
   const num = polyMul(L.num, LH.den);
   const den = polyAdd(polyMul(L.den, LH.den), polyMul(L.den, LH.num));
   return ratSimplify(num, den);
+}
+
+/**
+ * Calcula a função de transferência do esforço de controle U(s)/R(s) = Gc(s) / (1 + Gc(s)G(s)H(s))
+ */
+export function buildControlEffortTf(G: RatFunc, Gc: RatFunc, H?: RatFunc): RatFunc {
+  const L = ratMul(Gc, G);
+  const Hfunc = H || { num: [{ coeff: 1, vars: {} }], den: [{ coeff: 1, vars: {} }] };
+  const LH = ratMul(L, Hfunc);
+  // U/R = Gc / (1 + LH) = (Gc.num * LH.den) / (Gc.den * (LH.den + LH.num))
+  const num = polyMul(Gc.num, LH.den);
+  const den = polyMul(Gc.den, polyAdd(LH.den, LH.num));
+  return ratSimplify(num, den);
+}
+
+/**
+ * Extrai o primeiro zero real positivo zc > 0 de Gc(s) (para pré-filtro F(s) = zc / (s + zc) em PD/Lead)
+ */
+function extractRealPositiveZero(Gc: RatFunc): number | null {
+  try {
+    if (!isUnivariateInS(Gc.num)) return null;
+    const uN = trimUni(toUnivariateArr(Gc.num));
+    if (uN.length === 2 && Math.abs(uN[1]) > 1e-12) {
+      const zc = uN[0] / uN[1];
+      return zc > 1e-4 ? Number(zc.toFixed(4)) : null;
+    }
+    // Se grau 2 (ex: 2 estágios idênticos (s+zc)^2): verifica raiz real dupla ou real negativa
+    if (uN.length === 3 && Math.abs(uN[2]) > 1e-12) {
+      const b = uN[1] / uN[2];
+      const c = uN[0] / uN[2];
+      const disc = b * b - 4 * c;
+      if (disc >= -1e-4 && b > 0 && c > 0) {
+        const zc = (b - Math.sqrt(Math.max(0, disc))) / 2;
+        return zc > 1e-4 ? Number(zc.toFixed(4)) : null;
+      }
+    }
+    return null;
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -580,6 +628,7 @@ export function simulateControllerExercise(ex: ControllerExercise): ControllerSi
 
     const T_uncomp = buildClosedLoopTf(G, Gone, H);
     const T_comp = buildClosedLoopTf(G, Gc, H);
+    const Tu_comp = buildControlEffortTf(G, Gc, H);
 
     const a0 = ex.inputParams.a0 || 0;
     const a1 = ex.inputParams.a1 || 0;
@@ -589,6 +638,7 @@ export function simulateControllerExercise(ex: ControllerExercise): ControllerSi
 
     const simUncomp = simulateInputResponseRK4(T_uncomp, inputFn, ex.tMax, 300);
     const simComp = simulateInputResponseRK4(T_comp, inputFn, ex.tMax, 300);
+    const simU = simulateInputResponseRK4(Tu_comp, inputFn, ex.tMax, 300);
 
     if (!simUncomp || !simComp) return null;
 
@@ -598,6 +648,47 @@ export function simulateControllerExercise(ex: ControllerExercise): ControllerSi
     const yComp = simComp.y;
     const eUncomp = r.map((rv, i) => Number((rv - yUncomp[i]).toFixed(5)));
     const eComp = r.map((rv, i) => Number((rv - yComp[i]).toFixed(5)));
+    const uComp = simU ? simU.y : null;
+    const uPeak = uComp ? Number(Math.max(...uComp.map(v => Math.abs(v))).toFixed(3)) : null;
+
+    // Pré-filtro F(s) = zc / (s + zc) para PD Real e Avanço de Fase (Lead)
+    let prefilterZc: number | null = null;
+    let yCompPrefilter: number[] | null = null;
+    let eCompPrefilter: number[] | null = null;
+    let uCompPrefilter: number[] | null = null;
+    let overshootPrefilter: number | null = null;
+    let uPeakPrefilter: number | null = null;
+
+    if (ex.controllerId === 'PD' || ex.controllerId === 'Lead') {
+      const zc = extractRealPositiveZero(Gc);
+      if (zc !== null) {
+        prefilterZc = zc;
+        const F: RatFunc = {
+          num: [{ coeff: zc, vars: {} }],
+          den: [{ coeff: 1, vars: { s: 1 } }, { coeff: zc, vars: {} }]
+        };
+        const T_pref = ratMul(F, T_comp);
+        const Tu_pref = ratMul(F, Tu_comp);
+        const simYPref = simulateInputResponseRK4(T_pref, inputFn, ex.tMax, 300);
+        const simUPref = simulateInputResponseRK4(Tu_pref, inputFn, ex.tMax, 300);
+        if (simYPref) {
+          yCompPrefilter = simYPref.y;
+          eCompPrefilter = r.map((rv, i) => Number((rv - simYPref.y[i]).toFixed(5)));
+          if (ex.inputType === 'step' && a0 !== 0) {
+            const yFinP = yCompPrefilter[yCompPrefilter.length - 1];
+            const yMaxP = Math.max(...yCompPrefilter);
+            overshootPrefilter =
+              Math.abs(yFinP) > 1e-6 && yMaxP > yFinP
+                ? Number((((yMaxP - yFinP) / Math.abs(yFinP)) * 100).toFixed(2))
+                : 0;
+          }
+        }
+        if (simUPref) {
+          uCompPrefilter = simUPref.y;
+          uPeakPrefilter = Number(Math.max(...simUPref.y.map(v => Math.abs(v))).toFixed(3));
+        }
+      }
+    }
 
     const lastIdx = t.length - 1;
     const essUncomp = eUncomp[lastIdx];
@@ -630,6 +721,14 @@ export function simulateControllerExercise(ex: ControllerExercise): ControllerSi
       yComp,
       eUncomp,
       eComp,
+      uComp,
+      uPeak,
+      prefilterZc,
+      yCompPrefilter,
+      eCompPrefilter,
+      uCompPrefilter,
+      overshootPrefilter,
+      uPeakPrefilter,
       essUncomp,
       essComp,
       overshootUncomp,
