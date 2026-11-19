@@ -200,6 +200,12 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
   const [showVisionModal, setShowVisionModal] = useState<boolean>(false);
   const [pastedImageForModal, setPastedImageForModal] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [quickEdit, setQuickEdit] = useState<{
+    id: string;
+    name: string;
+    expr: string;
+    dir: 'right' | 'left';
+  } | null>(null);
 
   // Redução de Mason e Visualização Dividida (Painel 1: Circuito | Painel 2: Cálculos)
   const [analysisResult, setAnalysisResult] = useState<MasonAnalysis | null>(null);
@@ -483,13 +489,59 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
     setSelectedConnId(null);
   };
 
-  // 4. Adicionar Bloco G(s) ou H(s) GENÉRICO (Sem função predefinida — campos vazios / simbólicos)
+  // Encontra posição livre na grade para nunca empilhar elementos novos um em cima do outro
+  const findFreeGridSpot = (baseX: number, baseY: number): Point => {
+    const candidates: Point[] = [];
+    for (let row = 0; row < 5; row++) {
+      for (let col = 0; col < 6; col++) {
+        candidates.push({
+          x: snapToGrid(baseX + col * 140, GRID_SIZE),
+          y: snapToGrid(baseY + row * 100, GRID_SIZE)
+        });
+      }
+    }
+    for (const pt of candidates) {
+      const occupied = graph.elements.some(
+        el => Math.hypot((el.x ?? 0) - pt.x, (el.y ?? 0) - pt.y) < 85
+      );
+      if (!occupied) return pt;
+    }
+    return { x: snapToGrid(baseX + 40, GRID_SIZE), y: snapToGrid(baseY + 40, GRID_SIZE) };
+  };
+
+  // Enquadra todo o circuito na área visível do canvas (Atalho F — Fit to Screen)
+  const handleFitToScreen = useCallback(() => {
+    if (graph.elements.length === 0) {
+      setZoom(1);
+      setPan({ x: 0, y: 0 });
+      return;
+    }
+    const xs = graph.elements.map(e => e.x ?? 0);
+    const ys = graph.elements.map(e => e.y ?? 0);
+    const minX = Math.min(...xs) - 90;
+    const maxX = Math.max(...xs) + 90;
+    const minY = Math.min(...ys) - 70;
+    const maxY = Math.max(...ys) + 70;
+    const boxW = Math.max(240, maxX - minX);
+    const boxH = Math.max(180, maxY - minY);
+    const rect = canvasContainerRef.current?.getBoundingClientRect();
+    const viewW = rect?.width || 900;
+    const viewH = rect?.height || 520;
+    const nextZoom = Math.min(1.5, Math.max(0.45, Number(Math.min((viewW * 0.86) / boxW, (viewH * 0.82) / boxH).toFixed(2))));
+    const cx = (minX + maxX) / 2;
+    const cy = (minY + maxY) / 2;
+    setZoom(nextZoom);
+    setPan({
+      x: Math.round(viewW / 2 - cx * nextZoom),
+      y: Math.round(viewH / 2 - cy * nextZoom)
+    });
+  }, [graph.elements]);
+
+  // 4. Adicionar Bloco G(s) ou H(s) GENÉRICO (Sem função predefinida — nunca nasce empilhado)
   const handleAddBlock = (isFeedback = false) => {
     const prefix = isFeedback ? 'H' : 'G';
     const code = allocateExclusiveCode(prefix); // Ex: G1, G2, G3... / H1, H2, H3...
-    const count = graph.elements.filter(
-      e => e.type === 'block' && (isFeedback ? e.dir === 'left' : e.dir !== 'left')
-    ).length;
+    const spot = findFreeGridSpot(320, isFeedback ? 360 : 220);
     const newId = `${prefix.toLowerCase()}_${Date.now()}_${code}`;
     const newEl: DiagramElement = {
       id: newId,
@@ -500,8 +552,8 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
       num: '',
       den: '',
       rat: undefined,
-      x: snapToGrid(300 + (count % 4) * 160, GRID_SIZE),
-      y: snapToGrid(isFeedback ? 360 + (count % 2) * 80 : 240, GRID_SIZE),
+      x: spot.x,
+      y: spot.y,
       dir: isFeedback ? 'left' : 'right'
     };
     const updated = { ...graph, elements: [...graph.elements, newEl] };
@@ -511,18 +563,18 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
     setSelectedConnId(null);
   };
 
-  // 5. Adicionar Somador
+  // 5. Adicionar Somador (em posição livre na grade)
   const handleAddSummer = () => {
     const code = allocateExclusiveCode('S');
-    const count = graph.elements.filter(e => e.type === 'summer').length;
+    const spot = findFreeGridSpot(220, 220);
     const newId = `sum_${Date.now()}_${code}`;
     const newEl: DiagramElement = {
       id: newId,
       code,
       type: 'summer',
       name: code,
-      x: snapToGrid(240 + (count % 4) * 160, GRID_SIZE),
-      y: snapToGrid(240, GRID_SIZE)
+      x: spot.x,
+      y: spot.y
     };
     const updated = { ...graph, elements: [...graph.elements, newEl] };
     setGraph(updated);
@@ -753,6 +805,10 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
 
       if (e.key === 'Escape') {
         setContextMenu(null);
+        if (quickEdit) {
+          setQuickEdit(null);
+          return;
+        }
         if (activeDraft) {
           setActiveDraft(null);
           showToast('Operação de conexão atual cancelada.');
@@ -769,6 +825,50 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
       if (isEditingField) return;
 
       const isCtrlOrCmd = e.ctrlKey || e.metaKey;
+      const keyLow = e.key.toLowerCase();
+
+      // Atalhos rápidos estilo PSIM / CAD (sem Ctrl)
+      if (!isCtrlOrCmd && !e.altKey) {
+        if (keyLow === 'w') {
+          e.preventDefault();
+          setActiveTool('connect');
+          showToast('Modo Fio (W) ativo — clique nos pinos para conectar.');
+          return;
+        }
+        if (keyLow === 'v') {
+          e.preventDefault();
+          setActiveTool('select');
+          return;
+        }
+        if (keyLow === 'h') {
+          e.preventDefault();
+          setActiveTool('pan');
+          return;
+        }
+        if (keyLow === 'f') {
+          e.preventDefault();
+          handleFitToScreen();
+          showToast('Circuito enquadrado na tela (F).');
+          return;
+        }
+        if (keyLow === 'r' && selectedIds.length === 1) {
+          const targetEl = graph.elements.find(el => el.id === selectedIds[0]);
+          if (targetEl && targetEl.type === 'block') {
+            e.preventDefault();
+            const nextDir: 'right' | 'left' = targetEl.dir === 'left' ? 'right' : 'left';
+            const updated = {
+              ...graph,
+              elements: graph.elements.map(el =>
+                el.id === targetEl.id ? { ...el, dir: nextDir } : el
+              )
+            };
+            setGraph(updated);
+            pushHistory(updated);
+            showToast(`Sentido de ${targetEl.name} invertido (${nextDir === 'left' ? '← Realimentação' : '→ Direto'}).`);
+            return;
+          }
+        }
+      }
 
       if (isCtrlOrCmd && e.key.toLowerCase() === 'z') {
         e.preventDefault();
@@ -1498,18 +1598,56 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
     setDragInitialManualConns(initialManualMap);
   };
 
-  // Duplo clique em um elemento: seleciona e foca na edição na lateral esquerda
+  // Duplo clique estilo PSIM: abre mini-modal rápido de propriedades (Enter aplica e fecha!)
+  // ou alterna polaridade diretamente no Somador
   const handleNodeDoubleClick = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
     setSelectedId(id);
     setSelectedConnId(null);
-    if (isSidebarCollapsed) {
-      setIsSidebarCollapsed(false);
+    const el = graph.elements.find(item => item.id === id);
+    if (!el) return;
+
+    if (el.type === 'summer') {
+      const incoming = graph.connections.filter(c => c.to === id);
+      if (incoming.length > 0) {
+        // Alterna sinal da última conexão entrante (tipicamente a realimentação)
+        const targetConn = incoming[incoming.length - 1];
+        const nextSign = targetConn.sign === '-' ? '+' : '-';
+        handleSetConnectionSign(targetConn.id, nextSign);
+        showToast(`Sinal da entrada em ${el.name} alternado para (${nextSign}).`);
+      }
+      return;
     }
-    setTimeout(() => {
-      nameInputRef.current?.focus();
-      nameInputRef.current?.select();
-    }, 60);
+
+    setQuickEdit({
+      id: el.id,
+      name: el.name || '',
+      expr: el.expr || '',
+      dir: el.dir === 'left' ? 'left' : 'right'
+    });
+  };
+
+  const applyQuickEdit = () => {
+    if (!quickEdit) return;
+    const cleanExpr = quickEdit.expr.trim();
+    const updated = {
+      ...graph,
+      elements: graph.elements.map(el => {
+        if (el.id !== quickEdit.id) return el;
+        return {
+          ...el,
+          name: quickEdit.name.trim() || el.name,
+          expr: cleanExpr,
+          num: '',
+          den: '',
+          dir: el.type === 'block' ? quickEdit.dir : el.dir
+        };
+      })
+    };
+    setGraph(updated);
+    pushHistory(updated);
+    setQuickEdit(null);
+    showToast('Propriedades do elemento atualizadas.');
   };
 
   // Iniciar arraste manual de um segmento horizontal ou vertical de uma conexão
@@ -3446,54 +3584,51 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
           </button>
         )}
 
-        {/* Controles Flutuantes de Zoom e Visualização */}
+        {/* Controles Flutuantes de Zoom e Fit to Screen (Canto Inferior Esquerdo — sem sobrepor cabeçalho) */}
         <div
           style={{
             position: 'absolute',
-            top: '14px',
-            right: '14px',
+            bottom: '12px',
+            left: '14px',
             zIndex: 30,
             display: 'flex',
             alignItems: 'center',
-            gap: '6px',
+            gap: '5px',
             background: 'var(--card-bg)',
             border: '1px solid var(--card-border)',
-            borderRadius: '8px',
-            padding: '5px 8px'
+            borderRadius: '6px',
+            padding: '4px 7px'
           }}
         >
           <button
             type="button"
             className="filter-btn"
             onClick={() => setZoom(z => Math.min(2.4, Number((z + 0.15).toFixed(2))))}
-            style={{ padding: '4px 9px', fontSize: '0.78rem' }}
+            style={{ padding: '3px 8px', fontSize: '0.78rem', fontWeight: 700 }}
             title="Aumentar Zoom (Roda do Mouse)"
           >
-            🔍+
+            +
           </button>
-          <span style={{ fontSize: '0.76rem', fontWeight: 700, color: 'var(--text)', minWidth: '42px', textAlign: 'center' }}>
+          <span style={{ fontSize: '0.73rem', fontFamily: 'var(--font-mono), monospace', fontWeight: 700, color: 'var(--text)', minWidth: '40px', textAlign: 'center' }}>
             {Math.round(zoom * 100)}%
           </span>
           <button
             type="button"
             className="filter-btn"
             onClick={() => setZoom(z => Math.max(0.4, Number((z - 0.15).toFixed(2))))}
-            style={{ padding: '4px 9px', fontSize: '0.78rem' }}
+            style={{ padding: '3px 8px', fontSize: '0.78rem', fontWeight: 700 }}
             title="Diminuir Zoom (Roda do Mouse)"
           >
-            🔍-
+            −
           </button>
           <button
             type="button"
             className="filter-btn"
-            onClick={() => {
-              setZoom(1);
-              setPan({ x: 0, y: 0 });
-            }}
-            style={{ padding: '4px 9px', fontSize: '0.76rem' }}
-            title="Restaurar Zoom 100% e Centralizar Área de Desenho"
+            onClick={handleFitToScreen}
+            style={{ padding: '3px 8px', fontSize: '0.73rem', fontWeight: 600 }}
+            title="Enquadrar todo o circuito na tela (Atalho F)"
           >
-            ↺ 100%
+            Enquadrar (F)
           </button>
         </div>
 
@@ -3922,11 +4057,16 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
             {graph.elements.map(el => {
               const isSelected = selectedIds.includes(el.id);
               const isConnectingSource = activeDraft?.from === el.id;
-              // Os 8 pontos aparecem SOMENTE quando a ferramenta Criar Conexão ('connect') está ativa e o mouse está sobre o bloco!
-              const showEightPorts = activeTool === 'connect' && hoveredElementId === el.id;
+              // No modo Fio (W), mostra sempre os 4 pinos cardeais em TODOS os elementos (estilo PSIM), e os 8 pinos ao passar o mouse!
+              const isConnectMode = activeTool === 'connect';
+              const showAllEightPorts = isConnectMode && hoveredElementId === el.id;
+              const visiblePorts = isConnectMode
+                ? showAllEightPorts
+                  ? getElementEightPorts(el)
+                  : getElementEightPorts(el).filter(p => p.side === 'N' || p.side === 'S' || p.side === 'E' || p.side === 'W')
+                : [];
               const x = el.x ?? 100;
               const y = el.y ?? 100;
-              const eightPorts = getElementEightPorts(el);
 
               const elementCursor =
                 activeTool === 'select'
@@ -3973,15 +4113,16 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
                   }}
                   style={{ cursor: elementCursor }}
                 >
-                  {/* Zona de proximidade para manter os 8 pontos acessíveis no perímetro do bloco */}
-                  <rect
-                    x={x - 76}
-                    y={y - 46}
-                    width="152"
-                    height="92"
-                    fill="transparent"
-                    pointerEvents="all"
-                  />
+                  {/* Hitbox ajustado exatamente ao perímetro real de cada elemento (corrige invasão de 152px do Somador) */}
+                  {el.type === 'summer' ? (
+                    <circle cx={x} cy={y} r="24" fill="transparent" pointerEvents="all" />
+                  ) : el.type === 'pickoff' ? (
+                    <circle cx={x} cy={y} r="14" fill="transparent" pointerEvents="all" />
+                  ) : el.type === 'input' || el.type === 'output' ? (
+                    <rect x={x - 44} y={y - 24} width="88" height="48" fill="transparent" pointerEvents="all" />
+                  ) : (
+                    <rect x={x - 64} y={y - 34} width="128" height="68" fill="transparent" pointerEvents="all" />
+                  )}
 
                   {/* A. SOMADOR */}
                   {el.type === 'summer' && (
@@ -4300,9 +4441,8 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
                     );
                   })()}
 
-                  {/* OS 8 PONTOS DE CONEXÃO DA ROSA DOS VENTOS (SOMENTE QUANDO CRIAR CONEXÃO ATIVO E CURSOR SOBRE O BLOCO) */}
-                  {showEightPorts &&
-                    eightPorts.map(pt => {
+                  {/* PINOS DE CONEXÃO SEMPRE VISÍVEIS NO MODO FIO (W) COM SNAP MAGNÉTICO (ESTILO PSIM) */}
+                  {visiblePorts.map(pt => {
                       const isPortHovered =
                         hoveredPort?.elementId === el.id && hoveredPort?.side === pt.side;
                       const isOriginPort =
@@ -4324,15 +4464,15 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
                             );
                           }}
                           onMouseDown={e => handlePortClick(e, el.id, pt.side)}
-                          style={{ cursor: 'pointer' }}
+                          style={{ cursor: 'crosshair' }}
                         >
                           <title>{`${pt.label} de ${el.name}`}</title>
-                          <circle cx={pt.x} cy={pt.y} r="11" fill="transparent" />
+                          <circle cx={pt.x} cy={pt.y} r="13" fill="transparent" />
                           {(isPortHovered || isOriginPort) && (
                             <circle
                               cx={pt.x}
                               cy={pt.y}
-                              r="9.5"
+                              r="10"
                               fill="rgba(16, 185, 129, 0.25)"
                               stroke="#10b981"
                               strokeWidth="1.5"
@@ -4341,10 +4481,10 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
                           <circle
                             cx={pt.x}
                             cy={pt.y}
-                            r={isPortHovered || isOriginPort ? 6.5 : 4.8}
-                            fill={isPortHovered || isOriginPort ? '#10b981' : '#38bdf8'}
+                            r={isPortHovered || isOriginPort ? 6.2 : 4.2}
+                            fill={isPortHovered || isOriginPort ? '#10b981' : isLightTheme ? '#1e3a5f' : '#60a5fa'}
                             stroke="#ffffff"
-                            strokeWidth="1.8"
+                            strokeWidth="1.6"
                           />
                         </g>
                       );
@@ -4683,6 +4823,171 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
           </section>
         )}
       </div>
+
+      {/* Mini-Modal Rápido de Propriedades (Duplo Clique estilo PSIM — Enter aplica e fecha) */}
+      {quickEdit && (
+        <div
+          onClick={() => setQuickEdit(null)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 9998,
+            background: 'rgba(15, 23, 42, 0.45)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '16px'
+          }}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{
+              width: '100%',
+              maxWidth: '380px',
+              background: 'var(--card-bg)',
+              border: '1px solid var(--card-border)',
+              borderTop: '3px solid var(--primary)',
+              borderRadius: '6px',
+              padding: '18px 20px',
+              boxShadow: '0 12px 32px rgba(15, 23, 42, 0.28)'
+            }}
+          >
+            <div style={{ fontFamily: 'var(--font-serif), Georgia, serif', fontSize: '1.05rem', fontWeight: 700, color: 'var(--primary)', marginBottom: '12px' }}>
+              Propriedades do Elemento
+            </div>
+            <form
+              onSubmit={e => {
+                e.preventDefault();
+                applyQuickEdit();
+              }}
+              style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}
+            >
+              <div>
+                <label style={{ display: 'block', fontSize: '0.73rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '3px' }}>
+                  Nome / Rótulo
+                </label>
+                <input
+                  type="text"
+                  value={quickEdit.name}
+                  onChange={e => setQuickEdit({ ...quickEdit, name: e.target.value })}
+                  style={{
+                    width: '100%',
+                    padding: '7px 10px',
+                    borderRadius: '4px',
+                    background: 'var(--code-bg)',
+                    border: '1px solid var(--card-border)',
+                    color: 'var(--text)',
+                    fontSize: '0.84rem'
+                  }}
+                />
+              </div>
+
+              {graph.elements.find(el => el.id === quickEdit.id)?.type === 'block' && (
+                <>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.73rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '3px' }}>
+                      Função de Transferência (ex.: 10/(s+2) ou vazio para simbólico)
+                    </label>
+                    <input
+                      type="text"
+                      autoFocus
+                      value={quickEdit.expr}
+                      onChange={e => setQuickEdit({ ...quickEdit, expr: e.target.value })}
+                      placeholder="Ex.: 10/(s+2)"
+                      style={{
+                        width: '100%',
+                        padding: '7px 10px',
+                        borderRadius: '4px',
+                        background: 'var(--code-bg)',
+                        border: '1px solid var(--card-border)',
+                        color: 'var(--text)',
+                        fontSize: '0.86rem',
+                        fontFamily: 'var(--font-mono), monospace'
+                      }}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.73rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '3px' }}>
+                      Sentido do Fluxo (Atalho R)
+                    </label>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <button
+                        type="button"
+                        onClick={() => setQuickEdit({ ...quickEdit, dir: 'right' })}
+                        style={{
+                          flex: 1,
+                          padding: '6px',
+                          borderRadius: '4px',
+                          fontSize: '0.78rem',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          background: quickEdit.dir === 'right' ? 'var(--primary)' : 'var(--code-bg)',
+                          color: quickEdit.dir === 'right' ? '#fff' : 'var(--text)',
+                          border: `1px solid ${quickEdit.dir === 'right' ? 'var(--primary)' : 'var(--card-border)'}`
+                        }}
+                      >
+                        → Direto (Ramo Direto)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setQuickEdit({ ...quickEdit, dir: 'left' })}
+                        style={{
+                          flex: 1,
+                          padding: '6px',
+                          borderRadius: '4px',
+                          fontSize: '0.78rem',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          background: quickEdit.dir === 'left' ? 'var(--accent)' : 'var(--code-bg)',
+                          color: quickEdit.dir === 'left' ? '#fff' : 'var(--text)',
+                          border: `1px solid ${quickEdit.dir === 'left' ? 'var(--accent)' : 'var(--card-border)'}`
+                        }}
+                      >
+                        ← Realimentação
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '6px' }}>
+                <button
+                  type="button"
+                  onClick={() => setQuickEdit(null)}
+                  style={{
+                    padding: '6px 12px',
+                    borderRadius: '4px',
+                    fontSize: '0.78rem',
+                    fontWeight: 600,
+                    background: 'var(--code-bg)',
+                    color: 'var(--text-muted)',
+                    border: '1px solid var(--card-border)',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Cancelar (Esc)
+                </button>
+                <button
+                  type="submit"
+                  style={{
+                    padding: '6px 14px',
+                    borderRadius: '4px',
+                    fontSize: '0.78rem',
+                    fontWeight: 600,
+                    background: 'var(--primary)',
+                    color: '#fff',
+                    border: 'none',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Aplicar (Enter)
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Toast Flutuante (posicionado acima da barra de status Grade: 20px) */}
       {toastMessage && (
