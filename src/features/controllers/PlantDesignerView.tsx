@@ -371,8 +371,8 @@ export const PlantDesignerView: React.FC = () => {
       const sumZeros = zeroAngles.reduce((a, b) => a + b, 0);
       const sumPoles = poleAngles.reduce((a, b) => a + b, 0);
       let angleG = sumZeros - sumPoles;
-      while (angleG > 180) angleG -= 360;
-      while (angleG <= -180) angleG += 360;
+      while (angleG > 180 - 1e-4) angleG -= 360;
+      while (angleG < -180 - 1e-4) angleG += 360;
 
       let thetaDef = -180 - angleG;
       while (thetaDef > 180) thetaDef -= 360;
@@ -441,7 +441,7 @@ export const PlantDesignerView: React.FC = () => {
         latex:
           `${specStepLatex} \\;;\\; ` +
           `\\angle G(s_d) = ${zeroAngles.length > 0 ? zeroAngles.map(a => `${fmtPt(a, 1)}^\\circ`).join(' + ') : '0^\\circ'} - (${poleAngles.map(a => `${fmtPt(a, 1)}^\\circ`).join(' + ')}) = ${fmtPt(angleG, 1)}^\\circ \\;;\\; ` +
-          `\\theta_{\\text{def}} = -180^\\circ - (${fmtPt(angleG, 1)}^\\circ) = \\mathbf{${thetaDef >= 0 ? '+' : ''}${fmtPt(thetaDef, 1)}^\\circ}`
+          `\\theta_{\\text{def}} = -180^\\circ - (${fmtPt(angleG, 1)}^\\circ) = \\mathbf{${thetaDef > 0 ? '+' : ''}${fmtPt(thetaDef, 1)}^\\circ}`
       });
 
       let controllerExpr = fmtNum(K0, 4);
