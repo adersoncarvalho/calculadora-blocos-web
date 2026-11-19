@@ -22,6 +22,7 @@ import {
 } from '@/core/algebra/polynomial';
 import { analyzeTransferFunction } from '@/core/analysis/stability';
 import { SPlaneChart } from '@/components/SPlaneChart';
+import { PlantDesignerView } from '../controllers/PlantDesignerView';
 import { MathView } from '@/components/MathView';
 import {
   analyzeCompleteBlockDiagram,
@@ -102,7 +103,15 @@ export const MasonDeductionView: React.FC<MasonDeductionViewProps> = ({
   onClose
 }) => {
   const [copiedType, setCopiedType] = useState<'none' | 'final-latex' | 'final-text' | 'memorial' | 'scilab'>('none');
-  const [resultTab, setResultTab] = useState<'resumo' | 'memorial' | 'simulacao' | 'scilab'>('resumo');
+  const onlyControlSelected =
+    reportSections.control &&
+    !reportSections.validation &&
+    !reportSections.equations &&
+    !reportSections.graphical &&
+    !reportSections.steadyState;
+  const [resultTab, setResultTab] = useState<'resumo' | 'memorial' | 'controle' | 'simulacao' | 'scilab'>(
+    onlyControlSelected ? 'controle' : 'resumo'
+  );
   const [openSteps, setOpenSteps] = useState<Record<number, boolean>>({
     0: true,
     1: true,
@@ -754,7 +763,7 @@ export const MasonDeductionView: React.FC<MasonDeductionViewProps> = ({
         </div>
       </div>
 
-      {/* BARRA DE 4 ABAS LIMPAS (ESTILO DOCUMENTAÇÃO CIENTÍFICA) */}
+      {/* BARRA DE ABAS LIMPAS (ESTILO DOCUMENTAÇÃO CIENTÍFICA) */}
       <div
         className="academic-tab-bar"
         style={{
@@ -767,10 +776,13 @@ export const MasonDeductionView: React.FC<MasonDeductionViewProps> = ({
         {(
           [
             ['resumo', '1. Resumo'],
-            ['memorial', '2. Memorial Passo a Passo'],
-            ['simulacao', '3. Simulação RK4'],
-            ['scilab', '4. Scilab (.sce)']
-          ] as const
+            ...(reportSections.validation || reportSections.equations || reportSections.graphical || reportSections.steadyState
+              ? [['memorial', '2. Memorial']]
+              : []),
+            ...(reportSections.control ? [['controle', 'Projeto de Controle']] : []),
+            ['simulacao', 'Simulação RK4'],
+            ['scilab', 'Scilab (.sce)']
+          ] as [typeof resultTab, string][]
         ).map(([key, label]) => (
           <button
             key={key}
@@ -2856,6 +2868,90 @@ export const MasonDeductionView: React.FC<MasonDeductionViewProps> = ({
             </div>
           )}
         </>)}
+
+        {/* ABA DEDICADA: PROJETO DE CONTROLE (ESTABILIDADE + FORMULÁRIO DE COMPENSADOR P/PD/PI/LEAD/LAG) */}
+        {resultTab === 'controle' && reportSections.control && fullSys.outputByInputPairs.length > 0 && (() => {
+          const primaryTf = fullSys.outputByInputPairs[0].transferFunction;
+          const stab = analyzeTransferFunction(primaryTf);
+          const openLoopRat = analysis.forwardPaths[0]?.gain || primaryTf;
+          const olNumStr = polyToCompact(openLoopRat.num).replace(/\s+/g, '');
+          const olDenStr = polyToCompact(openLoopRat.den).replace(/\s+/g, '');
+          const openLoopExpr = olDenStr === '1' ? olNumStr : `(${olNumStr})/(${olDenStr})`;
+          const clNumStr = polyToCompact(primaryTf.num).replace(/\s+/g, '');
+          const clDenStr = polyToCompact(primaryTf.den).replace(/\s+/g, '');
+          const clExpr = `(${clNumStr})/(${clDenStr})`;
+          const isNumericPlant = stab.isUnivariate !== false && stab.order > 0;
+          const fmtPole = (p: { re: number; im: number }) =>
+            Math.abs(p.im) < 1e-4
+              ? p.re.toFixed(3).replace(/\.?0+$/, '')
+              : `${p.re.toFixed(3).replace(/\.?0+$/, '')} ${p.im >= 0 ? '+' : '−'} j${Math.abs(p.im).toFixed(3).replace(/\.?0+$/, '')}`;
+
+          return (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <section
+                style={{
+                  background: 'var(--card-bg)',
+                  border: '1px solid var(--card-border)',
+                  borderTop: '3px solid var(--primary)',
+                  borderRadius: '6px',
+                  padding: '1rem 1.15rem',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.85rem'
+                }}
+              >
+                <div style={{ fontWeight: 700, fontSize: '0.92rem', color: 'var(--primary)' }}>
+                  Diagnóstico de Controle do Circuito Montado
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(175px, 1fr))', gap: '8px' }}>
+                  <div style={{ background: 'var(--code-bg)', border: '1px solid var(--card-border)', borderRadius: '4px', padding: '8px 10px' }}>
+                    <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', fontWeight: 700 }}>ESTABILIDADE (MF)</div>
+                    <div style={{ fontSize: '0.82rem', fontWeight: 700, color: stab.isStable ? 'var(--success)' : 'var(--danger)', marginTop: '3px' }}>
+                      {stab.stabilityText}
+                    </div>
+                  </div>
+                  <div style={{ background: 'var(--code-bg)', border: '1px solid var(--card-border)', borderRadius: '4px', padding: '8px 10px' }}>
+                    <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', fontWeight: 700 }}>ORDEM / TIPO / GANHO DC</div>
+                    <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text)', marginTop: '3px' }}>
+                      Ordem {stab.order} · Tipo {stab.systemType} · DC: {stab.dcGain !== null ? stab.dcGain : stab.isUnivariate === false ? 'Simbólico' : '∞'}
+                    </div>
+                  </div>
+                  <div style={{ background: 'var(--code-bg)', border: '1px solid var(--card-border)', borderRadius: '4px', padding: '8px 10px' }}>
+                    <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', fontWeight: 700 }}>POLOS DE MALHA FECHADA</div>
+                    <div style={{ fontSize: '0.8rem', fontFamily: 'var(--font-mono), monospace', color: 'var(--text)', marginTop: '3px' }}>
+                      {stab.poles.length > 0 ? stab.poles.map(fmtPole).join(' ; ') : 'Simbólico — defina G(s) numérico'}
+                    </div>
+                  </div>
+                  {stab.secondOrderParams && (
+                    <div style={{ background: 'var(--code-bg)', border: '1px solid var(--card-border)', borderRadius: '4px', padding: '8px 10px' }}>
+                      <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', fontWeight: 700 }}>DINÂMICA DE 2ª ORDEM</div>
+                      <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--primary)', marginTop: '3px' }}>
+                        {stab.secondOrderParams.regime} (ζ = {stab.secondOrderParams.zeta}, ωn = {stab.secondOrderParams.wn})
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {!isNumericPlant && (
+                  <div style={{ fontSize: '0.8rem', color: 'var(--accent)', background: 'var(--code-bg)', border: '1px solid var(--card-border)', borderRadius: '4px', padding: '8px 10px' }}>
+                    Seu bloco está simbólico (sem coeficientes numéricos em s). Dê duplo clique no bloco G(s) do circuito para informar a planta (ex.: 1/((s+1)*(s+5)) ou 1/s^2), ou digite diretamente no projetor abaixo:
+                  </div>
+                )}
+
+                {isNumericPlant && (
+                  <SPlaneChart
+                    title="Plano s — Polos e Zeros de T(s)"
+                    plantExpr={clExpr}
+                    controllerExpr="1"
+                  />
+                )}
+              </section>
+
+              {/* Projetor Interativo de Controladores (P, PD Real, PI, Avanço, Atraso, Lead-Lag) preenchido com a planta do circuito */}
+              <PlantDesignerView initialPlantExpr={isNumericPlant ? openLoopExpr : undefined} />
+            </div>
+          );
+        })()}
 
         {/* ABA 3: SIMULAÇÃO RK4 */}
         {resultTab === 'simulacao' && (

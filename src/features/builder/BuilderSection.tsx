@@ -2900,46 +2900,51 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
               <div style={{ fontSize: '0.68rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                 Conteúdo do Memorial (Opcional):
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '5px 8px', fontSize: '0.73rem', color: 'var(--text)' }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer', margin: 0 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 8px', fontSize: '0.73rem', color: 'var(--text)' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', margin: 0, textTransform: 'none', fontWeight: 500 }}>
                   <input
                     type="checkbox"
+                    style={{ width: 'auto', margin: 0 }}
                     checked={reportSections.validation}
                     onChange={e => setReportSections(p => ({ ...p, validation: e.target.checked }))}
                   />
                   <span>Validação 8/8</span>
                 </label>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer', margin: 0 }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', margin: 0, textTransform: 'none', fontWeight: 500 }}>
                   <input
                     type="checkbox"
+                    style={{ width: 'auto', margin: 0 }}
                     checked={reportSections.equations}
                     onChange={e => setReportSections(p => ({ ...p, equations: e.target.checked }))}
                   />
                   <span>Equações &amp; Mason</span>
                 </label>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer', margin: 0 }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', margin: 0, textTransform: 'none', fontWeight: 500 }}>
                   <input
                     type="checkbox"
+                    style={{ width: 'auto', margin: 0 }}
                     checked={reportSections.graphical}
                     onChange={e => setReportSections(p => ({ ...p, graphical: e.target.checked }))}
                   />
                   <span>Redução Gráfica</span>
                 </label>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer', margin: 0 }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', margin: 0, textTransform: 'none', fontWeight: 500 }}>
                   <input
                     type="checkbox"
+                    style={{ width: 'auto', margin: 0 }}
                     checked={reportSections.steadyState}
                     onChange={e => setReportSections(p => ({ ...p, steadyState: e.target.checked }))}
                   />
                   <span>Regime (TVF)</span>
                 </label>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer', margin: 0, gridColumn: 'span 2' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', margin: 0, gridColumn: 'span 2', textTransform: 'none', fontWeight: 600, color: 'var(--primary)' }}>
                   <input
                     type="checkbox"
+                    style={{ width: 'auto', margin: 0 }}
                     checked={reportSections.control}
                     onChange={e => setReportSections(p => ({ ...p, control: e.target.checked }))}
                   />
-                  <span>Controle (Polos, Estabilidade &amp; LGR)</span>
+                  <span>Controle (Projetar P/PD/PI/Lead/Lag &amp; LGR)</span>
                 </label>
               </div>
               <div style={{ fontSize: '0.67rem', color: 'var(--text-muted)' }}>

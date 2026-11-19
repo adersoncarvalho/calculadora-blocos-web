@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { parseRatExpr } from '@/core/algebra/parser';
 import { toUnivariateArr, trimUni } from '@/core/algebra/polynomial';
 import { ratMul, RatFunc } from '@/core/algebra/rational';
@@ -306,8 +306,18 @@ const PRESETS = [
   }
 ];
 
-export const PlantDesignerView: React.FC = () => {
-  const [plantExpr, setPlantExpr] = useState('1/((s+1)*(s+5))');
+interface PlantDesignerViewProps {
+  initialPlantExpr?: string;
+}
+
+export const PlantDesignerView: React.FC<PlantDesignerViewProps> = ({ initialPlantExpr }) => {
+  const [plantExpr, setPlantExpr] = useState(initialPlantExpr || '1/((s+1)*(s+5))');
+
+  useEffect(() => {
+    if (initialPlantExpr && initialPlantExpr.trim()) {
+      setPlantExpr(initialPlantExpr.trim());
+    }
+  }, [initialPlantExpr]);
   const [specMode, setSpecMode] = useState<SpecMode>('sd');
   const [sigmaStr, setSigmaStr] = useState('3');
   const [omegaStr, setOmegaStr] = useState('3');
