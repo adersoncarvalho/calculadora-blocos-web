@@ -886,11 +886,11 @@ title('Esforço de Controle u(t) — Regra dos 10 V'); xgrid();`;
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', marginBottom: '12px' }}>
           <div>
-            <h2 style={{ margin: 0, fontSize: '1.12rem', color: 'var(--primary)' }}>
-              🧮 Projetar Planta Nova — Gerador Automático de Memorial (Regra dos 7 Passos)
+            <h2 style={{ margin: 0, fontSize: '1.18rem', color: 'var(--primary)', fontWeight: 700 }}>
+              Projetar Planta Nova — Gerador Automático de Memorial (Regra dos 7 Passos)
             </h2>
             <p style={{ margin: '2px 0 0 0', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-              Digite qualquer G(s) e especificação de prova para gerar automaticamente a triagem, memorial detalhado, gráficos (y, u, LGR) e script Scilab.
+              Informe G(s) e a especificação de projeto para gerar a triagem, memorial analítico, gráficos (y, u, LGR), circuito com Amp-Op e script Scilab.
             </p>
           </div>
           <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
@@ -912,16 +912,16 @@ title('Esforço de Controle u(t) — Regra dos 10 V'); xgrid();`;
                 }}
                 style={{
                   padding: '5px 9px',
-                  borderRadius: '6px',
+                  borderRadius: '4px',
                   fontSize: '0.73rem',
-                  fontWeight: 700,
+                  fontWeight: 600,
                   cursor: 'pointer',
                   background: 'var(--code-bg)',
                   color: 'var(--primary)',
                   border: '1px solid var(--card-border)'
                 }}
               >
-                ⚡ {p.name}
+                {p.name}
               </button>
             ))}
           </div>
@@ -1064,30 +1064,21 @@ title('Esforço de Controle u(t) — Regra dos 10 V'); xgrid();`;
             gap: '14px'
           }}
         >
-          {/* Barra de Sub-abas + Salvar PDF */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
-            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          {/* Barra de Sub-abas Estilo Documentação Científica + Exportar PDF */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', borderBottom: '1px solid var(--card-border)', paddingBottom: '4px' }}>
+            <div className="academic-tab-bar" style={{ marginBottom: 0, borderBottom: 'none' }}>
               {(
                 [
-                  ['memorial', '📝 Memorial de Cálculo'],
-                  ['graficos', '📈 Gráficos & LGR'],
-                  ['scilab', '💻 Código Scilab']
+                  ['memorial', '1. Memorial de Cálculo'],
+                  ['graficos', '2. Gráficos & LGR'],
+                  ['scilab', '3. Código Scilab']
                 ] as const
               ).map(([key, label]) => (
                 <button
                   key={key}
                   type="button"
+                  className={`academic-tab ${subTab === key ? 'active' : ''}`}
                   onClick={() => setSubTab(key)}
-                  style={{
-                    padding: '8px 14px',
-                    borderRadius: '6px',
-                    fontSize: '0.82rem',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    background: subTab === key ? 'var(--primary)' : 'var(--code-bg)',
-                    color: subTab === key ? '#fff' : 'var(--text)',
-                    border: `1px solid ${subTab === key ? 'var(--primary)' : 'var(--card-border)'}`
-                  }}
                 >
                   {label}
                 </button>
@@ -1104,17 +1095,17 @@ title('Esforço de Controle u(t) — Regra dos 10 V'); xgrid();`;
                   )
                 }
                 style={{
-                  padding: '7px 12px',
-                  borderRadius: '6px',
+                  padding: '6px 12px',
+                  borderRadius: '4px',
                   fontSize: '0.78rem',
-                  fontWeight: 700,
+                  fontWeight: 600,
                   cursor: 'pointer',
                   background: 'var(--code-bg)',
                   color: 'var(--primary)',
                   border: '1px solid var(--primary)'
                 }}
               >
-                🖨️ Salvar Memorial em PDF
+                Exportar PDF
               </button>
             )}
           </div>

@@ -640,11 +640,11 @@ export const ControllersSection: React.FC<ControllersSectionProps> = ({ onBack, 
             ⬅ Voltar à Página Principal
           </button>
           <div>
-            <h1 style={{ margin: 0, fontSize: '1.35rem', color: 'var(--primary)', fontWeight: 800 }}>
-              🎛️ Controladores de Sistemas de Controle (Controle Clássico)
+            <h1 style={{ margin: 0, fontSize: '1.4rem', color: 'var(--primary)', fontWeight: 700 }}>
+              Controladores de Sistemas Lineares (Controle Clássico)
             </h1>
             <p style={{ margin: '2px 0 0 0', fontSize: '0.82rem', color: 'var(--text-muted)' }}>
-              Teoria, Roteiro Passo a Passo do Professor, Todos os Exercícios dos Slides/Propostos, Diagramas e Simulações
+              Teoria, Procedimento do Professor, Exercícios dos Slides/Propostos, Simulações RK4 e Projeto de Plantas
             </p>
           </div>
         </div>
@@ -654,17 +654,18 @@ export const ControllersSection: React.FC<ControllersSectionProps> = ({ onBack, 
             type="button"
             className="btn-open-guide btn-highlight-builder"
             onClick={() => onNavigate('builder')}
-            style={{ fontSize: '0.82rem', cursor: 'pointer' }}
+            style={{ fontSize: '0.8rem', cursor: 'pointer', borderRadius: '4px' }}
           >
-            🛠️ Abrir Construtor Livre
+            Abrir Construtor Livre
           </button>
         )}
       </div>
 
-      {/* Seletor de Abas: Fundamentos vs 5 Controladores vs Listas de Exercícios */}
-      <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '20px' }}>
+      {/* Seletor de Abas Estilo Documentação Científica / IEEE */}
+      <div className="academic-tab-bar">
         <button
           type="button"
+          className={`academic-tab ${activeTab === 'fundamentos' ? 'active' : ''}`}
           onClick={() => {
             setActiveTab('fundamentos');
             if (typeof window !== 'undefined') {
@@ -674,21 +675,12 @@ export const ControllersSection: React.FC<ControllersSectionProps> = ({ onBack, 
               window.history.replaceState(null, '', `/?${params.toString()}`);
             }
           }}
-          style={{
-            padding: '10px 18px',
-            borderRadius: '8px',
-            fontSize: '0.88rem',
-            fontWeight: 700,
-            cursor: 'pointer',
-            background: activeTab === 'fundamentos' ? 'var(--primary)' : 'var(--card-bg)',
-            color: activeTab === 'fundamentos' ? '#fff' : 'var(--text)',
-            border: `1.5px solid ${activeTab === 'fundamentos' ? 'var(--primary)' : 'var(--card-border)'}`
-          }}
         >
-          📘 Fundamentos P, I, PI &amp; PD Prático (Aula 13)
+          Fundamentos P, I, PI &amp; PD
         </button>
         <button
           type="button"
+          className={`academic-tab ${activeTab === 'lgr' ? 'active' : ''}`}
           onClick={() => {
             setActiveTab('lgr');
             if (typeof window !== 'undefined') {
@@ -698,21 +690,12 @@ export const ControllersSection: React.FC<ControllersSectionProps> = ({ onBack, 
               window.history.replaceState(null, '', `/?${params.toString()}`);
             }
           }}
-          style={{
-            padding: '10px 18px',
-            borderRadius: '8px',
-            fontSize: '0.88rem',
-            fontWeight: 700,
-            cursor: 'pointer',
-            background: activeTab === 'lgr' ? 'var(--primary)' : 'var(--card-bg)',
-            color: activeTab === 'lgr' ? '#fff' : 'var(--text)',
-            border: `1.5px solid ${activeTab === 'lgr' ? 'var(--primary)' : 'var(--card-border)'}`
-          }}
         >
-          📈 Lugar das Raízes — LGR
+          Lugar das Raízes (LGR)
         </button>
         <button
           type="button"
+          className={`academic-tab ${activeTab === 'controladores' ? 'active' : ''}`}
           onClick={() => {
             setActiveTab('controladores');
             if (typeof window !== 'undefined') {
@@ -722,21 +705,12 @@ export const ControllersSection: React.FC<ControllersSectionProps> = ({ onBack, 
               window.history.replaceState(null, '', `/?${params.toString()}`);
             }
           }}
-          style={{
-            padding: '10px 18px',
-            borderRadius: '8px',
-            fontSize: '0.88rem',
-            fontWeight: 700,
-            cursor: 'pointer',
-            background: activeTab === 'controladores' ? 'var(--primary)' : 'var(--card-bg)',
-            color: activeTab === 'controladores' ? '#fff' : 'var(--text)',
-            border: `1.5px solid ${activeTab === 'controladores' ? 'var(--primary)' : 'var(--card-border)'}`
-          }}
         >
-          🎛️ 5 Controladores &amp; Slides (P, PD, PI, Avanço, Atraso)
+          5 Controladores &amp; Slides (P, PD, PI, Avanço, Atraso)
         </button>
         <button
           type="button"
+          className={`academic-tab ${activeTab === 'listas' ? 'active' : ''}`}
           onClick={() => {
             setActiveTab('listas');
             if (typeof window !== 'undefined') {
@@ -746,21 +720,12 @@ export const ControllersSection: React.FC<ControllersSectionProps> = ({ onBack, 
               window.history.replaceState(null, '', `/?${params.toString()}`);
             }
           }}
-          style={{
-            padding: '10px 18px',
-            borderRadius: '8px',
-            fontSize: '0.88rem',
-            fontWeight: 700,
-            cursor: 'pointer',
-            background: activeTab === 'listas' ? 'var(--primary)' : 'var(--card-bg)',
-            color: activeTab === 'listas' ? '#fff' : 'var(--text)',
-            border: `1.5px solid ${activeTab === 'listas' ? 'var(--primary)' : 'var(--card-border)'}`
-          }}
         >
-          📝 Listas de Exercícios (Lista P2 Controle 1 — 23 Questões)
+          Lista P2 (23 Questões)
         </button>
         <button
           type="button"
+          className={`academic-tab ${activeTab === 'designer' ? 'active' : ''}`}
           onClick={() => {
             setActiveTab('designer');
             if (typeof window !== 'undefined') {
@@ -770,18 +735,8 @@ export const ControllersSection: React.FC<ControllersSectionProps> = ({ onBack, 
               window.history.replaceState(null, '', `/?${params.toString()}`);
             }
           }}
-          style={{
-            padding: '10px 18px',
-            borderRadius: '8px',
-            fontSize: '0.88rem',
-            fontWeight: 700,
-            cursor: 'pointer',
-            background: activeTab === 'designer' ? '#059669' : 'var(--card-bg)',
-            color: activeTab === 'designer' ? '#fff' : 'var(--text)',
-            border: `1.5px solid ${activeTab === 'designer' ? '#059669' : 'var(--card-border)'}`
-          }}
         >
-          🧮 Projetar Planta Nova
+          Projetar Planta Nova
         </button>
       </div>
 
@@ -814,11 +769,11 @@ export const ControllersSection: React.FC<ControllersSectionProps> = ({ onBack, 
               type="text"
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              placeholder="🔍 Buscar em todos os controladores (ex.: cauda, bissetriz, Tipo 1, rampa, 3ª ordem, Slide 21)..."
+              placeholder="Buscar em todos os controladores (ex.: cauda, bissetriz, Tipo 1, rampa, 3ª ordem, Slide 21)..."
               style={{
                 width: '100%',
                 padding: '8px 34px 8px 12px',
-                borderRadius: '6px',
+                borderRadius: '4px',
                 background: 'var(--code-bg)',
                 border: '1px solid var(--card-border)',
                 color: 'var(--text)',
@@ -852,48 +807,48 @@ export const ControllersSection: React.FC<ControllersSectionProps> = ({ onBack, 
               onClick={() => setShowDecisionGuide(p => !p)}
               style={{
                 padding: '7px 12px',
-                borderRadius: '6px',
+                borderRadius: '4px',
                 fontSize: '0.78rem',
-                fontWeight: 700,
+                fontWeight: 600,
                 cursor: 'pointer',
                 background: showDecisionGuide ? 'var(--primary)' : 'var(--code-bg)',
                 color: showDecisionGuide ? '#fff' : 'var(--text)',
                 border: `1px solid ${showDecisionGuide ? 'var(--primary)' : 'var(--card-border)'}`
               }}
             >
-              🧭 Guia de Decisão {showDecisionGuide ? '▲' : '▼'}
+              Guia de Decisão {showDecisionGuide ? '▲' : '▼'}
             </button>
             <button
               type="button"
               onClick={() => setShowTheory(p => !p)}
               style={{
                 padding: '7px 12px',
-                borderRadius: '6px',
+                borderRadius: '4px',
                 fontSize: '0.78rem',
-                fontWeight: 700,
+                fontWeight: 600,
                 cursor: 'pointer',
-                background: showTheory ? theory.badgeColor : 'var(--code-bg)',
+                background: showTheory ? 'var(--primary)' : 'var(--code-bg)',
                 color: showTheory ? '#fff' : 'var(--text)',
-                border: `1px solid ${showTheory ? theory.badgeColor : 'var(--card-border)'}`
+                border: `1px solid ${showTheory ? 'var(--primary)' : 'var(--card-border)'}`
               }}
             >
-              📖 Teoria ({theory.shortName}) {showTheory ? '▲' : '▼'}
+              Teoria ({theory.shortName}) {showTheory ? '▲' : '▼'}
             </button>
             <button
               type="button"
               onClick={() => setShowMethod(p => !p)}
               style={{
                 padding: '7px 12px',
-                borderRadius: '6px',
+                borderRadius: '4px',
                 fontSize: '0.78rem',
-                fontWeight: 700,
+                fontWeight: 600,
                 cursor: 'pointer',
                 background: showMethod ? 'var(--primary)' : 'var(--code-bg)',
                 color: showMethod ? '#fff' : 'var(--text)',
                 border: `1px solid ${showMethod ? 'var(--primary)' : 'var(--card-border)'}`
               }}
             >
-              📋 Procedimento ({theory.professorMethodSteps.length} passos) {showMethod ? '▲' : '▼'}
+              Procedimento ({theory.professorMethodSteps.length} passos) {showMethod ? '▲' : '▼'}
             </button>
           </div>
         </div>
@@ -1525,28 +1480,19 @@ export const ControllersSection: React.FC<ControllersSectionProps> = ({ onBack, 
               gap: '10px'
             }}
           >
-            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            <div className="academic-tab-bar" style={{ marginBottom: 0, borderBottom: 'none' }}>
               {(
                 [
-                  ['memorial', '📝 Memorial de Cálculo'],
-                  ['graficos', '📈 Gráficos & LGR'],
-                  ['scilab', '💻 Código Scilab']
+                  ['memorial', '1. Memorial de Cálculo'],
+                  ['graficos', '2. Gráficos & LGR'],
+                  ['scilab', '3. Código Scilab']
                 ] as const
               ).map(([key, label]) => (
                 <button
                   key={key}
                   type="button"
+                  className={`academic-tab ${exerciseSubTab === key ? 'active' : ''}`}
                   onClick={() => setExerciseSubTab(key)}
-                  style={{
-                    padding: '8px 14px',
-                    borderRadius: '6px',
-                    fontSize: '0.82rem',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    background: exerciseSubTab === key ? theory.badgeColor : 'var(--code-bg)',
-                    color: exerciseSubTab === key ? '#fff' : 'var(--text)',
-                    border: `1px solid ${exerciseSubTab === key ? theory.badgeColor : 'var(--card-border)'}`
-                  }}
                 >
                   {label}
                 </button>
@@ -1565,33 +1511,33 @@ export const ControllersSection: React.FC<ControllersSectionProps> = ({ onBack, 
                     });
                   }}
                   style={{
-                    padding: '7px 12px',
-                    borderRadius: '6px',
+                    padding: '6px 12px',
+                    borderRadius: '4px',
                     fontSize: '0.78rem',
-                    fontWeight: 700,
+                    fontWeight: 600,
                     cursor: 'pointer',
-                    background: examMode ? '#d97706' : 'var(--code-bg)',
+                    background: examMode ? 'var(--accent)' : 'var(--code-bg)',
                     color: examMode ? '#fff' : 'var(--text)',
-                    border: `1px solid ${examMode ? '#d97706' : 'var(--card-border)'}`
+                    border: `1px solid ${examMode ? 'var(--accent)' : 'var(--card-border)'}`
                   }}
                 >
-                  {examMode ? '🎯 Modo Treino Ativo (Oculto)' : '🎯 Modo Treino de Prova'}
+                  {examMode ? 'Modo Treino Ativo (Oculto)' : 'Modo Treino de Prova'}
                 </button>
                 <button
                   type="button"
                   onClick={() => printElementAsPdf(memorialRef.current, activeExercise.title)}
                   style={{
-                    padding: '7px 12px',
-                    borderRadius: '6px',
+                    padding: '6px 12px',
+                    borderRadius: '4px',
                     fontSize: '0.78rem',
-                    fontWeight: 700,
+                    fontWeight: 600,
                     cursor: 'pointer',
                     background: 'var(--code-bg)',
                     color: 'var(--primary)',
                     border: '1px solid var(--primary)'
                   }}
                 >
-                  🖨️ Salvar PDF
+                  Exportar PDF
                 </button>
               </div>
             )}

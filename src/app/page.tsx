@@ -163,24 +163,26 @@ export default function HomePage() {
           }}
         >
           <div>
-            <div className="hero-eyebrow">⚡ Engenharia de Controle &amp; Automação • Domínio de Laplace</div>
-            <h1 className="hero-title" style={{ fontSize: '1.35rem', fontWeight: 800, margin: '4px 0 0 0' }}>
-              Calculadora e Laboratório de Redução em Diagrama de Blocos
+            <div className="hero-eyebrow" style={{ fontSize: '0.73rem', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+              Engenharia de Controle Clássico &amp; Domínio de Laplace
+            </div>
+            <h1 className="hero-title" style={{ fontSize: '1.45rem', fontWeight: 700, margin: '4px 0 0 0' }}>
+              ControleLab — Análise, Redução de Blocos e Projeto de Controladores
             </h1>
           </div>
           <span
             style={{
               fontSize: '0.78rem',
-              fontWeight: 700,
+              fontWeight: 600,
               color: 'var(--primary)',
               padding: '5px 11px',
-              borderRadius: '6px',
-              background: 'rgba(56, 189, 248, 0.1)',
-              border: '1px solid rgba(56, 189, 248, 0.25)',
+              borderRadius: '4px',
+              background: 'var(--code-bg)',
+              border: '1px solid var(--card-border)',
               whiteSpace: 'nowrap'
             }}
           >
-            {showPlatformOverview ? '▲ Recolher descrição' : '▼ Ver recursos da plataforma'}
+            {showPlatformOverview ? 'Recolher visão geral' : 'Sobre a plataforma'}
           </span>
         </div>
 
@@ -216,87 +218,89 @@ export default function HomePage() {
         )}
       </section>
 
-      {/* 3 Trilhas Principais Claras */}
+      {/* 3 Trilhas Principais Claras (Visual Editorial Acadêmico) */}
       <div className="learning-path-banner" id="learningPathBanner" style={{ marginTop: '18px' }}>
-        <div className="learning-path-header" style={{ marginBottom: '14px' }}>
-          <span className="learning-path-badge" style={{ fontSize: '0.74rem', background: 'rgba(56,189,248,0.1)', color: 'var(--primary)', padding: '3px 8px', borderRadius: '4px', fontWeight: 700 }}>
-            🎯 Acesso Rápido
+        <div className="learning-path-header" style={{ marginBottom: '16px' }}>
+          <span style={{ fontSize: '0.72rem', color: 'var(--accent)', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+            Módulos do Laboratório
           </span>
-          <h3 className="learning-path-title" style={{ fontSize: '1.15rem', margin: '6px 0 4px 0' }}>
-            O que você deseja fazer agora?
+          <h3 className="learning-path-title" style={{ fontSize: '1.22rem', margin: '4px 0 4px 0' }}>
+            Selecione o ambiente de estudo ou projeto
           </h3>
           <p className="learning-path-desc" style={{ margin: 0, fontSize: '0.84rem', color: 'var(--text-muted)' }}>
-            Escolha uma das 3 trilhas principais para ir direto ao conteúdo sem se perder entre abas:
+            Ferramentas integradas com memorial analítico em LaTeX, validação algébrica, simulação RK4 e geração de scripts Scilab.
           </p>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(270px, 1fr))', gap: '14px' }}>
-          {/* Trilha 1 • Controladores & Projeto */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(270px, 1fr))', gap: '16px' }}>
+          {/* Módulo 01 • Controladores & Projeto */}
           <div
             style={{
               background: 'var(--card-bg)',
-              border: '2px solid var(--primary)',
-              borderRadius: '10px',
+              border: '1px solid var(--card-border)',
+              borderTop: '3px solid var(--primary)',
+              borderRadius: '6px',
               padding: '18px',
               display: 'flex',
               flexDirection: 'column',
               gap: '10px'
             }}
           >
-            <div style={{ fontSize: '0.72rem', color: 'var(--primary)', fontWeight: 800, textTransform: 'uppercase' }}>
-              Trilha 1 • Controle Clássico &amp; LGR
+            <div style={{ fontSize: '0.71rem', color: 'var(--primary)', fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+              01 · Controle Clássico &amp; LGR
             </div>
-            <div style={{ fontWeight: 800, fontSize: '1.05rem', color: 'var(--text)' }}>
-              🎛️ Controladores &amp; Projeto de Plantas
+            <div style={{ fontFamily: 'var(--font-serif), Georgia, serif', fontWeight: 700, fontSize: '1.08rem', color: 'var(--text)' }}>
+              Controladores &amp; Projeto de Plantas
             </div>
-            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', lineHeight: 1.45 }}>
-              P, PD Real, PI, Avanço, Atraso, LGR comparativo, Saturação ±10 V, Amp-Op e Gerador Automático de Memorial.
+            <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
+              P, PD Real, PI, Avanço, Atraso e Lead-Lag com Regra dos 7 Passos, LGR comparativo, saturação ±10 V e circuito com Amp-Op.
             </div>
-            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: 'auto', paddingTop: '4px' }}>
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: 'auto', paddingTop: '6px' }}>
               <button
                 type="button"
                 onClick={() => handleSetView('controllers')}
-                style={{ padding: '7px 12px', borderRadius: '6px', fontSize: '0.78rem', fontWeight: 700, background: 'var(--primary)', color: '#fff', border: 'none', cursor: 'pointer' }}
+                style={{ padding: '7px 13px', borderRadius: '4px', fontSize: '0.8rem', fontWeight: 600, background: 'var(--primary)', color: '#fff', border: '1px solid var(--primary)', cursor: 'pointer' }}
               >
                 Abrir Controladores
               </button>
               <a
                 href="/?view=controllers&tab=designer"
-                style={{ padding: '7px 12px', borderRadius: '6px', fontSize: '0.78rem', fontWeight: 700, background: 'rgba(5,150,105,0.14)', color: 'var(--success)', border: '1px solid var(--success)', textDecoration: 'none' }}
+                style={{ padding: '7px 13px', borderRadius: '4px', fontSize: '0.8rem', fontWeight: 600, background: 'var(--code-bg)', color: 'var(--primary)', border: '1px solid var(--card-border)', textDecoration: 'none' }}
               >
-                🧮 Projetar Planta Nova
+                Projetar Planta Nova
               </a>
             </div>
           </div>
 
-          {/* Trilha 2 • Diagramas de Blocos & Redução */}
+          {/* Módulo 02 • Diagramas de Blocos & Redução */}
           <div
             style={{
               background: 'var(--card-bg)',
               border: '1px solid var(--card-border)',
-              borderRadius: '10px',
+              borderTop: '3px solid var(--accent)',
+              borderRadius: '6px',
               padding: '18px',
               display: 'flex',
               flexDirection: 'column',
               gap: '10px'
             }}
           >
-            <div style={{ fontSize: '0.72rem', color: '#a855f7', fontWeight: 800, textTransform: 'uppercase' }}>
-              Trilha 2 • Álgebra de Blocos
+            <div style={{ fontSize: '0.71rem', color: 'var(--accent)', fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+              02 · Álgebra de Blocos
             </div>
-            <div style={{ fontWeight: 800, fontSize: '1.05rem', color: 'var(--text)' }}>
-              🛠️ Construtor &amp; Topologias Canônicas
+            <div style={{ fontFamily: 'var(--font-serif), Georgia, serif', fontWeight: 700, fontSize: '1.08rem', color: 'var(--text)' }}>
+              Construtor &amp; Topologias Canônicas
             </div>
-            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', lineHeight: 1.45 }}>
-              Monte qualquer diagrama de blocos arbitrário ou explore modelos canônicos com redução passo a passo e Mason.
+            <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
+              Monte diagramas de blocos arbitrários ou explore modelos canônicos com redução algébrica passo a passo e fórmula de Mason.
             </div>
-            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: 'auto', paddingTop: '4px' }}>
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: 'auto', paddingTop: '6px' }}>
               <button
                 type="button"
                 onClick={() => handleSetView('builder')}
-                style={{ padding: '7px 12px', borderRadius: '6px', fontSize: '0.78rem', fontWeight: 700, background: 'var(--code-bg)', color: 'var(--text)', border: '1px solid var(--card-border)', cursor: 'pointer' }}
+                style={{ padding: '7px 13px', borderRadius: '4px', fontSize: '0.8rem', fontWeight: 600, background: 'var(--code-bg)', color: 'var(--text)', border: '1px solid var(--card-border)', cursor: 'pointer' }}
               >
-                🛠️ Construtor Livre
+                Construtor Livre
               </button>
               <button
                 type="button"
@@ -307,54 +311,55 @@ export default function HomePage() {
                     if (el) el.scrollIntoView({ behavior: 'smooth' });
                   }, 60);
                 }}
-                style={{ padding: '7px 12px', borderRadius: '6px', fontSize: '0.78rem', fontWeight: 700, background: showCanonicalModels ? 'rgba(56,189,248,0.16)' : 'var(--code-bg)', color: 'var(--primary)', border: '1px solid var(--primary)', cursor: 'pointer' }}
+                style={{ padding: '7px 13px', borderRadius: '4px', fontSize: '0.8rem', fontWeight: 600, background: showCanonicalModels ? 'var(--primary)' : 'var(--code-bg)', color: showCanonicalModels ? '#fff' : 'var(--primary)', border: '1px solid var(--card-border)', cursor: 'pointer' }}
               >
-                {showCanonicalModels ? '▲ Recolher Modelos' : '📐 Modelos Canônicos'}
+                {showCanonicalModels ? 'Recolher Modelos' : 'Modelos Canônicos'}
               </button>
             </div>
           </div>
 
-          {/* Trilha 3 • Listas, Teoria & Treino de Prova */}
+          {/* Módulo 03 • Listas, Teoria & Prática */}
           <div
             style={{
               background: 'var(--card-bg)',
               border: '1px solid var(--card-border)',
-              borderRadius: '10px',
+              borderTop: '3px solid var(--text-muted)',
+              borderRadius: '6px',
               padding: '18px',
               display: 'flex',
               flexDirection: 'column',
               gap: '10px'
             }}
           >
-            <div style={{ fontSize: '0.72rem', color: '#f59e0b', fontWeight: 800, textTransform: 'uppercase' }}>
-              Trilha 3 • Revisão &amp; Provas
+            <div style={{ fontSize: '0.71rem', color: 'var(--text-muted)', fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+              03 · Revisão &amp; Provas
             </div>
-            <div style={{ fontWeight: 800, fontSize: '1.05rem', color: 'var(--text)' }}>
-              📝 Listas Resolvidas &amp; Prática
+            <div style={{ fontFamily: 'var(--font-serif), Georgia, serif', fontWeight: 700, fontSize: '1.08rem', color: 'var(--text)' }}>
+              Listas Resolvidas &amp; Prática
             </div>
-            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', lineHeight: 1.45 }}>
-              Lista P2 completa (23 questões), laboratório interativo com 3 níveis e guia didático de regras de blocos.
+            <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
+              Lista P2 completa (23 questões), laboratório de prática com verificador algébrico e guia teórico de referência.
             </div>
-            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: 'auto', paddingTop: '4px' }}>
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: 'auto', paddingTop: '6px' }}>
               <a
                 href="/?view=controllers&tab=listas"
-                style={{ padding: '7px 12px', borderRadius: '6px', fontSize: '0.78rem', fontWeight: 700, background: 'var(--code-bg)', color: 'var(--text)', border: '1px solid var(--card-border)', textDecoration: 'none' }}
+                style={{ padding: '7px 13px', borderRadius: '4px', fontSize: '0.8rem', fontWeight: 600, background: 'var(--code-bg)', color: 'var(--text)', border: '1px solid var(--card-border)', textDecoration: 'none' }}
               >
-                📝 Lista P2 (23 Q)
+                Lista P2 (23 Q)
               </a>
               <button
                 type="button"
                 onClick={() => handleSetView('practice')}
-                style={{ padding: '7px 12px', borderRadius: '6px', fontSize: '0.78rem', fontWeight: 700, background: 'var(--code-bg)', color: 'var(--text)', border: '1px solid var(--card-border)', cursor: 'pointer' }}
+                style={{ padding: '7px 13px', borderRadius: '4px', fontSize: '0.8rem', fontWeight: 600, background: 'var(--code-bg)', color: 'var(--text)', border: '1px solid var(--card-border)', cursor: 'pointer' }}
               >
-                🧪 Prática
+                Prática
               </button>
               <button
                 type="button"
                 onClick={() => handleSetView('guide')}
-                style={{ padding: '7px 12px', borderRadius: '6px', fontSize: '0.78rem', fontWeight: 700, background: 'var(--code-bg)', color: 'var(--text)', border: '1px solid var(--card-border)', cursor: 'pointer' }}
+                style={{ padding: '7px 13px', borderRadius: '4px', fontSize: '0.8rem', fontWeight: 600, background: 'var(--code-bg)', color: 'var(--text)', border: '1px solid var(--card-border)', cursor: 'pointer' }}
               >
-                📚 Guia
+                Guia
               </button>
             </div>
           </div>

@@ -1,33 +1,115 @@
 @import 'katex/dist/katex.min.css';
 :root {
-  --bg: #090d16;
-  --card-bg: #131c2e;
-  --card-border: #1e293b;
-  --primary: #38bdf8;
-  --primary-hover: #0ea5e9;
-  --accent: #a855f7;
+  --bg: #0f141c;
+  --card-bg: #161d27;
+  --card-border: #263140;
+  --primary: #60a5fa;
+  --primary-hover: #3b82f6;
+  --accent: #d97706;
   --text: #f1f5f9;
   --text-muted: #94a3b8;
-  --code-bg: #050811;
-  --success: #10b981;
-  --danger: #ef4444;
+  --code-bg: #0b0f15;
+  --success: #34d399;
+  --danger: #f87171;
 }
 
 /* ==========================================
-   TEMA CLARO (LIGHT THEME) OVERRIDES
+   TEMA CLARO EDITORIAL / ACADÊMICO (UTFPR / IEEE)
    ========================================== */
 body.light-theme {
-  --bg: #f8fafc;
+  --bg: #fafaf8;
   --card-bg: #ffffff;
-  --card-border: #cbd5e1;
-  --primary: #0284c7;
-  --primary-hover: #0369a1;
-  --accent: #7c3aed;
-  --text: #0f172a;
-  --text-muted: #475569;
-  --code-bg: #f1f5f9;
-  --success: #059669;
-  --danger: #dc2626;
+  --card-border: #e2e8f0;
+  --primary: #1e3a5f;
+  --primary-hover: #152b47;
+  --accent: #b45309;
+  --text: #111827;
+  --text-muted: #4b5563;
+  --code-bg: #f4f5f7;
+  --success: #166534;
+  --danger: #991b1b;
+}
+
+body {
+  font-family: var(--font-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, .hero-title, .learning-path-title {
+  font-family: var(--font-serif), Georgia, "Times New Roman", serif;
+  letter-spacing: -0.015em;
+}
+
+code, pre, .font-mono {
+  font-family: var(--font-mono), Consolas, monospace !important;
+}
+
+/* Matemática KaTeX sóbria em preto/grafite no Modo Claro (estilo livro-texto) */
+body.light-theme .katex,
+body.light-theme .katex-display {
+  color: #111827 !important;
+}
+
+/* Remoção de glow/sombras excessivas em prol de bordas finas científicas */
+body.light-theme .hero-banner {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 1px 2px rgba(17, 24, 39, 0.04) !important;
+}
+
+body.light-theme .hero-banner::before {
+  background: linear-gradient(90deg, #1e3a5f, #b45309) !important;
+  height: 3px !important;
+}
+
+body.light-theme .global-navbar {
+  background: rgba(250, 250, 248, 0.94) !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+  box-shadow: none !important;
+}
+
+body.light-theme .global-nav-link {
+  color: #374151 !important;
+}
+
+body.light-theme .global-nav-link.active {
+  color: #1e3a5f !important;
+  background: transparent !important;
+  border-bottom: 2px solid #1e3a5f !important;
+  border-radius: 0 !important;
+}
+
+/* Abas estilo documentação científica / IEEE */
+.academic-tab-bar {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  border-bottom: 1px solid var(--card-border);
+  margin-bottom: 18px;
+}
+
+.academic-tab {
+  padding: 9px 14px;
+  background: transparent !important;
+  border: none !important;
+  border-bottom: 2px solid transparent !important;
+  border-radius: 0 !important;
+  color: var(--text-muted) !important;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease;
+  box-shadow: none !important;
+}
+
+.academic-tab:hover {
+  color: var(--text) !important;
+}
+
+.academic-tab.active {
+  color: var(--primary) !important;
+  border-bottom-color: var(--primary) !important;
+  font-weight: 700;
 }
 
 /* Header & BotÃµes */
