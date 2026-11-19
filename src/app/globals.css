@@ -3500,6 +3500,130 @@ body.light-theme button.btn-secondary:hover {
   max-height: 260px;
 }
 
+/* ============================================================================
+   AUDITORIA COMPLETA DO MODO CLARO — GUIA DIDÁTICO, CARDS, QUIZ & SVGS
+   ============================================================================ */
+body.light-theme .guide-objective-badge {
+  background: #f0f4f8 !important;
+  border: 1px solid #cbd5e1 !important;
+  border-left: 3px solid #1e3a5f !important;
+  color: #111827 !important;
+}
+
+body.light-theme .guide-conditions-box {
+  background: #ecfdf5 !important;
+  border: 1px solid #a7f3d0 !important;
+  border-left: 3px solid #166534 !important;
+  color: #064e3b !important;
+}
+
+body.light-theme .guide-conditions-box strong {
+  color: #166534 !important;
+}
+
+body.light-theme .guide-counterexample-box {
+  background: #fef2f2 !important;
+  border: 1px solid #fecaca !important;
+  border-left: 3px solid #991b1b !important;
+  color: #7f1d1d !important;
+}
+
+body.light-theme .guide-counterexample-box strong {
+  color: #991b1b !important;
+}
+
+body.light-theme .component-card,
+body.light-theme .heuristic-phase-card,
+body.light-theme .guide-quiz-card {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #111827 !important;
+  box-shadow: 0 1px 2px rgba(17, 24, 39, 0.04) !important;
+}
+
+body.light-theme .component-card-title,
+body.light-theme .heuristic-phase-card .phase-header,
+body.light-theme .guide-quiz-card .question-title {
+  color: #1e3a5f !important;
+}
+
+body.light-theme .heuristic-phase-card .phase-num {
+  background: #1e3a5f !important;
+  color: #ffffff !important;
+}
+
+body.light-theme .component-card-desc,
+body.light-theme .heuristic-phase-card p,
+body.light-theme .heuristic-phase-card li {
+  color: #374151 !important;
+}
+
+body.light-theme .component-svg-box,
+body.light-theme .component-card-eq,
+body.light-theme .guide-svg-box,
+body.light-theme .guide-formula-box {
+  background: #f4f5f7 !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #111827 !important;
+}
+
+body.light-theme .component-svg-box svg rect[fill="#050811"],
+body.light-theme .component-svg-box svg rect[fill="#131c2e"],
+body.light-theme .component-svg-box svg rect[fill="#0d1525"],
+body.light-theme .component-svg-box svg circle[fill="#131c2e"],
+body.light-theme .guide-svg-box svg rect[fill="#050811"],
+body.light-theme .guide-svg-box svg rect[fill="#131c2e"],
+body.light-theme .guide-svg-box svg rect[fill="#0d1525"],
+body.light-theme .guide-svg-box svg circle[fill="#131c2e"] {
+  fill: #ffffff !important;
+  stroke: #1e3a5f !important;
+}
+
+body.light-theme .component-svg-box svg line[stroke="#38bdf8"],
+body.light-theme .guide-svg-box svg line[stroke="#38bdf8"],
+body.light-theme .guide-svg-box svg path[stroke="#38bdf8"] {
+  stroke: #1e3a5f !important;
+}
+
+body.light-theme .component-svg-box svg text[fill="#f8fafc"],
+body.light-theme .component-svg-box svg text[fill="#cbd5e1"],
+body.light-theme .component-svg-box svg text[fill="#94a3b8"],
+body.light-theme .guide-svg-box svg text[fill="#f8fafc"],
+body.light-theme .guide-svg-box svg text[fill="#cbd5e1"],
+body.light-theme .guide-svg-box svg text[fill="#94a3b8"] {
+  fill: #111827 !important;
+}
+
+body.light-theme .quiz-option-btn {
+  background: #f8fafc !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #111827 !important;
+}
+
+body.light-theme .quiz-option-btn:hover {
+  background: #f0f4f8 !important;
+  border-color: #1e3a5f !important;
+  color: #1e3a5f !important;
+}
+
+body.light-theme .quiz-option-btn.selected-correct {
+  background: #ecfdf5 !important;
+  border-color: #166534 !important;
+  color: #166534 !important;
+}
+
+body.light-theme .quiz-option-btn.selected-wrong {
+  background: #fef2f2 !important;
+  border-color: #991b1b !important;
+  color: #991b1b !important;
+}
+
+body.light-theme kbd {
+  background: #f1f5f9 !important;
+  color: #1e3a5f !important;
+  border: 1px solid #cbd5e1 !important;
+}
+
 @media (max-width: 768px) {
   .global-navbar {
     padding: 6px 10px !important;

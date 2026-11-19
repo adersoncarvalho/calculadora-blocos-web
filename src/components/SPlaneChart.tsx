@@ -420,7 +420,8 @@ export const SPlaneChart: React.FC<SPlaneChartProps> = ({
             width: '100%',
             height: 'auto',
             display: 'block',
-            background: 'rgba(15, 23, 42, 0.35)',
+            background: 'var(--code-bg)',
+            border: '1px solid var(--card-border)',
             borderRadius: '6px',
             userSelect: 'none',
             cursor: toolMode === 'zoom' ? 'zoom-in' : toolMode === 'pan' ? (panDrag ? 'grabbing' : 'grab') : 'default'
@@ -553,8 +554,8 @@ export const SPlaneChart: React.FC<SPlaneChartProps> = ({
                     y={cy - 6}
                     fontSize="9.5"
                     fontWeight="800"
-                    fill="#facc15"
-                    stroke="#0f172a"
+                    fill="#b45309"
+                    stroke="var(--code-bg)"
                     strokeWidth="2.5"
                     style={{ paintOrder: 'stroke' }}
                   >
@@ -618,8 +619,8 @@ export const SPlaneChart: React.FC<SPlaneChartProps> = ({
                       textAnchor="middle"
                       fontSize="9.5"
                       fontWeight="700"
-                      fill="#fca5a5"
-                      stroke="#0f172a"
+                      fill="#b91c1c"
+                      stroke="var(--code-bg)"
                       strokeWidth="3"
                       style={{ paintOrder: 'stroke' }}
                     >
