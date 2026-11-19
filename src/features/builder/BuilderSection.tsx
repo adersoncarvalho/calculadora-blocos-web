@@ -206,6 +206,7 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
     expr: string;
     dir: 'right' | 'left';
   } | null>(null);
+  const [summerEditId, setSummerEditId] = useState<string | null>(null);
 
   // Redução de Mason e Visualização Dividida (Painel 1: Circuito | Painel 2: Cálculos)
   const [analysisResult, setAnalysisResult] = useState<MasonAnalysis | null>(null);
@@ -537,11 +538,11 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
     });
   }, [graph.elements]);
 
-  // 4. Adicionar Bloco G(s) ou H(s) GENÉRICO (Sem função predefinida — nunca nasce empilhado)
+  // 4. Adicionar Bloco G(s) ou H(s) GENÉRICO (Alinhado em y = 240 com R(s)/C(s) e sem empilhar)
   const handleAddBlock = (isFeedback = false) => {
     const prefix = isFeedback ? 'H' : 'G';
     const code = allocateExclusiveCode(prefix); // Ex: G1, G2, G3... / H1, H2, H3...
-    const spot = findFreeGridSpot(320, isFeedback ? 360 : 220);
+    const spot = findFreeGridSpot(380, isFeedback ? 360 : 240);
     const newId = `${prefix.toLowerCase()}_${Date.now()}_${code}`;
     const newEl: DiagramElement = {
       id: newId,
@@ -563,10 +564,10 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
     setSelectedConnId(null);
   };
 
-  // 5. Adicionar Somador (em posição livre na grade)
+  // 5. Adicionar Somador (Alinhado em y = 240 com R(s)/C(s) e em posição livre na grade)
   const handleAddSummer = () => {
     const code = allocateExclusiveCode('S');
-    const spot = findFreeGridSpot(220, 220);
+    const spot = findFreeGridSpot(240, 240);
     const newId = `sum_${Date.now()}_${code}`;
     const newEl: DiagramElement = {
       id: newId,
@@ -807,6 +808,10 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
         setContextMenu(null);
         if (quickEdit) {
           setQuickEdit(null);
+          return;
+        }
+        if (summerEditId) {
+          setSummerEditId(null);
           return;
         }
         if (activeDraft) {
@@ -1609,14 +1614,7 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
     if (!el) return;
 
     if (el.type === 'summer') {
-      const incoming = graph.connections.filter(c => c.to === id);
-      if (incoming.length > 0) {
-        // Alterna sinal da última conexão entrante (tipicamente a realimentação)
-        const targetConn = incoming[incoming.length - 1];
-        const nextSign = targetConn.sign === '-' ? '+' : '-';
-        handleSetConnectionSign(targetConn.id, nextSign);
-        showToast(`Sinal da entrada em ${el.name} alternado para (${nextSign}).`);
-      }
+      setSummerEditId(id);
       return;
     }
 
@@ -2063,7 +2061,8 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
         outputEl: chosenOutput
       });
       setSplitMode('split');
-      showToast(`⚡ Resolução analítica concluída para ${chosenOutput.name} / ${chosenInput.name}!`);
+      setTimeout(() => handleFitToScreen(), 120);
+      showToast(`Resolução analítica concluída para ${chosenOutput.name} / ${chosenInput.name}.`);
     } catch (err) {
       console.error(err);
       showToast('⚠️ Erro ao resolver o diagrama. Verifique as expressões e conexões.');
@@ -3628,82 +3627,71 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
           </button>
         )}
 
-        {/* Controles Flutuantes de Zoom e Fit to Screen (Canto Inferior Esquerdo — sem sobrepor cabeçalho) */}
+        {/* Barra Inferior Unificada do Canvas (Zoom + Fit à esquerda | Ferramenta, Grade e Coordenadas à direita — zero colisões) */}
         <div
           style={{
             position: 'absolute',
-            bottom: '12px',
-            left: '14px',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            height: '34px',
             zIndex: 30,
+            background: 'var(--card-bg)',
+            borderTop: '1px solid var(--card-border)',
+            padding: '0 12px',
             display: 'flex',
             alignItems: 'center',
-            gap: '5px',
-            background: 'var(--card-bg)',
-            border: '1px solid var(--card-border)',
-            borderRadius: '6px',
-            padding: '4px 7px'
-          }}
-        >
-          <button
-            type="button"
-            className="filter-btn"
-            onClick={() => setZoom(z => Math.min(2.4, Number((z + 0.15).toFixed(2))))}
-            style={{ padding: '3px 8px', fontSize: '0.78rem', fontWeight: 700 }}
-            title="Aumentar Zoom (Roda do Mouse)"
-          >
-            +
-          </button>
-          <span style={{ fontSize: '0.73rem', fontFamily: 'var(--font-mono), monospace', fontWeight: 700, color: 'var(--text)', minWidth: '40px', textAlign: 'center' }}>
-            {Math.round(zoom * 100)}%
-          </span>
-          <button
-            type="button"
-            className="filter-btn"
-            onClick={() => setZoom(z => Math.max(0.4, Number((z - 0.15).toFixed(2))))}
-            style={{ padding: '3px 8px', fontSize: '0.78rem', fontWeight: 700 }}
-            title="Diminuir Zoom (Roda do Mouse)"
-          >
-            −
-          </button>
-          <button
-            type="button"
-            className="filter-btn"
-            onClick={handleFitToScreen}
-            style={{ padding: '3px 8px', fontSize: '0.73rem', fontWeight: 600 }}
-            title="Enquadrar todo o circuito na tela (Atalho F)"
-          >
-            Enquadrar (F)
-          </button>
-        </div>
-
-        {/* Barra de Status Técnica Inferior Direita (Estilo CAD / Simulink) */}
-        <div
-          style={{
-            position: 'absolute',
-            bottom: '12px',
-            right: '14px',
-            zIndex: 25,
-            pointerEvents: 'none',
-            background: 'var(--card-bg)',
-            border: '1px solid var(--card-border)',
-            borderRadius: '4px',
-            padding: '4px 10px',
-            fontSize: '0.71rem',
+            justifyContent: 'space-between',
+            gap: '10px',
+            fontSize: '0.72rem',
             fontFamily: 'var(--font-mono), monospace',
-            color: 'var(--text-muted)',
-            display: 'flex',
-            gap: '12px'
+            color: 'var(--text-muted)'
           }}
         >
-          <span>
-            Ferramenta: <b style={{ color: 'var(--primary)' }}>{toolDefinitions.find(t => t.id === activeTool)?.label}</b>
-          </span>
-          <span>Grade: {GRID_SIZE}px</span>
-          {mousePos && (
-            <span>
-              ({snapToGrid(mousePos.x, GRID_SIZE)}, {snapToGrid(mousePos.y, GRID_SIZE)})
+          <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+            <button
+              type="button"
+              className="filter-btn"
+              onClick={() => setZoom(z => Math.min(2.4, Number((z + 0.15).toFixed(2))))}
+              style={{ padding: '2px 7px', fontSize: '0.75rem', fontWeight: 700 }}
+              title="Aumentar Zoom (Roda do Mouse)"
+            >
+              +
+            </button>
+            <span style={{ fontWeight: 700, color: 'var(--text)', minWidth: '38px', textAlign: 'center' }}>
+              {Math.round(zoom * 100)}%
             </span>
-          )}
+            <button
+              type="button"
+              className="filter-btn"
+              onClick={() => setZoom(z => Math.max(0.4, Number((z - 0.15).toFixed(2))))}
+              style={{ padding: '2px 7px', fontSize: '0.75rem', fontWeight: 700 }}
+              title="Diminuir Zoom (Roda do Mouse)"
+            >
+              −
+            </button>
+            <button
+              type="button"
+              className="filter-btn"
+              onClick={handleFitToScreen}
+              style={{ padding: '2px 8px', fontSize: '0.72rem', fontWeight: 600 }}
+              title="Enquadrar todo o circuito na tela (Atalho F)"
+            >
+              Enquadrar (F)
+            </button>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', pointerEvents: 'none', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+            <span>
+              Ferramenta: <b style={{ color: 'var(--primary)' }}>{toolDefinitions.find(t => t.id === activeTool)?.label}</b>
+            </span>
+            <span>Grade: {GRID_SIZE}px</span>
+            {mousePos && (
+              <span>
+                ({snapToGrid(mousePos.x, GRID_SIZE)}, {snapToGrid(mousePos.y, GRID_SIZE)})
+              </span>
+            )}
+          </div>
         </div>
 
         {/* SVG DE TELA CHEIA */}
@@ -5033,6 +5021,131 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
           </div>
         </div>
       )}
+
+      {/* Mini-Modal de Polaridades do Somador (Duplo Clique em S1, S2...) */}
+      {summerEditId && (() => {
+        const sumEl = graph.elements.find(el => el.id === summerEditId);
+        const incoming = graph.connections.filter(c => c.to === summerEditId);
+        if (!sumEl) return null;
+        return (
+          <div
+            onClick={() => setSummerEditId(null)}
+            style={{
+              position: 'fixed',
+              inset: 0,
+              zIndex: 9998,
+              background: 'rgba(15, 23, 42, 0.45)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '16px'
+            }}
+          >
+            <div
+              onClick={e => e.stopPropagation()}
+              style={{
+                width: '100%',
+                maxWidth: '360px',
+                background: 'var(--card-bg)',
+                border: '1px solid var(--card-border)',
+                borderTop: '3px solid var(--primary)',
+                borderRadius: '6px',
+                padding: '16px 18px',
+                boxShadow: '0 12px 32px rgba(15, 23, 42, 0.28)'
+              }}
+            >
+              <div style={{ fontFamily: 'var(--font-serif), Georgia, serif', fontSize: '1.02rem', fontWeight: 700, color: 'var(--primary)', marginBottom: '10px' }}>
+                Polaridades das Entradas — {sumEl.name}
+              </div>
+              {incoming.length === 0 ? (
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '12px' }}>
+                  Nenhuma conexão entrando neste somador ainda. Use o modo Fio (W) para conectar sinais.
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '12px' }}>
+                  {incoming.map(conn => {
+                    const src = graph.elements.find(e => e.id === conn.from);
+                    const isNeg = conn.sign === '-';
+                    return (
+                      <div
+                        key={conn.id}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          padding: '7px 10px',
+                          borderRadius: '4px',
+                          background: 'var(--code-bg)',
+                          border: '1px solid var(--card-border)'
+                        }}
+                      >
+                        <div style={{ fontSize: '0.82rem', color: 'var(--text)' }}>
+                          De <b>{src?.name || conn.from}</b>{' '}
+                          <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                            (porta {conn.toPort || 'W'})
+                          </span>
+                        </div>
+                        <div style={{ display: 'flex', gap: '4px' }}>
+                          <button
+                            type="button"
+                            onClick={() => handleSetConnectionSign(conn.id, '+')}
+                            style={{
+                              padding: '3px 10px',
+                              borderRadius: '4px',
+                              fontWeight: 700,
+                              fontSize: '0.82rem',
+                              cursor: 'pointer',
+                              background: !isNeg ? 'var(--success)' : 'var(--card-bg)',
+                              color: !isNeg ? '#fff' : 'var(--text-muted)',
+                              border: `1px solid ${!isNeg ? 'var(--success)' : 'var(--card-border)'}`
+                            }}
+                          >
+                            +
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleSetConnectionSign(conn.id, '-')}
+                            style={{
+                              padding: '3px 10px',
+                              borderRadius: '4px',
+                              fontWeight: 700,
+                              fontSize: '0.82rem',
+                              cursor: 'pointer',
+                              background: isNeg ? 'var(--danger)' : 'var(--card-bg)',
+                              color: isNeg ? '#fff' : 'var(--text-muted)',
+                              border: `1px solid ${isNeg ? 'var(--danger)' : 'var(--card-border)'}`
+                            }}
+                          >
+                            −
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+              <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                <button
+                  type="button"
+                  onClick={() => setSummerEditId(null)}
+                  style={{
+                    padding: '6px 14px',
+                    borderRadius: '4px',
+                    fontSize: '0.78rem',
+                    fontWeight: 600,
+                    background: 'var(--primary)',
+                    color: '#fff',
+                    border: 'none',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Concluir (Esc)
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Toast Flutuante (posicionado acima da barra de status Grade: 20px) */}
       {toastMessage && (

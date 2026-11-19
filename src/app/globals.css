@@ -44,10 +44,15 @@ code, pre, .font-mono {
   font-family: var(--font-mono), Consolas, monospace !important;
 }
 
-/* Matemática KaTeX sóbria em preto/grafite no Modo Claro (estilo livro-texto) */
+/* Matemática KaTeX sóbria em preto/grafite no Modo Claro e branco-gelo neutro no Modo Escuro */
 body.light-theme .katex,
 body.light-theme .katex-display {
   color: #111827 !important;
+}
+
+body:not(.light-theme) .katex,
+body:not(.light-theme) .katex-display {
+  color: #e6e8ec !important;
 }
 
 /* Remoção de glow/sombras excessivas em prol de bordas finas científicas */

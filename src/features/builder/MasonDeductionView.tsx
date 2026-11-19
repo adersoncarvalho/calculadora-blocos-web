@@ -89,6 +89,7 @@ export const MasonDeductionView: React.FC<MasonDeductionViewProps> = ({
   onClose
 }) => {
   const [copiedType, setCopiedType] = useState<'none' | 'final-latex' | 'final-text' | 'memorial' | 'scilab'>('none');
+  const [resultTab, setResultTab] = useState<'resumo' | 'memorial' | 'simulacao' | 'scilab'>('resumo');
   const [openSteps, setOpenSteps] = useState<Record<number, boolean>>({
     0: true,
     1: true,
@@ -740,6 +741,35 @@ export const MasonDeductionView: React.FC<MasonDeductionViewProps> = ({
         </div>
       </div>
 
+      {/* BARRA DE 4 ABAS LIMPAS (ESTILO DOCUMENTAÇÃO CIENTÍFICA) */}
+      <div
+        className="academic-tab-bar"
+        style={{
+          marginBottom: 0,
+          padding: '0 1.25rem',
+          background: 'var(--card-bg)',
+          flexShrink: 0
+        }}
+      >
+        {(
+          [
+            ['resumo', '1. Resumo'],
+            ['memorial', '2. Memorial Passo a Passo'],
+            ['simulacao', '3. Simulação RK4'],
+            ['scilab', '4. Scilab (.sce)']
+          ] as const
+        ).map(([key, label]) => (
+          <button
+            key={key}
+            type="button"
+            className={`academic-tab ${resultTab === key ? 'active' : ''}`}
+            onClick={() => setResultTab(key)}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
       {/* CORPO ROLÁVEL DO MEMORIAL DE CÁLCULO */}
       <div
         data-testid="deduction-scroll-container"
@@ -756,8 +786,9 @@ export const MasonDeductionView: React.FC<MasonDeductionViewProps> = ({
         }}
       >
         {/* =================================================================
-            QUADRO RESUMO DE RESULTADOS PRINCIPAIS (TOPO)
+            QUADRO RESUMO DE RESULTADOS PRINCIPAIS (ABA 1: RESUMO)
             ================================================================= */}
+        {resultTab === 'resumo' && (
         <div
           style={{
             background: 'var(--card-bg)',
@@ -930,7 +961,9 @@ export const MasonDeductionView: React.FC<MasonDeductionViewProps> = ({
                     marginBottom: '0.3rem'
                   }}
                 >
-                  Relação Sinal de Erro / Entrada ({pair.inputInfo.displayName}):
+                  {pair.targetInfo.signalLatex.startsWith('E')
+                    ? `Relação Sinal de Erro / Entrada (${pair.inputInfo.displayName}):`
+                    : `Relação Sinal de Controle / Somador (${pair.targetInfo.displayName} / ${pair.inputInfo.displayName}):`}
                 </div>
                 <MathView
                   math={`\\frac{${pair.targetInfo.signalLatex}}{${pair.inputInfo.signalLatex}} = ${pair.transferFunctionLatex}`}
@@ -939,10 +972,12 @@ export const MasonDeductionView: React.FC<MasonDeductionViewProps> = ({
             ))}
           </div>
         </div>
+        )}
 
         {/* =================================================================
-            PAINEL DE VALIDAÇÃO TOPOLÓGICA DO CIRCUITO (8 REGRAS OBRIGATÓRIAS — SEÇÃO 7)
+            PAINEL DE VALIDAÇÃO TOPOLÓGICA DO CIRCUITO (ABA 2: MEMORIAL PASSO A PASSO)
             ================================================================= */}
+        {resultTab === 'memorial' && (<>
         {fullSys.validationReport && (
           <section
             style={{
@@ -2718,10 +2753,32 @@ export const MasonDeductionView: React.FC<MasonDeductionViewProps> = ({
             isInitialOpen={true}
           />
         )}
+        </>)}
+
+        {/* ABA 3: SIMULAÇÃO RK4 */}
+        {resultTab === 'simulacao' && (
+          <div
+            style={{
+              background: 'var(--card-bg)',
+              border: '1px solid var(--card-border)',
+              borderRadius: '8px',
+              padding: '1rem 1.2rem'
+            }}
+          >
+            {fullSys.scilabReport.previewSeries && fullSys.scilabReport.previewSeries.length > 0 ? (
+              renderStepResponseChart()
+            ) : (
+              <div style={{ fontSize: '0.84rem', color: 'var(--text-muted)' }}>
+                Simulação temporal numérica disponível quando todos os blocos possuem coeficientes numéricos em s (sem parâmetros simbólicos pendentes).
+              </div>
+            )}
+          </div>
+        )}
 
         {/* =================================================================
-            SEÇÃO 10 (OBRIGATÓRIA) — IMPLEMENTAÇÃO E SIMULAÇÃO NO SCILAB
+            SEÇÃO 10 (OBRIGATÓRIA) — IMPLEMENTAÇÃO E SIMULAÇÃO NO SCILAB (ABA 4: SCILAB)
             ================================================================= */}
+        {resultTab === 'scilab' && (
         <section
           style={{
             background: 'var(--card-bg)',
@@ -2868,6 +2925,7 @@ export const MasonDeductionView: React.FC<MasonDeductionViewProps> = ({
             </div>
           )}
         </section>
+        )}
       </div>
     </div>
   );
