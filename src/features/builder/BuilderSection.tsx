@@ -3944,7 +3944,7 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
                     strokeLinejoin="round"
                     fill="none"
                     markerEnd={
-                      conn.isPending || tgt.type === 'pickoff'
+                      conn.isPending || tgt?.type === 'pickoff'
                         ? undefined
                         : isCutHovered
                         ? 'url(#builder-arr-cut)'
