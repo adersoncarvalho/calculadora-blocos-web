@@ -10,14 +10,18 @@ import {
   CONTROLLERS_THEORY,
   CONTROLLER_EXERCISES,
   simulateControllerExercise,
+  simulateClosedLoopWithSaturationRK4,
   ControllerExercise
 } from './controllersData';
+import { parseRatExpr } from '@/core/algebra/parser';
 import { ControllerBlockDiagram } from './ControllerBlockDiagram';
+import { OpAmpCircuitDiagram } from './OpAmpCircuitDiagram';
 import { ListaP2View } from './ListaP2View';
 import { FundamentosView } from './FundamentosView';
 import { LugarRaizesView } from './LugarRaizesView';
 import { PlantDesignerView } from './PlantDesignerView';
 import { printElementAsPdf } from '@/utils/printMemorial';
+import { useStudyChecklist } from '@/utils/studyChecklist';
 
 interface ControllersSectionProps {
   onBack: () => void;
@@ -96,8 +100,10 @@ export const ControllersSection: React.FC<ControllersSectionProps> = ({ onBack, 
   const [examMode, setExamMode] = useState<boolean>(false);
   const [revealedSteps, setRevealedSteps] = useState<number>(0);
   const [usePrefilter, setUsePrefilter] = useState<boolean>(false);
+  const [useSaturation, setUseSaturation] = useState<boolean>(false);
   const [copiedScilab, setCopiedScilab] = useState<boolean>(false);
   const memorialRef = useRef<HTMLDivElement | null>(null);
+  const { isDone, toggleItem, countDone } = useStudyChecklist();
 
   const exercisesForCategory = useMemo(
     () => CONTROLLER_EXERCISES.filter(e => e.controllerId === selectedCategory),
@@ -202,6 +208,30 @@ export const ControllersSection: React.FC<ControllersSectionProps> = ({ onBack, 
     return simulateControllerExercise(activeExercise);
   }, [activeExercise]);
 
+  // Simulação com Saturação Real (±10 V) + Anti-Windup quando ativada
+  const saturatedSimulation = useMemo(() => {
+    if (!useSaturation || !simulation || activeExercise.feedbackExpr) return null;
+    try {
+      const G = parseRatExpr(activeExercise.plantExpr);
+      const Gc = parseRatExpr(activeExercise.controllerExpr);
+      const a0 = activeExercise.inputParams.a0 || 0;
+      const a1 = activeExercise.inputParams.a1 || 0;
+      const a2 = activeExercise.inputParams.a2 || 0;
+      const inputFn = (t: number) => a0 + a1 * t + a2 * t * t;
+      return simulateClosedLoopWithSaturationRK4(
+        G,
+        Gc,
+        inputFn,
+        activeExercise.tMax,
+        300,
+        10,
+        usePrefilter ? simulation.prefilterZc : null
+      );
+    } catch {
+      return null;
+    }
+  }, [useSaturation, simulation, activeExercise, usePrefilter]);
+
   const copyScilab = () => {
     navigator.clipboard.writeText(activeExercise.scilabCode);
     setCopiedScilab(true);
@@ -260,11 +290,31 @@ export const ControllersSection: React.FC<ControllersSectionProps> = ({ onBack, 
       overshootComp
     } = simulation;
 
-    const activeYComp = usePrefilter && yCompPrefilter ? yCompPrefilter : yComp;
-    const activeEComp = usePrefilter && eCompPrefilter ? eCompPrefilter : eComp;
-    const activeUComp = usePrefilter && uCompPrefilter ? uCompPrefilter : uComp;
-    const activeOvershoot = usePrefilter && overshootPrefilter !== null ? overshootPrefilter : overshootComp;
-    const activeUPeak = usePrefilter && uPeakPrefilter !== null ? uPeakPrefilter : uPeak;
+    const activeYComp = saturatedSimulation
+      ? saturatedSimulation.y
+      : usePrefilter && yCompPrefilter
+      ? yCompPrefilter
+      : yComp;
+    const activeEComp = saturatedSimulation
+      ? saturatedSimulation.e
+      : usePrefilter && eCompPrefilter
+      ? eCompPrefilter
+      : eComp;
+    const activeUComp = saturatedSimulation
+      ? saturatedSimulation.u
+      : usePrefilter && uCompPrefilter
+      ? uCompPrefilter
+      : uComp;
+    const activeOvershoot = saturatedSimulation
+      ? saturatedSimulation.overshoot
+      : usePrefilter && overshootPrefilter !== null
+      ? overshootPrefilter
+      : overshootComp;
+    const activeUPeak = saturatedSimulation
+      ? Number(Math.max(...saturatedSimulation.u.map(v => Math.abs(v))).toFixed(2))
+      : usePrefilter && uPeakPrefilter !== null
+      ? uPeakPrefilter
+      : uPeak;
 
     const isUncompUnstable = yUncomp.some(v => Math.abs(v) >= 1e5);
     const isCompUnstable = activeYComp.some(v => Math.abs(v) >= 1e5);
@@ -321,46 +371,74 @@ export const ControllersSection: React.FC<ControllersSectionProps> = ({ onBack, 
 
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
-        {/* Barra do Pré-Filtro (quando disponível em PD Real / Avanço) */}
-        {prefilterZc !== null && (
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              flexWrap: 'wrap',
-              gap: '8px',
-              padding: '8px 12px',
-              borderRadius: '6px',
-              background: 'var(--card-bg)',
-              border: '1px solid var(--card-border)'
-            }}
-          >
-            <div style={{ fontSize: '0.8rem', color: 'var(--text)' }}>
-              <strong>🔧 Pré-Filtro de Referência:</strong>{' '}
-              <MathView math={`F(s) = \\frac{${prefilterZc}}{s + ${prefilterZc}}`} inline />{' '}
+        {/* Barra de Controles de Simulação: Saturação Real (±10 V) + Pré-Filtro */}
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: '8px',
+            padding: '8px 12px',
+            borderRadius: '6px',
+            background: 'var(--card-bg)',
+            border: '1px solid var(--card-border)'
+          }}
+        >
+          <div style={{ fontSize: '0.8rem', color: 'var(--text)' }}>
+            {prefilterZc !== null ? (
+              <>
+                <strong>🔧 Pré-Filtro:</strong>{' '}
+                <MathView math={`F(s) = \\frac{${prefilterZc}}{s + ${prefilterZc}}`} inline />{' '}
+                <span style={{ color: 'var(--text-muted)' }}>
+                  {renderRichMathText('(cancela o zero do controlador em $Y(s)/R(s)$, reduzindo sobressinal e pico $u(0^+)$)')}
+                </span>
+              </>
+            ) : (
               <span style={{ color: 'var(--text-muted)' }}>
-                (cancela o zero do controlador em $Y(s)/R(s)$, reduzindo sobressinal e pico $u(0^+)$)
+                Ative a saturação real do amp-op (±10 V) com anti-windup automático para ver o efeito físico na saída.
               </span>
-            </div>
-            <button
-              type="button"
-              onClick={() => setUsePrefilter(p => !p)}
-              style={{
-                padding: '6px 12px',
-                borderRadius: '6px',
-                fontSize: '0.77rem',
-                fontWeight: 700,
-                cursor: 'pointer',
-                background: usePrefilter ? 'var(--primary)' : 'var(--code-bg)',
-                color: usePrefilter ? '#fff' : 'var(--text)',
-                border: `1px solid ${usePrefilter ? 'var(--primary)' : 'var(--card-border)'}`
-              }}
-            >
-              {usePrefilter ? '✓ Pré-Filtro Ativo' : '○ Ativar Pré-Filtro'}
-            </button>
+            )}
           </div>
-        )}
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            {!activeExercise.feedbackExpr && (
+              <button
+                type="button"
+                onClick={() => setUseSaturation(p => !p)}
+                style={{
+                  padding: '6px 12px',
+                  borderRadius: '6px',
+                  fontSize: '0.77rem',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  background: useSaturation ? '#dc2626' : 'var(--code-bg)',
+                  color: useSaturation ? '#fff' : 'var(--text)',
+                  border: `1px solid ${useSaturation ? '#dc2626' : 'var(--card-border)'}`
+                }}
+              >
+                {useSaturation ? '⚡ Saturação ±10 V Ativa' : '○ Simular Saturação (±10 V)'}
+              </button>
+            )}
+            {prefilterZc !== null && (
+              <button
+                type="button"
+                onClick={() => setUsePrefilter(p => !p)}
+                style={{
+                  padding: '6px 12px',
+                  borderRadius: '6px',
+                  fontSize: '0.77rem',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  background: usePrefilter ? 'var(--primary)' : 'var(--code-bg)',
+                  color: usePrefilter ? '#fff' : 'var(--text)',
+                  border: `1px solid ${usePrefilter ? 'var(--primary)' : 'var(--card-border)'}`
+                }}
+              >
+                {usePrefilter ? '✓ Pré-Filtro Ativo' : '○ Ativar Pré-Filtro'}
+              </button>
+            )}
+          </div>
+        </div>
 
         {/* Alertas de estabilidade caso existam */}
         {isUncompUnstable && (
@@ -1161,11 +1239,21 @@ export const ControllersSection: React.FC<ControllersSectionProps> = ({ onBack, 
                   {item.shortName}
                 </span>
                 <span style={{ fontSize: '0.73rem', color: 'var(--text-muted)', fontWeight: 600 }}>
-                  {count} {count === 1 ? 'exercício' : 'exercícios'}
+                  {countDone(CONTROLLER_EXERCISES.filter(e => e.controllerId === catId).map(e => e.id))}/{count} feitos
                 </span>
               </div>
               <div style={{ fontWeight: 700, fontSize: '0.92rem', color: 'var(--text)' }}>
                 {item.fullName}
+              </div>
+              <div style={{ marginTop: '6px', height: '4px', borderRadius: '999px', background: 'var(--card-border)', overflow: 'hidden' }}>
+                <div
+                  style={{
+                    height: '100%',
+                    width: `${count > 0 ? (countDone(CONTROLLER_EXERCISES.filter(e => e.controllerId === catId).map(e => e.id)) / count) * 100 : 0}%`,
+                    background: item.badgeColor,
+                    transition: 'width 0.2s ease'
+                  }}
+                />
               </div>
             </button>
           );
@@ -1399,7 +1487,9 @@ export const ControllersSection: React.FC<ControllersSectionProps> = ({ onBack, 
                               textAlign: 'left'
                             }}
                           >
-                            <div style={{ fontSize: '0.66rem', opacity: isAct ? 0.9 : 0.7 }}>{ex.badge}</div>
+                            <div style={{ fontSize: '0.66rem', opacity: isAct ? 0.9 : 0.7 }}>
+                              {isDone(ex.id) ? '✓ ' : ''}{ex.badge}
+                            </div>
                             <div>{ex.title.split('—')[0].trim()}</div>
                           </button>
                         );
@@ -1502,14 +1592,32 @@ export const ControllersSection: React.FC<ControllersSectionProps> = ({ onBack, 
 
           {/* Detalhes Completos do Exercício Selecionado */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            {/* Cabeçalho sempre visível */}
-            <div>
-              <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', fontWeight: 600 }}>
-                {activeExercise.source} • Entrada: <MathView math={activeExercise.inputParams.labelLatex} inline />
+            {/* Cabeçalho sempre visível + Checklist de Revisão */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '10px' }}>
+              <div>
+                <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', fontWeight: 600 }}>
+                  {activeExercise.source} • Entrada: <MathView math={activeExercise.inputParams.labelLatex} inline />
+                </div>
+                <h3 style={{ margin: '4px 0 0 0', fontSize: '1.15rem', color: 'var(--primary)' }}>
+                  {activeExercise.title}
+                </h3>
               </div>
-              <h3 style={{ margin: '4px 0 0 0', fontSize: '1.15rem', color: 'var(--primary)' }}>
-                {activeExercise.title}
-              </h3>
+              <button
+                type="button"
+                onClick={() => toggleItem(activeExercise.id)}
+                style={{
+                  padding: '7px 12px',
+                  borderRadius: '6px',
+                  fontSize: '0.78rem',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  background: isDone(activeExercise.id) ? 'rgba(5, 150, 105, 0.16)' : 'var(--code-bg)',
+                  color: isDone(activeExercise.id) ? 'var(--success)' : 'var(--text-muted)',
+                  border: `1px solid ${isDone(activeExercise.id) ? 'var(--success)' : 'var(--card-border)'}`
+                }}
+              >
+                {isDone(activeExercise.id) ? '✓ Refiz no papel' : '○ Marcar como estudado'}
+              </button>
             </div>
 
             {exerciseSubTab === 'memorial' && (
@@ -1709,6 +1817,14 @@ export const ControllersSection: React.FC<ControllersSectionProps> = ({ onBack, 
                     );
                   })}
                 </div>
+
+                {/* Circuito Analógico com Amp-Op (SVG) */}
+                {(!examMode || revealedSteps >= activeExercise.detailedSteps.length) && (
+                  <OpAmpCircuitDiagram
+                    controllerType={activeExercise.controllerId}
+                    controllerExpr={activeExercise.controllerExpr}
+                  />
+                )}
               </div>
             )}
 

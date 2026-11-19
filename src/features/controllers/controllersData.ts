@@ -619,6 +619,160 @@ export function simulateInputResponseRK4(
   return { t: tArr, y: yArr };
 }
 
+/**
+ * Simulador RK4 em malha fechada acoplada com Saturação Real do Atuador (±uLimit, ex.: ±10 V)
+ * e Anti-Windup automático quando Gc(s) possui polo na origem (integrador).
+ */
+export function simulateClosedLoopWithSaturationRK4(
+  G: RatFunc,
+  Gc: RatFunc,
+  inputFn: (t: number) => number,
+  tMax: number = 10,
+  numSteps: number = 300,
+  uLimit: number = 10,
+  prefilterZc: number | null = null
+): { t: number[]; y: number[]; e: number[]; u: number[]; overshoot: number | null } | null {
+  try {
+    if (
+      !isUnivariateInS(G.num) ||
+      !isUnivariateInS(G.den) ||
+      !isUnivariateInS(Gc.num) ||
+      !isUnivariateInS(Gc.den)
+    ) {
+      return null;
+    }
+
+    const toSS = (tf: RatFunc) => {
+      const uN = trimUni(toUnivariateArr(tf.num));
+      const uD = trimUni(toUnivariateArr(tf.den));
+      const n = uD.length - 1;
+      const m = uN.length - 1;
+      if (n < 0 || m > n || Math.abs(uD[n]) < 1e-12) return null;
+      const an = uD[n];
+      const a = uD.map(c => c / an);
+      const b = new Array(n + 1).fill(0);
+      for (let i = 0; i <= m; i++) b[i] = uN[i] / an;
+      const d = b[n];
+      const c = new Array(n).fill(0);
+      for (let i = 0; i < n; i++) c[i] = b[i] - a[i] * d;
+      return { n, a, c, d };
+    };
+
+    const ssG = toSS(G);
+    const ssC = toSS(Gc);
+    if (!ssG || !ssC) return null;
+
+    const hasIntegrator = ssC.n > 0 && Math.abs(ssC.a[0]) < 1e-7;
+    const subSteps = 4; // 4 sub-passos RK4 por ponto para estabilidade com polos rápidos (PD/Lead)
+    const dt = tMax / (numSteps * subSteps);
+
+    let xG = new Array(ssG.n).fill(0);
+    let xC = new Array(ssC.n).fill(0);
+    let rf = 0;
+
+    const evalOutputs = (sG: number[], sC: number[], rRef: number) => {
+      let y = 0;
+      for (let i = 0; i < ssG.n; i++) y += ssG.c[i] * sG[i];
+      const e = rRef - y;
+      let uRaw = ssC.d * e;
+      for (let i = 0; i < ssC.n; i++) uRaw += ssC.c[i] * sC[i];
+      const uSat = Math.max(-uLimit, Math.min(uLimit, uRaw));
+      // Se G tiver d direto (raro), inclui
+      const yOut = y + ssG.d * uSat;
+      return { y: yOut, e: rRef - yOut, uRaw, uSat };
+    };
+
+    const derivAll = (sG: number[], sC: number[], rFilt: number, rIn: number) => {
+      const rEff = prefilterZc ? rFilt : rIn;
+      const { e, uRaw, uSat } = evalOutputs(sG, sC, rEff);
+
+      // Planta: dxG = A_G xG + B_G uSat
+      const dxG = new Array(ssG.n).fill(0);
+      if (ssG.n > 0) {
+        for (let i = 0; i < ssG.n - 1; i++) dxG[i] = sG[i + 1];
+        let lastG = uSat;
+        for (let i = 0; i < ssG.n; i++) lastG -= ssG.a[i] * sG[i];
+        dxG[ssG.n - 1] = lastG;
+      }
+
+      // Controlador: anti-windup condicional se saturado na mesma direção do erro
+      const dxC = new Array(ssC.n).fill(0);
+      const isSaturated = Math.abs(uRaw) > uLimit + 1e-6;
+      const freezeIntegrator = hasIntegrator && isSaturated && Math.sign(uRaw) === Math.sign(e);
+      if (ssC.n > 0 && !freezeIntegrator) {
+        for (let i = 0; i < ssC.n - 1; i++) dxC[i] = sC[i + 1];
+        let lastC = e;
+        for (let i = 0; i < ssC.n; i++) lastC -= ssC.a[i] * sC[i];
+        dxC[ssC.n - 1] = lastC;
+      }
+
+      const drf = prefilterZc ? prefilterZc * (rIn - rFilt) : 0;
+      return { dxG, dxC, drf };
+    };
+
+    const tArr: number[] = [];
+    const yArr: number[] = [];
+    const eArr: number[] = [];
+    const uArr: number[] = [];
+
+    for (let step = 0; step <= numSteps; step++) {
+      const tVal = step * subSteps * dt;
+      const rNow = inputFn(tVal);
+      const out = evalOutputs(xG, xC, prefilterZc ? rf : rNow);
+      const ySafe = Number.isFinite(out.y) ? Math.max(-1e6, Math.min(1e6, out.y)) : 0;
+      const uSafe = Number.isFinite(out.uSat) ? out.uSat : 0;
+      tArr.push(Number(tVal.toFixed(4)));
+      yArr.push(Number(ySafe.toFixed(5)));
+      eArr.push(Number((rNow - ySafe).toFixed(5)));
+      uArr.push(Number(uSafe.toFixed(5)));
+
+      if (step < numSteps) {
+        for (let sub = 0; sub < subSteps; sub++) {
+          const ts = tVal + sub * dt;
+          const r0 = inputFn(ts);
+          const rH = inputFn(ts + 0.5 * dt);
+          const r1 = inputFn(ts + dt);
+
+          const k1 = derivAll(xG, xC, rf, r0);
+          const k2 = derivAll(
+            xG.map((v, i) => v + 0.5 * dt * k1.dxG[i]),
+            xC.map((v, i) => v + 0.5 * dt * k1.dxC[i]),
+            rf + 0.5 * dt * k1.drf,
+            rH
+          );
+          const k3 = derivAll(
+            xG.map((v, i) => v + 0.5 * dt * k2.dxG[i]),
+            xC.map((v, i) => v + 0.5 * dt * k2.dxC[i]),
+            rf + 0.5 * dt * k2.drf,
+            rH
+          );
+          const k4 = derivAll(
+            xG.map((v, i) => v + dt * k3.dxG[i]),
+            xC.map((v, i) => v + dt * k3.dxC[i]),
+            rf + dt * k3.drf,
+            r1
+          );
+
+          xG = xG.map((v, i) => v + (dt / 6) * (k1.dxG[i] + 2 * k2.dxG[i] + 2 * k3.dxG[i] + k4.dxG[i]));
+          xC = xC.map((v, i) => v + (dt / 6) * (k1.dxC[i] + 2 * k2.dxC[i] + 2 * k3.dxC[i] + k4.dxC[i]));
+          rf = rf + (dt / 6) * (k1.drf + 2 * k2.drf + 2 * k3.drf + k4.drf);
+        }
+      }
+    }
+
+    const yFin = yArr[yArr.length - 1];
+    const yMax = Math.max(...yArr);
+    const overshoot =
+      Math.abs(yFin) > 1e-6 && yMax > yFin
+        ? Number((((yMax - yFin) / Math.abs(yFin)) * 100).toFixed(2))
+        : 0;
+
+    return { t: tArr, y: yArr, e: eArr, u: uArr, overshoot };
+  } catch {
+    return null;
+  }
+}
+
 export function simulateControllerExercise(ex: ControllerExercise): ControllerSimulationResult | null {
   try {
     const G = parseRatExpr(ex.plantExpr);

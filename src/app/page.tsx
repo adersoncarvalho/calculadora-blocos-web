@@ -216,115 +216,148 @@ export default function HomePage() {
         )}
       </section>
 
-      {/* Trilha Progressiva de Aplicação e Estudo (Percurso Acadêmico) */}
-      <div className="learning-path-banner" id="learningPathBanner" style={{ marginTop: '20px' }}>
+      {/* 3 Trilhas Principais Claras */}
+      <div className="learning-path-banner" id="learningPathBanner" style={{ marginTop: '18px' }}>
         <div className="learning-path-header" style={{ marginBottom: '14px' }}>
           <span className="learning-path-badge" style={{ fontSize: '0.74rem', background: 'rgba(56,189,248,0.1)', color: 'var(--primary)', padding: '3px 8px', borderRadius: '4px', fontWeight: 700 }}>
-            🎯 Percurso Acadêmico
+            🎯 Acesso Rápido
           </span>
           <h3 className="learning-path-title" style={{ fontSize: '1.15rem', margin: '6px 0 4px 0' }}>
-            Trilha Progressiva de Aplicação e Estudo
+            O que você deseja fazer agora?
           </h3>
           <p className="learning-path-desc" style={{ margin: 0, fontSize: '0.84rem', color: 'var(--text-muted)' }}>
-            Roteiro estruturado para resolver exercícios, explorar transformações canônicas e projetar diagramas com autonomia:
+            Escolha uma das 3 trilhas principais para ir direto ao conteúdo sem se perder entre abas:
           </p>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: '14px' }}>
-          {/* Etapa 1 • Teoria */}
-          <a
-            href="/?view=guide"
-            className="learning-step-card"
-            onClick={e => {
-              if (!e.ctrlKey && !e.metaKey && !e.shiftKey && e.button === 0) {
-                e.preventDefault();
-                handleSetView('guide');
-              }
-            }}
-            style={{ cursor: 'pointer', background: 'var(--card-bg)', border: '1px solid var(--card-border)', borderRadius: '8px', padding: '16px', textDecoration: 'none', display: 'block' }}
-          >
-            <div style={{ fontSize: '0.72rem', color: 'var(--primary)', fontWeight: 700 }}>Etapa 1 • Teoria</div>
-            <div style={{ fontWeight: 700, fontSize: '0.96rem', margin: '4px 0', color: 'var(--text)' }}>📚 Fundamentos & Regras</div>
-            <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', lineHeight: '1.45' }}>Estude premissas de isolamento, equações nodais e regras de blocos.</div>
-          </a>
-
-          {/* Etapa 2 • Modelos (Abre a calculadora de topologias canônicas abaixo) */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(270px, 1fr))', gap: '14px' }}>
+          {/* Trilha 1 • Controladores & Projeto */}
           <div
-            className="learning-step-card"
-            onClick={() => {
-              setShowCanonicalModels(prev => !prev);
-              setTimeout(() => {
-                const el = document.getElementById('calcSectionArea');
-                if (el) el.scrollIntoView({ behavior: 'smooth' });
-              }, 60);
-            }}
-            role="button"
-            tabIndex={0}
             style={{
-              cursor: 'pointer',
-              background: showCanonicalModels ? 'rgba(56,189,248,0.1)' : 'var(--card-bg)',
-              border: `1px solid ${showCanonicalModels ? 'var(--primary)' : 'var(--card-border)'}`,
-              borderRadius: '8px',
-              padding: '16px'
+              background: 'var(--card-bg)',
+              border: '2px solid var(--primary)',
+              borderRadius: '10px',
+              padding: '18px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '10px'
             }}
           >
-            <div style={{ fontSize: '0.72rem', color: 'var(--primary)', fontWeight: 700 }}>Etapa 2 • Modelos</div>
-            <div style={{ fontWeight: 700, fontSize: '0.96rem', margin: '4px 0', color: 'var(--text)' }}>📐 Topologias Canônicas</div>
-            <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', lineHeight: '1.45' }}>
-              {showCanonicalModels ? '▲ Recolher modelos canônicos' : '▼ Abrir modelos e memorial analítico'}
+            <div style={{ fontSize: '0.72rem', color: 'var(--primary)', fontWeight: 800, textTransform: 'uppercase' }}>
+              Trilha 1 • Controle Clássico &amp; LGR
+            </div>
+            <div style={{ fontWeight: 800, fontSize: '1.05rem', color: 'var(--text)' }}>
+              🎛️ Controladores &amp; Projeto de Plantas
+            </div>
+            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', lineHeight: 1.45 }}>
+              P, PD Real, PI, Avanço, Atraso, LGR comparativo, Saturação ±10 V, Amp-Op e Gerador Automático de Memorial.
+            </div>
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: 'auto', paddingTop: '4px' }}>
+              <button
+                type="button"
+                onClick={() => handleSetView('controllers')}
+                style={{ padding: '7px 12px', borderRadius: '6px', fontSize: '0.78rem', fontWeight: 700, background: 'var(--primary)', color: '#fff', border: 'none', cursor: 'pointer' }}
+              >
+                Abrir Controladores
+              </button>
+              <a
+                href="/?view=controllers&tab=designer"
+                style={{ padding: '7px 12px', borderRadius: '6px', fontSize: '0.78rem', fontWeight: 700, background: 'rgba(5,150,105,0.14)', color: 'var(--success)', border: '1px solid var(--success)', textDecoration: 'none' }}
+              >
+                🧮 Projetar Planta Nova
+              </a>
             </div>
           </div>
 
-          {/* Etapa 3 • Prática */}
-          <a
-            href="/?view=practice"
-            className="learning-step-card"
-            onClick={e => {
-              if (!e.ctrlKey && !e.metaKey && !e.shiftKey && e.button === 0) {
-                e.preventDefault();
-                handleSetView('practice');
-              }
+          {/* Trilha 2 • Diagramas de Blocos & Redução */}
+          <div
+            style={{
+              background: 'var(--card-bg)',
+              border: '1px solid var(--card-border)',
+              borderRadius: '10px',
+              padding: '18px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '10px'
             }}
-            style={{ cursor: 'pointer', background: 'var(--card-bg)', border: '1px solid var(--card-border)', borderRadius: '8px', padding: '16px', textDecoration: 'none', display: 'block' }}
           >
-            <div style={{ fontSize: '0.72rem', color: 'var(--primary)', fontWeight: 700 }}>Etapa 3 • Prática</div>
-            <div style={{ fontWeight: 700, fontSize: '0.96rem', margin: '4px 0', color: 'var(--text)' }}>🧪 Laboratório Interativo</div>
-            <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', lineHeight: '1.45' }}>Exercícios em 3 níveis com verificador de equivalência algébrica real.</div>
-          </a>
+            <div style={{ fontSize: '0.72rem', color: '#a855f7', fontWeight: 800, textTransform: 'uppercase' }}>
+              Trilha 2 • Álgebra de Blocos
+            </div>
+            <div style={{ fontWeight: 800, fontSize: '1.05rem', color: 'var(--text)' }}>
+              🛠️ Construtor &amp; Topologias Canônicas
+            </div>
+            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', lineHeight: 1.45 }}>
+              Monte qualquer diagrama de blocos arbitrário ou explore modelos canônicos com redução passo a passo e Mason.
+            </div>
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: 'auto', paddingTop: '4px' }}>
+              <button
+                type="button"
+                onClick={() => handleSetView('builder')}
+                style={{ padding: '7px 12px', borderRadius: '6px', fontSize: '0.78rem', fontWeight: 700, background: 'var(--code-bg)', color: 'var(--text)', border: '1px solid var(--card-border)', cursor: 'pointer' }}
+              >
+                🛠️ Construtor Livre
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowCanonicalModels(prev => !prev);
+                  setTimeout(() => {
+                    const el = document.getElementById('calcSectionArea');
+                    if (el) el.scrollIntoView({ behavior: 'smooth' });
+                  }, 60);
+                }}
+                style={{ padding: '7px 12px', borderRadius: '6px', fontSize: '0.78rem', fontWeight: 700, background: showCanonicalModels ? 'rgba(56,189,248,0.16)' : 'var(--code-bg)', color: 'var(--primary)', border: '1px solid var(--primary)', cursor: 'pointer' }}
+              >
+                {showCanonicalModels ? '▲ Recolher Modelos' : '📐 Modelos Canônicos'}
+              </button>
+            </div>
+          </div>
 
-          {/* Etapa 4 • Criação */}
-          <a
-            href="/?view=builder"
-            className="learning-step-card"
-            onClick={e => {
-              if (!e.ctrlKey && !e.metaKey && !e.shiftKey && e.button === 0) {
-                e.preventDefault();
-                handleSetView('builder');
-              }
+          {/* Trilha 3 • Listas, Teoria & Treino de Prova */}
+          <div
+            style={{
+              background: 'var(--card-bg)',
+              border: '1px solid var(--card-border)',
+              borderRadius: '10px',
+              padding: '18px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '10px'
             }}
-            style={{ cursor: 'pointer', background: 'var(--card-bg)', border: '1px solid var(--card-border)', borderRadius: '8px', padding: '16px', textDecoration: 'none', display: 'block' }}
           >
-            <div style={{ fontSize: '0.72rem', color: 'var(--primary)', fontWeight: 700 }}>Etapa 4 • Criação</div>
-            <div style={{ fontWeight: 700, fontSize: '0.96rem', margin: '4px 0', color: 'var(--text)' }}>🛠️ Construtor Livre</div>
-            <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', lineHeight: '1.45' }}>Monte qualquer diagrama arbitrário e calcule a redução algébrica completa.</div>
-          </a>
-
-          {/* Etapa 5 • Controladores */}
-          <a
-            href="/?view=controllers"
-            className="learning-step-card"
-            onClick={e => {
-              if (!e.ctrlKey && !e.metaKey && !e.shiftKey && e.button === 0) {
-                e.preventDefault();
-                handleSetView('controllers');
-              }
-            }}
-            style={{ cursor: 'pointer', background: 'var(--card-bg)', border: '1px solid var(--card-border)', borderRadius: '8px', padding: '16px', textDecoration: 'none', display: 'block' }}
-          >
-            <div style={{ fontSize: '0.72rem', color: 'var(--primary)', fontWeight: 700 }}>Etapa 5 • Projeto</div>
-            <div style={{ fontWeight: 700, fontSize: '0.96rem', margin: '4px 0', color: 'var(--text)' }}>🎛️ Controladores</div>
-            <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', lineHeight: '1.45' }}>P, PD, PI, Avanço de Fase e Atraso de Fase separados com teoria, método do professor, exercícios e simulações.</div>
-          </a>
+            <div style={{ fontSize: '0.72rem', color: '#f59e0b', fontWeight: 800, textTransform: 'uppercase' }}>
+              Trilha 3 • Revisão &amp; Provas
+            </div>
+            <div style={{ fontWeight: 800, fontSize: '1.05rem', color: 'var(--text)' }}>
+              📝 Listas Resolvidas &amp; Prática
+            </div>
+            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', lineHeight: 1.45 }}>
+              Lista P2 completa (23 questões), laboratório interativo com 3 níveis e guia didático de regras de blocos.
+            </div>
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: 'auto', paddingTop: '4px' }}>
+              <a
+                href="/?view=controllers&tab=listas"
+                style={{ padding: '7px 12px', borderRadius: '6px', fontSize: '0.78rem', fontWeight: 700, background: 'var(--code-bg)', color: 'var(--text)', border: '1px solid var(--card-border)', textDecoration: 'none' }}
+              >
+                📝 Lista P2 (23 Q)
+              </a>
+              <button
+                type="button"
+                onClick={() => handleSetView('practice')}
+                style={{ padding: '7px 12px', borderRadius: '6px', fontSize: '0.78rem', fontWeight: 700, background: 'var(--code-bg)', color: 'var(--text)', border: '1px solid var(--card-border)', cursor: 'pointer' }}
+              >
+                🧪 Prática
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSetView('guide')}
+                style={{ padding: '7px 12px', borderRadius: '6px', fontSize: '0.78rem', fontWeight: 700, background: 'var(--code-bg)', color: 'var(--text)', border: '1px solid var(--card-border)', cursor: 'pointer' }}
+              >
+                📚 Guia
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 

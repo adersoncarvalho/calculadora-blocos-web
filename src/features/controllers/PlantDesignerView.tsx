@@ -11,12 +11,14 @@ import { SPlaneChart } from '@/components/SPlaneChart';
 import {
   buildClosedLoopTf,
   buildControlEffortTf,
-  simulateInputResponseRK4
+  simulateInputResponseRK4,
+  simulateClosedLoopWithSaturationRK4
 } from './controllersData';
 import { ControllerBlockDiagram } from './ControllerBlockDiagram';
+import { OpAmpCircuitDiagram } from './OpAmpCircuitDiagram';
 import { printElementAsPdf } from '@/utils/printMemorial';
 
-type DesignerMode = 'Auto' | 'P' | 'PD' | 'PI' | 'Lead' | 'Lag';
+type DesignerMode = 'Auto' | 'P' | 'PD' | 'PI' | 'Lead' | 'Lag' | 'LeadLag' | 'PD_PI';
 type SpecMode = 'sd' | 'mpts';
 type InputKind = 'step' | 'ramp';
 type LeadCriterion = 'bissetriz' | 'rfixed';
@@ -28,7 +30,7 @@ interface MemorialStep {
 }
 
 interface DesignerResult {
-  chosenType: 'P' | 'PD' | 'PI' | 'Lead' | 'Lag';
+  chosenType: 'P' | 'PD' | 'PI' | 'Lead' | 'Lag' | 'LeadLag' | 'PD_PI';
   reason: string;
   systemType: number;
   order: number;
@@ -42,6 +44,16 @@ interface DesignerResult {
   steps: MemorialStep[];
   scilabCode: string;
   tMax: number;
+}
+
+function renderRichMathText(text: string): React.ReactNode {
+  const parts = text.split(/(\$[^$]+\$)/g);
+  return parts.map((part, idx) => {
+    if (part.startsWith('$') && part.endsWith('$') && part.length > 2) {
+      return <MathView key={`rm-${idx}`} math={part.slice(1, -1)} inline />;
+    }
+    return <React.Fragment key={`rt-${idx}`}>{part}</React.Fragment>;
+  });
 }
 
 const fmtPt = (v: number, digits = 3): string => {
@@ -304,6 +316,7 @@ export const PlantDesignerView: React.FC = () => {
   const [leadCrit, setLeadCrit] = useState<LeadCriterion>('bissetriz');
   const [subTab, setSubTab] = useState<'memorial' | 'graficos' | 'scilab'>('memorial');
   const [usePrefilter, setUsePrefilter] = useState<boolean>(false);
+  const [useSaturation, setUseSaturation] = useState<boolean>(false);
   const [copiedScilab, setCopiedScilab] = useState<boolean>(false);
   const memorialRef = useRef<HTMLDivElement | null>(null);
 
@@ -385,26 +398,37 @@ export const PlantDesignerView: React.FC = () => {
       const essReqFrac = essReqPct / 100;
 
       // Triagem automática do controlador
-      let chosenType: 'P' | 'PD' | 'PI' | 'Lead' | 'Lag';
+      let chosenType: 'P' | 'PD' | 'PI' | 'Lead' | 'Lag' | 'LeadLag' | 'PD_PI';
       let reason = '';
       if (mode !== 'Auto') {
         chosenType = mode;
-        reason = `Modo selecionado manualmente: ${mode}.`;
+        reason = `Modo selecionado manualmente: ${mode === 'LeadLag' ? 'Avanço + Atraso (2 estágios)' : mode === 'PD_PI' ? 'PD Real + PI (PID Real)' : mode}.`;
       } else if (thetaDef > 2) {
-        chosenType = 'PD';
-        reason = `Como θdef = +${fmtPt(thetaDef, 1)}° > 0°, o ponto sd está à esquerda do LGR original e exige adiantamento de fase (PD Real ou Avanço de Fase).`;
+        if (inputKind === 'step' && systemType === 0 && essReqPct === 0) {
+          chosenType = 'PD_PI';
+          reason = `Como $\\theta_{\\text{def}} = +${fmtPt(thetaDef, 1)}^\\circ > 0^\\circ$ e exige erro nulo ao degrau em planta Tipo 0, projeta-se em 2 estágios: 1º **PD Real** (transitório em $s_d$) + 2º **PI** (erro nulo).`;
+        } else if (
+          (inputKind === 'step' && systemType === 0 && essReqPct > 0 && essReqPct <= 10) ||
+          (inputKind === 'ramp' && systemType === 1 && essReqPct > 0)
+        ) {
+          chosenType = 'LeadLag';
+          reason = `Como $\\theta_{\\text{def}} = +${fmtPt(thetaDef, 1)}^\\circ > 0^\\circ$ e também há especificação rigorosa de erro estacionário, projeta-se em 2 estágios: 1º **Avanço de Fase** (transitório) + 2º **Atraso de Fase** (erro).`;
+        } else {
+          chosenType = 'PD';
+          reason = `Como $\\theta_{\\text{def}} = +${fmtPt(thetaDef, 1)}^\\circ > 0^\\circ$, o ponto $s_d$ está à esquerda do LGR original e exige adiantamento de fase (PD Real ou Avanço de Fase).`;
+        }
       } else if (inputKind === 'step' && systemType === 0 && essReqPct === 0) {
         chosenType = 'PI';
-        reason = `Planta Tipo 0 com θdef ≈ 0° e requisito de erro nulo ao degrau (ess = 0) → Controlador PI.`;
+        reason = `Planta Tipo 0 com $\\theta_{\\text{def}} \\approx 0^\\circ$ e requisito de erro nulo ao degrau ($e_{ss} = 0$) → Controlador PI.`;
       } else if (
         (inputKind === 'step' && systemType === 0 && essReqPct > 0 && 1 / (1 + Ka) > essReqFrac) ||
         (inputKind === 'ramp' && systemType === 1 && essReqPct > 0 && 1 / Ka > essReqFrac)
       ) {
         chosenType = 'Lag';
-        reason = `O transitório já passa por sd (θdef ≈ 0°), mas o erro estacionário com K0 supera o limite pedido → Compensador por Atraso de Fase (Lag).`;
+        reason = `O transitório já passa por $s_d$ ($\\theta_{\\text{def}} \\approx 0^\\circ$), mas o erro estacionário com $K_0$ supera o limite pedido → Compensador por Atraso de Fase (Lag).`;
       } else {
         chosenType = 'P';
-        reason = `O ponto desejado sd pertence ao LGR original (θdef ≈ 0°) e o erro já atende à especificação → Controlador Proporcional (P).`;
+        reason = `O ponto desejado $s_d$ pertence ao LGR original ($\\theta_{\\text{def}} \\approx 0^\\circ$) e o erro já atende à especificação → Controlador Proporcional (P).`;
       }
 
       const plantLatex = `\\frac{${formatPolyLatex(numG)}}{${formatFactorList(poles)}}`;
@@ -556,6 +580,98 @@ export const PlantDesignerView: React.FC = () => {
 
         controllerExpr = `${fmtNum(Kc, 4)}*(s+${fmtNum(zi, 4)})/s`;
         controllerLatex = `G_c(s) = ${fmtPt(Kc, 3)}\\frac{s + ${fmtPt(zi, 3)}}{s}`;
+      } else if (chosenType === 'LeadLag' || chosenType === 'PD_PI') {
+        // Projeto Combinado em 2 Estágios: 1º Estágio (PD Real / Avanço) + 2º Estágio (PI ou Atraso)
+        const phiNeeded = Math.max(5, thetaDef > 0 ? thetaDef : 20);
+        const N = Math.max(2, Number(pdNStr.replace(',', '.')) || 10);
+        const r = N + 1;
+        const phiMax = (Math.asin((r - 1) / (r + 1)) * 180) / Math.PI;
+        const phiUse = Math.min(phiNeeded, phiMax - 0.5);
+        const cotPhi = 1 / Math.tan((phiUse * Math.PI) / 180);
+        const c2 = r;
+        const c1 = -(sigma * (r + 1) + omega * (r - 1) * cotPhi);
+        const c0 = sigma * sigma + omega * omega;
+        const delta = Math.max(0, c1 * c1 - 4 * c2 * c0);
+        const zc = (-c1 + Math.sqrt(delta)) / (2 * c2);
+        const pc = r * zc;
+
+        const K1Mag = buildLiteralMagnitudeStep('K_{c1}', leadGain, zeros, poles, sd, zc, pc);
+        const Kc1 = K1Mag.value;
+        const Ka1 = Kc1 * (zc / pc) * Math.abs(G0);
+
+        steps.push({
+          title: '2. Estágio 1 — Adiantamento de Fase ($z_c, p_c$ e $K_{c1}$ pela Regra dos 7 Passos)',
+          description: `Fixando $N = ${fmtPt(N, 1)}$ ($r = ${fmtPt(r, 1)}$) para fornecer $\\theta_{\\text{def}} = ${fmtPt(phiUse, 1)}^\\circ$ em $s_d$ e calculando $K_{c1} = \\frac{1}{|\\bar{G}_{c1}(s_d)G(s_d)|}$:`,
+          latex:
+            `c_2 = ${fmtPt(c2, 2)} \\;;\\; c_1 = ${fmtPt(c1, 2)} \\;;\\; c_0 = ${fmtPt(c0, 2)} \\;;\\; \\Delta = ${fmtPt(delta, 2)} \\implies z_c = \\mathbf{${fmtPt(zc, 3)}} \\;;\\; p_c = r z_c = \\mathbf{${fmtPt(pc, 3)}} \\;;\\; ` +
+            `${K1Mag.latex}`
+        });
+
+        if (chosenType === 'PD_PI') {
+          // Estágio 2: PI (zero zi e polo na origem)
+          const angSd = complexArgDeg(sd);
+          const phiPI = 5;
+          const ziMax = sigma + omega / Math.tan(((angSd - phiPI) * Math.PI) / 180);
+          const ziDipolo = sLenta / 1.1;
+          const zi = Math.max(0.02, Math.min(ziMax > 0 ? ziMax : ziDipolo, ziDipolo));
+          const perdaPI = Math.abs(complexArgDeg({ re: sd.re + zi, im: sd.im }) - angSd);
+
+          const allZ = [...zeros, { re: -zc, im: 0 }, { re: -zi, im: 0 }];
+          const allP = [...poles, { re: -pc, im: 0 }, { re: 0, im: 0 }];
+          const KcTotMag = buildLiteralMagnitudeStep('K_c', leadGain, allZ, allP, sd);
+          const KcTot = KcTotMag.value;
+
+          steps.push({
+            title: '3. Estágio 2 — Integrador PI ($z_i$) e Ganho Total $K_c$ (Regra dos 7 Passos)',
+            description: 'Com o transitório já ajustado em $s_d$, adiciona-se $\\frac{s+z_i}{s}$ com perda angular $\\le 5^\\circ$ para zerar $e_{ss}$ ao degrau:',
+            latex:
+              `z_i = \\min\\!\\left(${fmtPt(ziMax, 3)}\\,;\\, \\frac{${fmtPt(sLenta, 3)}}{1{,}1}\\right) = \\mathbf{${fmtPt(zi, 3)}} \\;;\\; \\Delta\\theta_{\\text{perda}} = \\mathbf{${fmtPt(perdaPI, 2)}^\\circ} \\;;\\; ` +
+              `${KcTotMag.latex} \\;;\\; e_{ss}(\\text{degrau}) = \\mathbf{0}`
+          });
+
+          controllerExpr = `${fmtNum(KcTot, 4)}*(s+${fmtNum(zc, 4)})*(s+${fmtNum(zi, 4)})/(s*(s+${fmtNum(pc, 4)}))`;
+          controllerLatex = `G_c(s) = ${fmtPt(KcTot, 3)}\\frac{(s + ${fmtPt(zc, 3)})(s + ${fmtPt(zi, 3)})}{s(s + ${fmtPt(pc, 3)})}`;
+          prefilterZc = zc;
+        } else {
+          // Estágio 2: Atraso de Fase (z_lag, p_lag)
+          const isTipo1 = systemType >= 1 && inputKind === 'ramp';
+          const Kreq = isTipo1 ? 1 / Math.max(0.005, essReqFrac) : Math.max(1, 1 / Math.max(0.005, essReqFrac) - 1);
+          const beta = Math.max(1.5, Kreq / Math.max(1e-4, Ka1));
+          const phiLag = 5;
+          const cotLag = 1 / Math.tan((phiLag * Math.PI) / 180);
+          const l2 = beta;
+          const l1 = -(sigma * (beta + 1) + omega * (beta - 1) * cotLag);
+          const l0 = sigma * sigma + omega * omega;
+          const dLag = Math.max(0, l1 * l1 - 4 * l2 * l0);
+          const pMax = (-l1 - Math.sqrt(dLag)) / (2 * l2);
+          const zMax = beta * pMax;
+          const zDipolo = sLenta / 1.1;
+          const zCauda = isTipo1 && 1 / Ka1 > 1 / Kreq ? 0.02 / (1 / Ka1 - 1 / Kreq) : Infinity;
+          const zLag = Math.max(0.005, Math.min(zMax, zDipolo, zCauda));
+          const pLag = zLag / beta;
+          const perdaLag = Math.abs(
+            complexArgDeg({ re: sd.re + zLag, im: sd.im }) - complexArgDeg({ re: sd.re + pLag, im: sd.im })
+          );
+
+          const allZ = [...zeros, { re: -zc, im: 0 }, { re: -zLag, im: 0 }];
+          const allP = [...poles, { re: -pc, im: 0 }, { re: -pLag, im: 0 }];
+          const KcTotMag = buildLiteralMagnitudeStep('K_c', leadGain, allZ, allP, sd);
+          const KcTot = KcTotMag.value;
+          const Knovo = KcTot * (zc / pc) * (zLag / pLag) * Math.abs(G0);
+          const essNovo = isTipo1 ? 1 / Knovo : 1 / (1 + Knovo);
+
+          steps.push({
+            title: '3. Estágio 2 — Atraso de Fase ($\\beta, z_{\\text{lag}}, p_{\\text{lag}}$) e Ganho Total $K_c$',
+            description: 'Com $K_{a,1}$ do 1º estágio, calcula-se $\\beta = K_{\\text{req}}/K_{a,1}$, posiciona-se o dipolo com $\\varphi = 5^\\circ$ e recalcula-se $K_c = \\frac{1}{|\\bar{G}_c(s_d)G(s_d)|}$:',
+            latex:
+              `K_{a,1} = ${fmtPt(Ka1, 3)} \\;;\\; \\beta = \\frac{${fmtPt(Kreq, 2)}}{${fmtPt(Ka1, 3)}} = \\mathbf{${fmtPt(beta, 2)}} \\;;\\; z_{\\text{lag}} = \\mathbf{${fmtPt(zLag, 4)}} \\;;\\; p_{\\text{lag}} = \\mathbf{${fmtPt(pLag, 5)}} \\;;\\; \\Delta\\theta_{\\text{perda}} = \\mathbf{${fmtPt(perdaLag, 2)}^\\circ} \\;;\\; ` +
+              `${KcTotMag.latex} \\;;\\; e_{ss,\\text{final}} = \\mathbf{${isTipo1 ? fmtPt(essNovo, 4) : `${fmtPt(essNovo * 100, 2)}\\%`}}`
+          });
+
+          controllerExpr = `${fmtNum(KcTot, 4)}*(s+${fmtNum(zc, 4)})*(s+${fmtNum(zLag, 5)})/((s+${fmtNum(pc, 4)})*(s+${fmtNum(pLag, 6)}))`;
+          controllerLatex = `G_c(s) = ${fmtPt(KcTot, 3)}\\frac{(s + ${fmtPt(zc, 3)})(s + ${fmtPt(zLag, 4)})}{(s + ${fmtPt(pc, 3)})(s + ${fmtPt(pLag, 5)})}`;
+          prefilterZc = zc;
+        }
       } else {
         // Compensador por Atraso de Fase (Lag) — Passos 0 a 7
         const isTipo1 = systemType >= 1 && inputKind === 'ramp';
@@ -696,6 +812,23 @@ title('Esforço de Controle u(t) — Regra dos 10 V'); xgrid();`;
 
       const t = sCom.t;
       const r = t.map(inputFn);
+
+      if (useSaturation) {
+        const satSim = simulateClosedLoopWithSaturationRK4(
+          G,
+          Gc,
+          inputFn,
+          design.result.tMax,
+          280,
+          10,
+          usePrefilter ? design.result.prefilterZc : null
+        );
+        if (satSim) {
+          const uPeakSat = Number(Math.max(...satSim.u.map(v => Math.abs(v))).toFixed(2));
+          return { t: satSim.t, r, ySem: sSem.y, yActive: satSim.y, eActive: satSim.e, uActive: satSim.u, uPeak: uPeakSat };
+        }
+      }
+
       const yActive = usePrefilter && yPref ? yPref : sCom.y;
       const uActive = usePrefilter && uPref ? uPref : sU?.y ?? null;
       const eActive = r.map((rv, i) => Number((rv - yActive[i]).toFixed(5)));
@@ -705,7 +838,7 @@ title('Esforço de Controle u(t) — Regra dos 10 V'); xgrid();`;
     } catch {
       return null;
     }
-  }, [design.result, plantExpr, inputKind, usePrefilter]);
+  }, [design.result, plantExpr, inputKind, usePrefilter, useSaturation]);
 
   const inputStyle: React.CSSProperties = {
     width: '100%',
@@ -852,12 +985,14 @@ title('Esforço de Controle u(t) — Regra dos 10 V'); xgrid();`;
               CONTROLADOR
             </label>
             <select value={mode} onChange={e => setMode(e.target.value as DesignerMode)} style={inputStyle}>
-              <option value="Auto">Automático (Triagem θdef)</option>
+              <option value="Auto">Automático (Triagem θdef + ess)</option>
               <option value="P">P (Proporcional)</option>
               <option value="PD">PD Real (N = 10)</option>
               <option value="PI">PI (Erro Nulo)</option>
               <option value="Lead">Avanço de Fase (Lead)</option>
               <option value="Lag">Atraso de Fase (Lag)</option>
+              <option value="LeadLag">Avanço + Atraso (2 Estágios)</option>
+              <option value="PD_PI">PD Real + PI (PID Real)</option>
             </select>
           </div>
 
@@ -974,7 +1109,8 @@ title('Esforço de Controle u(t) — Regra dos 10 V'); xgrid();`;
                   color: 'var(--text)'
                 }}
               >
-                <strong>🎯 Controlador Projetado ({design.result.chosenType}):</strong> {design.result.reason}
+                <strong>🎯 Controlador Projetado ({design.result.chosenType === 'LeadLag' ? 'Avanço + Atraso' : design.result.chosenType === 'PD_PI' ? 'PD Real + PI' : design.result.chosenType}):</strong>{' '}
+                {renderRichMathText(design.result.reason)}
               </div>
 
               <ControllerBlockDiagram
@@ -998,14 +1134,19 @@ title('Esforço de Controle u(t) — Regra dos 10 V'); xgrid();`;
                   }}
                 >
                   <div style={{ fontWeight: 700, fontSize: '0.87rem', color: 'var(--text)', marginBottom: '4px' }}>
-                    {st.title}
+                    {renderRichMathText(st.title)}
                   </div>
                   <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '6px' }}>
-                    {st.description}
+                    {renderRichMathText(st.description)}
                   </div>
                   {renderStackedMath(st.latex)}
                 </div>
               ))}
+
+              <OpAmpCircuitDiagram
+                controllerType={design.result.chosenType}
+                controllerExpr={design.result.controllerExpr}
+              />
             </div>
           )}
 
@@ -1029,24 +1170,42 @@ title('Esforço de Controle u(t) — Regra dos 10 V'); xgrid();`;
                     </span>
                   )}
                 </div>
-                {design.result.prefilterZc !== null && (
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                   <button
                     type="button"
-                    onClick={() => setUsePrefilter(p => !p)}
+                    onClick={() => setUseSaturation(p => !p)}
                     style={{
                       padding: '6px 12px',
                       borderRadius: '6px',
                       fontSize: '0.78rem',
                       fontWeight: 700,
                       cursor: 'pointer',
-                      background: usePrefilter ? 'var(--primary)' : 'var(--code-bg)',
-                      color: usePrefilter ? '#fff' : 'var(--text)',
-                      border: `1px solid ${usePrefilter ? 'var(--primary)' : 'var(--card-border)'}`
+                      background: useSaturation ? '#dc2626' : 'var(--code-bg)',
+                      color: useSaturation ? '#fff' : 'var(--text)',
+                      border: `1px solid ${useSaturation ? '#dc2626' : 'var(--card-border)'}`
                     }}
                   >
-                    {usePrefilter ? '✓ Pré-Filtro F(s) Ativo' : '○ Ativar Pré-Filtro F(s) = zc/(s+zc)'}
+                    {useSaturation ? '⚡ Saturação ±10 V Ativa (Anti-Windup)' : '○ Simular Saturação Real (±10 V)'}
                   </button>
-                )}
+                  {design.result.prefilterZc !== null && (
+                    <button
+                      type="button"
+                      onClick={() => setUsePrefilter(p => !p)}
+                      style={{
+                        padding: '6px 12px',
+                        borderRadius: '6px',
+                        fontSize: '0.78rem',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        background: usePrefilter ? 'var(--primary)' : 'var(--code-bg)',
+                        color: usePrefilter ? '#fff' : 'var(--text)',
+                        border: `1px solid ${usePrefilter ? 'var(--primary)' : 'var(--card-border)'}`
+                      }}
+                    >
+                      {usePrefilter ? '✓ Pré-Filtro F(s) Ativo' : '○ Ativar Pré-Filtro F(s)'}
+                    </button>
+                  )}
+                </div>
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '12px' }}>
