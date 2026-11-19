@@ -4213,32 +4213,22 @@ export const BuilderSection: React.FC<BuilderSectionProps> = ({ onBack }) => {
                     <rect x={x - 64} y={y - 34} width="128" height="68" fill="transparent" pointerEvents="all" />
                   )}
 
-                  {/* A0. PONTO DE RAMIFICAÇÃO / DERIVAÇÃO (JUNÇÃO LIMPA E DISCRETA NO FIO) */}
-                  {el.type === 'pickoff' && (
+                  {/* A0. PONTO DE RAMIFICAÇÃO / DERIVAÇÃO (INVISÍVEL EM REPOUSO — SÓ APARECE AO SELECIONAR/HOVER) */}
+                  {el.type === 'pickoff' && (isSelected || isConnectingSource || hoveredElementId === el.id) && (
                     <>
-                      {(isSelected || isConnectingSource || hoveredElementId === el.id) && (
-                        <circle
-                          cx={x}
-                          cy={y}
-                          r="8"
-                          fill="rgba(16, 185, 129, 0.2)"
-                          stroke="#10b981"
-                          strokeWidth="1.2"
-                        />
-                      )}
                       <circle
                         cx={x}
                         cy={y}
-                        r={isSelected || isConnectingSource ? 4 : 3}
-                        fill={
-                          isSelected
-                            ? '#f59e0b'
-                            : isConnectingSource
-                            ? '#10b981'
-                            : isLightTheme
-                            ? '#0284c7'
-                            : '#38bdf8'
-                        }
+                        r="8"
+                        fill="rgba(16, 185, 129, 0.2)"
+                        stroke="#10b981"
+                        strokeWidth="1.2"
+                      />
+                      <circle
+                        cx={x}
+                        cy={y}
+                        r="3.5"
+                        fill={isSelected ? '#f59e0b' : '#10b981'}
                       />
                     </>
                   )}
